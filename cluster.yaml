@@ -1,0 +1,20 @@
+__default__:
+    email:           pedge@eng.ucsd.edu
+    working_dir:     /home/pedge/git/hapcut-pacbio
+    queue:           hotel
+    group:           bansal-group
+    qsub_stdout_dir: /oasis/tscc/scratch/pedge/hapcut-pacbio/stdout
+    ppn:             1
+    walltime:        '30:00:00'
+
+call_candidate_snvs:
+    ppn: 4
+    walltime: '100:00:00'
+
+extracthairs_split:
+    ppn: 1
+    walltime: '10:00:00'
+
+extract_snv_fragments_split:
+    ppn: 1
+    walltime: '10:00:00'

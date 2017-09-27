@@ -1,4 +1,5 @@
 from count_accuracy import count_accuracy
+import os
 
 # FILE PATHS
 TWOBITTOFASTA = 'twoBitToFa' # can be downloaded from 'http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/twoBitToFa'
@@ -6,7 +7,7 @@ PACBIO_BAM_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/NA12878
 PACBIO_BAI_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/NA12878_PacBio_MtSinai/sorted_final_merged.bam.bai'
 GIAB_HIGH_CONF_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/latest/GRCh37/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_nosomaticdel.bed'
 GIAB_VCF_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/NISTv3.3.2/GRCh37/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_PGandRTGphasetransfer.vcf.gz'
-DATA        = '/oasis/tscc/scratch/pedge/reaper'
+DATA        = '/oasis/tscc/data/pedge/reaper'
 BWA            = '/home/pedge/installed/bwa'
 SAMTOOLS       = '/home/pedge/git/samtools/samtools'
 PICARD         = '/home/pedge/installed/picard/broadinstitute-picard-2a49ee2/dist/picard.jar'
@@ -32,44 +33,44 @@ chroms = ['chr{}'.format(i) for i in range(1,23)] + ['chrX']
 
 # DEFAULT
 rule all:
-    input: 'scratch/accuracy_reports/chr20.txt'
+    input: 'data/accuracy_reports/chr20.txt'
 
 rule accuracy_stats:
     params: job_name = 'accuracy_stats.{chrom}',
-    input:  reaper_vcf = '{DATA}/variants/reaper/{chrom}.vcf',
-            illumina_vcf = '{DATA}/variants/illumina_30x/{chrom}.vcf',
-            giab_ref = '{DATA}/variants/GIAB/{chrom}.vcf',
-            bed_filter ='{DATA}/variants/GIAB/high_confidence.bed',
-            #'{DATA}/variants/GIAB/high_confidence.chr_prefix.bed',
+    input:  reaper_vcf = 'data/variants/reaper/{chrom}.vcf',
+            illumina_vcf = 'data/variants/illumina_30x/{chrom}.vcf',
+            giab_ref = 'data/variants/GIAB/{chrom}.vcf',
+            bed_filter ='data/variants/GIAB/high_confidence.bed',
+            #'data/variants/GIAB/high_confidence.chr_prefix.bed',
             hg19_fasta = HG19
-    output: report = '{DATA}/accuracy_reports/{chrom}.txt'
+    output: report = 'data/accuracy_reports/{chrom}.txt'
     run:
         count_accuracy(input.reaper_vcf, input.illumina_vcf, input.giab_ref, input.bed_filter, wildcards.chrom, input.hg19_fasta, output.report)
 
 rule run_reaper:
     params: job_name = 'reaper.{chrom}',
-    input:  bam_file = '{DATA}/aligned_reads/pacbio/{chrom}.bam',
-            bai_file = '{DATA}/aligned_reads/pacbio/{chrom}.bai',
-            ref      = HG19
+    input:  bam = 'data/aligned_reads/pacbio/pacbio.bam',
+            bai = 'data/aligned_reads/pacbio/pacbio.bam.bai',
+            ref      = HG19,
             ref_ix   = HG19 + '.fai'
-    output: vcf = '{DATA}/variants/reaper/{chrom}.vcf',
-    shell: '{REAPER} -z --bam {input.bam} --ref {input.ref} --out {output.vcf}'
+    output: vcf = 'data/variants/reaper/{chrom}.vcf',
+    shell: '{REAPER} -z --bam {input.bam} --ref {input.ref} --out {output.vcf} -r {wildcards.chrom}'
 
 #rule intersect_beds_giab_exons:
 #    params: job_name = 'intersect_beds_giab_exons',
-#    input: giab_conf = '{DATA}/variants/GIAB/high_confidence.chr_prefix.bed',
-#           exons     = '{DATA}/genome_features/hg19_exons.bed'
-#    output: bed_filter = '{DATA}/genome_features/exons_intersect_giab_conf.bed'
+#    input: giab_conf = 'data/variants/GIAB/high_confidence.chr_prefix.bed',
+#           exons     = 'data/genome_features/hg19_exons.bed'
+#    output: bed_filter = 'data/genome_features/exons_intersect_giab_conf.bed'
 #    shell: 'bedtools intersect -a {input.giab_conf} -b {input.exons} | sort -k 1,1 -k2,2n > {output.bed_filter}'
 
 # Call 30x Illumina variants
 rule call_variants_Illumina:
     params: job_name = 'Call_Illumina_30x',
-    input: bam = '{DATA}/aligned_reads/illumina_30x/NIST_NA12878_HG001_HiSeq_300x_RMNISTHS_30xdownsample.bam',
-            bai = '{DATA}/aligned_reads/illumina_30x/NIST_NA12878_HG001_HiSeq_300x_RMNISTHS_30xdownsample.bam.bai',
-            fa = HS37D5
+    input: bam = 'data/aligned_reads/illumina_30x/NIST_NA12878_HG001_HiSeq_300x_RMNISTHS_30xdownsample.bam',
+            bai = 'data/aligned_reads/illumina_30x/NIST_NA12878_HG001_HiSeq_300x_RMNISTHS_30xdownsample.bam.bai',
+            fa = HS37D5,
             fai = HS37D5 + '.fai'
-    output: vcf = '{DATA}/variants/illumina_30x/{chr}.vcf'
+    output: vcf = 'data/variants/illumina_30x/{chr}.vcf'
     shell:
         '''
         freebayes -f {HS37D5} \
@@ -83,8 +84,8 @@ rule call_variants_Illumina:
 # DOWNLOAD 30x Illumina reads
 rule download_Illumina_reads:
     params: job_name = 'DOWNLOAD_Illumina_30x',
-    output: bam = '{DATA}/aligned_reads/illumina_30x/NIST_NA12878_HG001_HiSeq_300x_RMNISTHS_30xdownsample.bam',
-            bai = '{DATA}/aligned_reads/illumina_30x/NIST_NA12878_HG001_HiSeq_300x_RMNISTHS_30xdownsample.bam.bai',
+    output: bam = 'data/aligned_reads/illumina_30x/NIST_NA12878_HG001_HiSeq_300x_RMNISTHS_30xdownsample.bam',
+            bai = 'data/aligned_reads/illumina_30x/NIST_NA12878_HG001_HiSeq_300x_RMNISTHS_30xdownsample.bam.bai',
     shell:
         '''
         wget {Illumina_30x_BAM_URL} -O {output.bam};
@@ -103,33 +104,34 @@ rule download_hg19_pacbio:
         '''
 
 rule download_HS37D5:
-    output: '{DATA}/genomes/hs37d5.fa'
+    params: job_name = 'download_hs37d',
+    output: 'data/genomes/hs37d5.fa'
     shell: 'wget {HS37D5_URL} -O {output}.gz; gunzip -c {output}.gz'
 
 # ADD CHR TO TG VARIANTS
 rule extract_chrom_GIAB_VCF:
     params: job_name = 'extract_chr_GIAB_VCF.{chrnum}',
-    input:  gz = '{DATA}/variants/GIAB/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_PGandRTGphasetransfer.vcf.gz'
-    output: vcf = '{DATA}/variants/GIAB/chr{chrnum}.vcf'
-    shell: '''gunzip -c {input.gz} | grep -P '^{chrnum}\t' | awk '{print "chr" $0;}' > {output.vcf}'''
+    input:  gz = 'data/variants/GIAB/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_PGandRTGphasetransfer.vcf.gz'
+    output: vcf = 'data/variants/GIAB/chr{chrnum}.vcf'
+    shell: '''gunzip -c {input.gz} | grep -P '^{{chrnum}}\t' | awk '{{print "chr" $0;}}' > {output.vcf}'''
 
 # DOWNLOAD GIAB VARIANTS
 rule download_GIAB_high_confidence_bed:
     params: job_name = 'DOWNLOAD_GIAB',
-    output: '{DATA}/variants/GIAB/high_confidence.bed'
-    shell: 'wget -q -O- {GIAB_HIGH_CONF_URL} | awk '{print "chr" $0;}' > {output}'
+    output: 'data/variants/GIAB/high_confidence.bed'
+    shell: '''wget -q -O- {GIAB_HIGH_CONF_URL} | awk '{{print "chr" $0;}}' > {output}'''
 
 # DOWNLOAD GIAB VARIANTS
 rule download_GIAB_VCF:
     params: job_name = 'DOWNLOAD_GIAB',
-    output: '{DATA}/variants/GIAB/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_PGandRTGphasetransfer.vcf.gz'
+    output: 'data/variants/GIAB/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_PGandRTGphasetransfer.vcf.gz'
     shell: 'wget {GIAB_VCF_URL} -O {output}'
 
 # DOWNLOAD PACBIO BAM
 rule download_pacbio:
     params: job_name = 'download_pacbio'
-    output: bam = '{DATA}/aligned_reads/pacbio/pacbio.bam',
-            bai = '{DATA}/aligned_reads/pacbio/pacbio.bam.bai'
+    output: bam = 'data/aligned_reads/pacbio/pacbio.bam',
+            bai = 'data/aligned_reads/pacbio/pacbio.bam.bai'
     shell:
         '''
         wget {PACBIO_BAM_URL} -O {output.bam}
@@ -143,8 +145,8 @@ rule index_fasta:
     output: fai = '{x}.fa.fai'
     shell:  '{SAMTOOLS} faidx {input.fa}'
 
-rule index_bam:
-    params: job_name = lambda wildcards: 'index_bam.{}'.format(str(wildcards.x).replace("/", "."))
-    input:  bam = '{x}.bam'
-    output: bai = '{x}.bam.bai'
-    shell:  '{SAMTOOLS} index {input.bam} {output.bai}'
+#rule index_bam:
+#    params: job_name = lambda wildcards: 'index_bam.{}'.format(str(wildcards.x).replace("/", "."))
+#    input:  bam = '{x}.bam'
+#    output: bai = '{x}.bam.bai'
+#    shell:  '{SAMTOOLS} index {input.bam} {output.bai}'

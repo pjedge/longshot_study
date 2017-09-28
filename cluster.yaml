@@ -7,4 +7,8 @@ __default__:
     ppn:             1
     walltime:        '30:00:00'
 
+vcfeval_rtgtools:
+    ppn: 4
 
+vcfeval_rtgtools:
+    ppn: 4

@@ -21,11 +21,13 @@ filter_SNVs(infile, outfile, max_dp, density_count=10, density_len=500, density_
                     lines.append(((chrom,pos,qual),line.strip()))
 
         filt = [0] * len(lines)
+        dp_count = 0
         for i in range(len(lines)):
 
             depth = int(float(re.findall(dp_pat,lines[i][1])[0]))
             if depth > max_dp:
                 filt[i] = 1
+                dp_count += 1
 
             j = i+1
             d = 0
@@ -48,7 +50,8 @@ filter_SNVs(infile, outfile, max_dp, density_count=10, density_len=500, density_
 
                 j += 1
 
-        #print("{} variants filtered due to density".format(sum(filt)))
+        print("{} variants filtered due to depth".format(dp_count)
+        print("{} variants filtered due to density".format(sum(filt)-dp_count))
         filtered_lines = [l for ((chrom,pos,qual),l),f in zip(lines,filt) if f == 0]
 
         for line in filtered_lines:

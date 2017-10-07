@@ -20,12 +20,20 @@ BGZIP = 'bgzip'
 TABIX = 'tabix'
 
 # PARAMS
-chroms = ['chr{}'.format(i) for i in range(1,23)] + ['chrX']
+chroms = ['chr20']  #['chr{}'.format(i) for i in range(1,23)] + ['chrX']
 
 # DEFAULT
+methods = [
+'reaper_-x_-n_-m_1_-W_500_-B_30_-i_-C_77', # max alignment, no short haps, no long haps
+'reaper_-x_-n_-W_500_-B_30_-i_-C_77', # max alignment, no long haps
+'reaper_-z_-n_-W_500_-B_30_-i_-C_77', # all alignment, no long haps
+'reaper_-z_-W_500_-B_30_-i_-C_77', # all alignment
+'illumina_30x.filtered'
+]
+
 rule all:
-    input: 'data/vcfeval/reaper.all.done',
-           'data/vcfeval/illumina_30x.all.done'
+    input: expand('data/vcfeval/{m}.{c}.done',m=methods,c=['chr20'])
+    #expand('data/vcfeval/{m}.{c}.done',m=methods,c=chroms+['all'])
 
 #rule vcfeval_rtgtools_all:
 #    params: job_name = 'vcfeval_rtgtools.{calls_name}.all',
@@ -83,6 +91,14 @@ rule rtg_filter_SNVs_GIAB:
             tbi = 'data/variants/GIAB/NA12878.SNVs_ONLY.vcf.gz.tbi'
     shell: '{RTGTOOLS} RTG_MEM=12g vcffilter --snps-only -i {input.vcfgz} -o {output.vcfgz}'
 
+from filter_SNVs import filter_SNVs
+rule filter_illumina_SNVs:
+    params: job_name = 'filter_SNVs_illumina.{chrom}',
+    input:  vcf = 'data/variants/illumina_30x/{chrom}.vcf'
+    output: vcf = 'data/variants/illumina_30x.filtered/{chrom}.vcf'
+    run:
+        filter_SNVs(input.vcf, output.vcf, 52, density_count=10, density_len=500, density_qual=50)
+
 rule combine_chrom:
     params: job_name = 'combine_chroms.{calls_name}',
     input: expand('data/variants/{{calls_name}}/{chrom}.vcf',chrom=chroms)
@@ -99,8 +115,10 @@ rule run_reaper:
             bai = 'data/aligned_reads/pacbio/pacbio.bam.bai',
             ref    = 'data/genomes/hg19.fa',
             ref_ix = 'data/genomes/hg19.fa.fai'
-    output: vcf = 'data/variants/reaper/chr{chrnum}.vcf',
-    shell: '{REAPER} -r chr{wildcards.chrnum} -z -W 1000 -B 30 ---bam {input.bam} --ref {input.ref} --out {output.vcf} --indels'
+    output: vcf = 'data/variants/reaper_{options}/chr{chrnum}.vcf',
+    run:
+        options_str = wildcards.options.replace('_',' ')
+        shell('{REAPER} -r chr{wildcards.chrnum} {options_str} --bam {input.bam} --ref {input.ref} --out {output.vcf}')
 
 #rule intersect_beds_giab_exons:
 #    params: job_name = 'intersect_beds_giab_exons',

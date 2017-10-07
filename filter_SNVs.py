@@ -1,7 +1,7 @@
 
 import re
 
-filter_SNVs(infile, outfile, max_dp, density_count=10, density_len=500, density_qual=50):
+def filter_SNVs(infile, outfile, max_dp, density_count=10, density_len=500, density_qual=50):
     dp_pat = re.compile("DP=(\d+)")
 
     with open(outfile,'w') as outf:
@@ -50,7 +50,7 @@ filter_SNVs(infile, outfile, max_dp, density_count=10, density_len=500, density_
 
                 j += 1
 
-        print("{} variants filtered due to depth".format(dp_count)
+        print("{} variants filtered due to depth".format(dp_count))
         print("{} variants filtered due to density".format(sum(filt)-dp_count))
         filtered_lines = [l for ((chrom,pos,qual),l),f in zip(lines,filt) if f == 0]
 

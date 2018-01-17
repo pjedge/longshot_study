@@ -1,9 +1,19 @@
+import matplotlib as mpl
 from matplotlib import pyplot as plt
 import pickle
 import os
 import gzip
 import argparse
 
+
+mpl.rc('legend', fontsize=9)
+mpl.rc('xtick', labelsize=9)
+mpl.rc('ytick', labelsize=9)
+mpl.rc('axes', labelsize=9)
+mpl.rc('axes', labelsize=9)
+mpl.rcParams.update({'font.size': 9})
+mpl.rc('lines', linewidth=1.5)
+mpl.rc('mathtext',default='regular')
 
 def parseargs():
 
@@ -16,11 +26,12 @@ def parseargs():
     args = parser.parse_args()
     return args
 
-colors = ['r','#ccccff','#9999ff','#8080ff','#6666ff','#3333ff']
+colors = ['r','k','#ccccff','#9999ff','#8080ff','#6666ff','#3333ff']
 
 def plot_vcfeval(dirlist, labels, output_file, title):
 
     plt.figure();
+    ax1 = plt.subplot(111);
     plt.title(title)
 
     if len(dirlist) == len(colors):
@@ -56,10 +67,18 @@ def plot_vcfeval(dirlist, labels, output_file, title):
                     precisions.append(TPc/(TPc+FP))
                     recalls.append(TPb/(TPb+FN))
 
-        plt.plot(recalls, precisions, color=color,label=label)
+        plt.plot(recalls, precisions, color=color,label=label,linewidth=2,alpha=0.75)
 
-    plt.xlim((0.5,1.0))
-    plt.ylim((0.95,1.0))
+    plt.grid(True,color='grey',linestyle='--',alpha=0.5)
+    #ax1.spines["top"].set_visible(False)
+    #ax1.spines["right"].set_visible(False)
+    #ax1.spines["bottom"].set_visible(False)
+    #ax1.spines["left"].set_visible(False)
+    plt.tick_params(axis="both", which="both", bottom="off", top="off",
+                labelbottom="on", left="off", right="off", labelleft="on")
+
+    plt.xlim((0.75,1.0))
+    plt.ylim((0.99,1.0))
     plt.xlabel('Recall')
     plt.ylabel('Precision')
     plt.legend()

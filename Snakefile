@@ -20,7 +20,47 @@ BGZIP = 'bgzip'
 TABIX = 'tabix'
 
 # PARAMS
-chroms = ['chr20']  #['chr{}'.format(i) for i in range(1,23)] + ['chrX']
+chroms = ['chr{}'.format(i) for i in range(1,23)] #+ ['chrX']  # ['chr20']  #
+
+chunksize = int(1e6) #int(5e6)
+
+hg19_size_list = [('chr1', 249250621),
+('chr2', 243199373),
+('chr3', 198022430),
+('chr4', 191154276),
+('chr5', 180915260),
+('chr6', 171115067),
+('chr7', 159138663),
+('chr8', 146364022),
+('chr9', 141213431),
+('chr10', 135534747),
+('chr11', 135006516),
+('chr12', 133851895),
+('chr13', 115169878),
+('chr14', 107349540),
+('chr15', 102531392),
+('chr16', 90354753),
+('chr17', 81195210),
+('chr18', 78077248),
+('chr19', 59128983),
+('chr20', 63025520),
+('chr21', 48129895),
+('chr22', 51304566),
+('chrX', 155270560),
+('chrY', 59373566)]
+
+# create chunks of hg19
+# return list of (chrom,start,stop) tuples. stop is inclusive
+chunklist = []
+
+for chrom, chrlen in hg19_size_list:
+    for start in range(1,chrlen+1,chunksize):
+        end = start+chunksize-1 if start+chunksize-1 < chrlen else chrlen
+        chunklist.append((chrom,start,end))
+
+regions = ['{}.{}.{}'.format(chrom,start,stop) for chrom,start,stop in chunklist]
+
+regions = [r for r in regions if 'chr20.' in r]
 
 # DEFAULT
 methods = [
@@ -31,9 +71,15 @@ methods = [
 'illumina_30x.filtered'
 ]
 
+methods_less = [
+'reaper_-z_-W_500_-B_30_-i_-C_77', # all alignment
+'illumina_30x.filtered'
+]
+
 rule all:
-    input: expand('data/vcfeval/{m}.{c}.done',m=methods,c=['chr20'])
-    #expand('data/vcfeval/{m}.{c}.done',m=methods,c=chroms+['all'])
+    input: #expand('data/vcfeval/{m}.{c}.done',m=methods,c=['chr20'])
+        expand('data/vcfeval/{m}.{c}.done',m=methods_less,c=['chr20'])
+        #expand('data/vcfeval/{m}.{c}.done',m=methods_less,c=chroms+['all'])
 
 #rule vcfeval_rtgtools_all:
 #    params: job_name = 'vcfeval_rtgtools.{calls_name}.all',
@@ -93,9 +139,9 @@ rule rtg_filter_SNVs_GIAB:
 
 from filter_SNVs import filter_SNVs
 rule filter_illumina_SNVs:
-    params: job_name = 'filter_SNVs_illumina.{chrom}',
-    input:  vcf = 'data/variants/illumina_30x/{chrom}.vcf'
-    output: vcf = 'data/variants/illumina_30x.filtered/{chrom}.vcf'
+    params: job_name = 'filter_SNVs_illumina.chr{chrnum}',
+    input:  vcf = 'data/variants/illumina_30x/chr{chrnum}.vcf'
+    output: vcf = 'data/variants/illumina_30x.filtered/chr{chrnum}.vcf'
     run:
         filter_SNVs(input.vcf, output.vcf, 52, density_count=10, density_len=500, density_qual=50)
 
@@ -109,16 +155,26 @@ rule combine_chrom:
         cat {input} | grep -Pv '^#' >> {output}; # cat files, removing the headers.
         '''
 
+rule combine_regions:
+    params: job_name = 'combine_regions.reaper_{calls_name}',
+    input: expand('data/variants/reaper_{{calls_name}}/{r}.vcf',r=regions)
+    output: 'data/variants/reaper_{calls_name}/chr20.vcf'
+    shell:
+        '''
+        grep -P '^#' {input[0]} > {output}; # grep header
+        cat {input} | grep -Pv '^#' >> {output}; # cat files, removing the headers.
+        '''
+
 rule run_reaper:
-    params: job_name = 'reaper.chr{chrnum}',
+    params: job_name = 'reaper.{chrom}',
     input:  bam = 'data/aligned_reads/pacbio/pacbio.bam',
             bai = 'data/aligned_reads/pacbio/pacbio.bam.bai',
             ref    = 'data/genomes/hg19.fa',
             ref_ix = 'data/genomes/hg19.fa.fai'
-    output: vcf = 'data/variants/reaper_{options}/chr{chrnum}.vcf',
+    output: vcf = 'data/variants/reaper_{options}/{chrom}.{start}.{stop}.vcf',
     run:
         options_str = wildcards.options.replace('_',' ')
-        shell('{REAPER} -r chr{wildcards.chrnum} {options_str} --bam {input.bam} --ref {input.ref} --out {output.vcf}')
+        shell('{REAPER} -r {wildcards.chrom}:{wildcards.start}-{wildcards.stop} {options_str} --bam {input.bam} --ref {input.ref} --out {output.vcf}')
 
 #rule intersect_beds_giab_exons:
 #    params: job_name = 'intersect_beds_giab_exons',

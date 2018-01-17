@@ -23,11 +23,16 @@ TABIX = 'tabix'
 chroms = ['chr20']  #['chr{}'.format(i) for i in range(1,23)] + ['chrX']
 
 # DEFAULT
-methods = [
+methods_old = [
 'reaper_-x_-n_-m_1_-W_500_-B_30_-i_-C_77', # max alignment, no short haps, no long haps
 'reaper_-x_-n_-W_500_-B_30_-i_-C_77', # max alignment, no long haps
 'reaper_-z_-n_-W_500_-B_30_-i_-C_77', # all alignment, no long haps
 'reaper_-z_-W_500_-B_30_-i_-C_77', # all alignment
+'illumina_30x.filtered'
+]
+
+methods = [
+'reaper_-z_-i_-C_77', # all alignment
 'illumina_30x.filtered'
 ]
 

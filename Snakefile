@@ -20,16 +20,9 @@ BGZIP = 'bgzip'
 TABIX = 'tabix'
 
 # PARAMS
-chroms = ['chr20']  #['chr{}'.format(i) for i in range(1,23)] + ['chrX']
+chroms = ['chr{}'.format(i) for i in range(1,23)] #+ ['chrX']  # ['chr20']  #
 
 # DEFAULT
-methods_old = [
-'reaper_-x_-n_-m_1_-W_500_-B_30_-i_-C_77', # max alignment, no short haps, no long haps
-'reaper_-x_-n_-W_500_-B_30_-i_-C_77', # max alignment, no long haps
-'reaper_-z_-n_-W_500_-B_30_-i_-C_77', # all alignment, no long haps
-'reaper_-z_-W_500_-B_30_-i_-C_77', # all alignment
-'illumina_30x.filtered'
-]
 
 methods = [
 'reaper_-z_-i_-C_77', # all alignment
@@ -37,31 +30,7 @@ methods = [
 ]
 
 rule all:
-    input: expand('data/vcfeval/{m}.{c}.done',m=methods,c=['chr20'])
-    #expand('data/vcfeval/{m}.{c}.done',m=methods,c=chroms+['all'])
-
-#rule vcfeval_rtgtools_all:
-#    params: job_name = 'vcfeval_rtgtools.{calls_name}.all',
-#    input:  calls_vcf = 'data/variants/{calls_name}/all.vcf.gz',
-#            calls_ix = 'data/variants/{calls_name}/all.vcf.gz.tbi',
-#            giab_ref = 'data/variants/GIAB/NA12878.vcf.gz',
-#            giab_ix = 'data/variants/GIAB/NA12878.vcf.gz.tbi',
-#            bed_filter ='data/variants/GIAB/high_confidence.bed',
-#            hg19_sdf = 'data/genomes/hg19.sdf'
-#    output: done = 'data/vcfeval/{calls_name}.all.done'
-#    shell:
-#        '''
-#        {RTGTOOLS} RTG_MEM=12g vcfeval \
-#        --region={wildcards.chrom} \
-#        -c {input.calls_vcf} \
-#        -b {input.giab_ref} \
-#        -e {input.bed_filter} \
-#        -t {input.hg19_sdf} \
-#        -o data/vcfeval/{wildcards.calls_name}.{wildcards.chrom} \
-#        --output-mode=roc-only;
-#        cp data/vcfeval/{wildcards.calls_name}.{wildcards.chrom}/done {output.done};
-#        '''
-
+        expand('data/vcfeval/{m}.{c}.done',m=methods, c=chroms+['all'])
 
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
 # therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
@@ -98,9 +67,9 @@ rule rtg_filter_SNVs_GIAB:
 
 from filter_SNVs import filter_SNVs
 rule filter_illumina_SNVs:
-    params: job_name = 'filter_SNVs_illumina.{chrom}',
-    input:  vcf = 'data/variants/illumina_30x/{chrom}.vcf'
-    output: vcf = 'data/variants/illumina_30x.filtered/{chrom}.vcf'
+    params: job_name = 'filter_SNVs_illumina.chr{chrnum}',
+    input:  vcf = 'data/variants/illumina_30x/chr{chrnum}.vcf'
+    output: vcf = 'data/variants/illumina_30x.filtered/chr{chrnum}.vcf'
     run:
         filter_SNVs(input.vcf, output.vcf, 52, density_count=10, density_len=500, density_qual=50)
 
@@ -114,23 +83,26 @@ rule combine_chrom:
         cat {input} | grep -Pv '^#' >> {output}; # cat files, removing the headers.
         '''
 
+rule combine_regions:
+    params: job_name = 'combine_regions.reaper_{calls_name}',
+    input: expand('data/variants/reaper_{{calls_name}}/{r}.vcf',r=regions)
+    output: 'data/variants/reaper_{calls_name}/chr20.vcf'
+    shell:
+        '''
+        grep -P '^#' {input[0]} > {output}; # grep header
+        cat {input} | grep -Pv '^#' >> {output}; # cat files, removing the headers.
+        '''
+
 rule run_reaper:
-    params: job_name = 'reaper.chr{chrnum}',
+    params: job_name = 'reaper.{chrom}',
     input:  bam = 'data/aligned_reads/pacbio/pacbio.bam',
             bai = 'data/aligned_reads/pacbio/pacbio.bam.bai',
             ref    = 'data/genomes/hg19.fa',
             ref_ix = 'data/genomes/hg19.fa.fai'
-    output: vcf = 'data/variants/reaper_{options}/chr{chrnum}.vcf',
+    output: vcf = 'data/variants/reaper_{options}/{chrom}.{start}.{stop}.vcf',
     run:
         options_str = wildcards.options.replace('_',' ')
-        shell('{REAPER} -r chr{wildcards.chrnum} {options_str} --bam {input.bam} --ref {input.ref} --out {output.vcf}')
-
-#rule intersect_beds_giab_exons:
-#    params: job_name = 'intersect_beds_giab_exons',
-#    input: giab_conf = 'data/variants/GIAB/high_confidence.chr_prefix.bed',
-#           exons     = 'data/genome_features/hg19_exons.bed'
-#    output: bed_filter = 'data/genome_features/exons_intersect_giab_conf.bed'
-#    shell: 'bedtools intersect -a {input.giab_conf} -b {input.exons} | sort -k 1,1 -k2,2n > {output.bed_filter}'
+        shell('{REAPER} -r {wildcards.chrom}:{wildcards.start}-{wildcards.stop} {options_str} --bam {input.bam} --ref {input.ref} --out {output.vcf}')
 
 # Call 30x Illumina variants
 rule call_variants_Illumina:

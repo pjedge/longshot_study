@@ -26,25 +26,26 @@ chroms = ['chr{}'.format(i) for i in range(1,23)] #+ ['chrX']  # ['chr20']  #
 # DEFAULT
 
 methods = [
-'reaper_-z_-i_-C_77', # all alignment
+'reaper_-z_-i_-B_30_-C_77', # all alignment
 'illumina_30x.filtered'
 ]
 
 rule all:
     input:
-        'data/plots/whole_genome_prec_recall.png'
+        'data/plots/prec_recall_chr20.png'
+        #'data/plots/whole_genome_prec_recall.png'
         #expand('data/vcfeval/{m}.{c}.done',m=methods, c=chroms+['all'])
 
 rule plot_pr_curve:
     params: job_name = 'plot_pr_curve',
             title = 'Precision Recall Curve for Reaper on PacBio Reads vs Standard Illumina'
     input:
-        reaper_rtg = 'data/vcfeval/reaper.all.done',
-        illumina_rtg = 'data/vcfeval/illumina_30x.filtered.all.done'
+        reaper_rtg = 'data/vcfeval/reaper.{chrom}.done',
+        illumina_rtg = 'data/vcfeval/illumina_30x.filtered.{chrom}.done'
     output:
-        png = 'data/plots/whole_genome_prec_recall.png'
+        png = 'data/plots/prec_recall_{chrom}.png'
     run:
-        plot_vcfeval.plot_vcfeval(['data/vcfeval/illumina_30x.filtered.all','data/vcfeval/reaper.all'],['Freebayes, Illumina 30x','Reaper, PacBio 44x'],output.png,params.title)
+        plot_vcfeval.plot_vcfeval(['data/vcfeval/illumina_30x.filtered.{}'.format(wildcards.chrom),'data/vcfeval/reaper.{}'.format(wildcards.chrom)],['Freebayes, Illumina 30x','Reaper, PacBio 44x'],output.png,params.title)
 
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
 # therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.

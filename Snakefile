@@ -1,3 +1,4 @@
+import plot_vcfeval_precision_recall as plot_vcfeval
 
 # DATA URLs
 PACBIO_BAM_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/NA12878_PacBio_MtSinai/sorted_final_merged.bam'
@@ -25,12 +26,27 @@ chroms = ['chr{}'.format(i) for i in range(1,23)] #+ ['chrX']  # ['chr20']  #
 # DEFAULT
 
 methods = [
-'reaper_-z_-i_-C_77', # all alignment
+'reaper_30x.-z_-i_-B_30_-C_77', # all alignment
 'illumina_30x.filtered'
 ]
 
 rule all:
-    input: expand('data/vcfeval/{m}.{c}.done',m=methods, c=chroms+['all'])
+    input:
+        'data/plots/prec_recall_chr20.png'
+        #'data/plots/whole_genome_prec_recall.png'
+        #expand('data/vcfeval/{m}.{c}.done',m=methods, c=chroms+['all'])
+
+rule plot_pr_curve:
+    params: job_name = 'plot_pr_curve',
+            title = 'Precision Recall Curve for Reaper on PacBio Reads vs Standard Illumina'
+    input:
+        reaper30_rtg = 'data/vcfeval/reaper_30x.-z_-i_-B_30_-C_77/{chrom}.done',
+        reaper44_rtg = 'data/vcfeval/reaper_44x.-z_-i_-B_30_-C_77/{chrom}.done',
+        illumina_rtg = 'data/vcfeval/illumina_30x.filtered/{chrom}.done'
+    output:
+        png = 'data/plots/prec_recall_{chrom}.png'
+    run:
+        plot_vcfeval.plot_vcfeval(['data/vcfeval/illumina_30x/filtered.{}'.format(wildcards.chrom),'data/vcfeval/reaper_30x/{}'.format(wildcards.chrom),'data/vcfeval/reaper_44x/{}'.format(wildcards.chrom)],['Freebayes, Illumina 30x','Reaper, PacBio 30x','Reaper, PacBio 44x'],output.png,params.title)
 
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
 # therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
@@ -43,7 +59,7 @@ rule vcfeval_rtgtools:
             giab_ix = 'data/variants/GIAB/NA12878.SNVs_ONLY.vcf.gz.tbi',
             bed_filter ='data/variants/GIAB/high_confidence.bed',
             hg19_sdf = 'data/genomes/hg19.sdf'
-    output: done = 'data/vcfeval/{calls_name}.{chrom}.done'
+    output: done = 'data/vcfeval/{calls_name}/{chrom}.done'
     shell:
         '''
         {RTGTOOLS} RTG_MEM=12g vcfeval \
@@ -52,8 +68,8 @@ rule vcfeval_rtgtools:
         -b {input.giab_ref} \
         -e {input.bed_filter} \
         -t {input.hg19_sdf} \
-        -o data/vcfeval/{wildcards.calls_name}.{wildcards.chrom};
-        cp data/vcfeval/{wildcards.calls_name}.{wildcards.chrom}/done {output.done};
+        -o data/vcfeval/{wildcards.calls_name}/{wildcards.chrom};
+        cp data/vcfeval/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
         '''
 
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
@@ -94,12 +110,12 @@ rule combine_chrom:
 #        '''
 
 rule run_reaper:
-    params: job_name = 'reaper.chr{chrnum}',
-    input:  bam = 'data/aligned_reads/pacbio/pacbio.bam',
-            bai = 'data/aligned_reads/pacbio/pacbio.bam.bai',
+    params: job_name = 'reaper.cov{cov}.chr{chrnum}',
+    input:  bam = 'data/aligned_reads/pacbio/pacbio.{cov}x.bam',
+            bai = 'data/aligned_reads/pacbio/pacbio.{cov}x.bam.bai',
             ref    = 'data/genomes/hg19.fa',
             ref_ix = 'data/genomes/hg19.fa.fai'
-    output: vcf = 'data/variants/reaper_{options}/chr{chrnum}.vcf',
+    output: vcf = 'data/variants/reaper_{cov,\d+}x.{options}/chr{chrnum}.vcf',
     run:
         options_str = wildcards.options.replace('_',' ')
         shell('{REAPER} -r chr{wildcards.chrnum} {options_str} --bam {input.bam} --ref {input.ref} --out {output.vcf}')
@@ -190,11 +206,24 @@ rule download_GIAB_VCF:
     output: 'data/variants/GIAB/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_PGandRTGphasetransfer.vcf.gz'
     shell: 'wget {GIAB_VCF_URL} -O {output}'
 
+# SUBSAMPLE PACBIO BAM
+rule subsample_pacbio:
+    params: job_name = 'subsample_pacbio'
+    input: bam = 'data/aligned_reads/pacbio/pacbio.44x.bam',
+    output: bam = 'data/aligned_reads/pacbio/pacbio.{cov}x.bam',
+            bai = 'data/aligned_reads/pacbio/pacbio.{cov}x.bam.bai'
+    run:
+        subsample_frac = float(wildcards.cov) / 44.0
+        shell('''
+        {SAMTOOLS} view -hb {input.bam} -s {subsample_frac} > {output.bam};
+        {SAMTOOLS} index {output.bam} {output.bai}
+        ''')
+
 # DOWNLOAD PACBIO BAM
 rule download_pacbio:
     params: job_name = 'download_pacbio'
-    output: bam = 'data/aligned_reads/pacbio/pacbio.bam',
-            bai = 'data/aligned_reads/pacbio/pacbio.bam.bai'
+    output: bam = 'data/aligned_reads/pacbio/pacbio.44x.bam',
+            bai = 'data/aligned_reads/pacbio/pacbio.44x.bam.bai'
     shell:
         '''
         wget {PACBIO_BAM_URL} -O {output.bam}

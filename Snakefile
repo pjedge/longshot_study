@@ -30,7 +30,7 @@ methods = [
 ]
 
 rule all:
-        expand('data/vcfeval/{m}.{c}.done',m=methods, c=chroms+['all'])
+    input: expand('data/vcfeval/{m}.{c}.done',m=methods, c=chroms+['all'])
 
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
 # therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
@@ -83,26 +83,26 @@ rule combine_chrom:
         cat {input} | grep -Pv '^#' >> {output}; # cat files, removing the headers.
         '''
 
-rule combine_regions:
-    params: job_name = 'combine_regions.reaper_{calls_name}',
-    input: expand('data/variants/reaper_{{calls_name}}/{r}.vcf',r=regions)
-    output: 'data/variants/reaper_{calls_name}/chr20.vcf'
-    shell:
-        '''
-        grep -P '^#' {input[0]} > {output}; # grep header
-        cat {input} | grep -Pv '^#' >> {output}; # cat files, removing the headers.
-        '''
+#rule combine_regions:
+#    params: job_name = 'combine_regions.reaper_{calls_name}',
+#    input: expand('data/variants/reaper_{{calls_name}}/{r}.vcf',r=regions)
+#    output: 'data/variants/reaper_{calls_name}/chr20.vcf'
+#    shell:
+#        '''
+#        grep -P '^#' {input[0]} > {output}; # grep header
+#        cat {input} | grep -Pv '^#' >> {output}; # cat files, removing the headers.
+#        '''
 
 rule run_reaper:
-    params: job_name = 'reaper.{chrom}',
+    params: job_name = 'reaper.chr{chrnum}',
     input:  bam = 'data/aligned_reads/pacbio/pacbio.bam',
             bai = 'data/aligned_reads/pacbio/pacbio.bam.bai',
             ref    = 'data/genomes/hg19.fa',
             ref_ix = 'data/genomes/hg19.fa.fai'
-    output: vcf = 'data/variants/reaper_{options}/{chrom}.{start}.{stop}.vcf',
+    output: vcf = 'data/variants/reaper_{options}/chr{chrnum}.vcf',
     run:
         options_str = wildcards.options.replace('_',' ')
-        shell('{REAPER} -r {wildcards.chrom}:{wildcards.start}-{wildcards.stop} {options_str} --bam {input.bam} --ref {input.ref} --out {output.vcf}')
+        shell('{REAPER} -r chr{wildcards.chrnum} {options_str} --bam {input.bam} --ref {input.ref} --out {output.vcf}')
 
 # Call 30x Illumina variants
 rule call_variants_Illumina:

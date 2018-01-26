@@ -1,15 +1,18 @@
 import plot_vcfeval_precision_recall as plot_vcfeval
 
+include: "simulation.snakefile"
+include: "NA12878.snakefile"
+
 # DATA URLs
 PACBIO_BAM_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/NA12878_PacBio_MtSinai/sorted_final_merged.bam'
-PACBIO_BAI_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/NA12878_PacBio_MtSinai/sorted_final_merged.bam.bai'
+#PACBIO_BAI_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/NA12878_PacBio_MtSinai/sorted_final_merged.bam.bai'
 GIAB_HIGH_CONF_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/latest/GRCh37/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_nosomaticdel.bed'
 GIAB_VCF_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/NISTv3.3.2/GRCh37/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_PGandRTGphasetransfer.vcf.gz'
 HG19_URL     = 'http://hgdownload.cse.ucsc.edu/goldenpath/hg19/bigZips/hg19.2bit'
 HS37D5_URL     = 'ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz'
 HG19_SDF_URL   = 'https://s3.amazonaws.com/rtg-datasets/references/hg19.sdf.zip'
 Illumina_30x_BAM_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/NIST_NA12878_HG001_HiSeq_300x/RMNISTHS_30xdownsample.bam'
-Illumina_30x_BAI_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/NIST_NA12878_HG001_HiSeq_300x/RMNISTHS_30xdownsample.bam.bai'
+#Illumina_30x_BAI_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/NIST_NA12878_HG001_HiSeq_300x/RMNISTHS_30xdownsample.bam.bai'
 
 # PATHS TO TOOLS
 TWOBITTOFASTA = 'twoBitToFa' # can be downloaded from 'http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/twoBitToFa'
@@ -25,131 +28,110 @@ chroms = ['chr{}'.format(i) for i in range(1,23)] #+ ['chrX']  # ['chr20']  #
 
 # DEFAULT
 
-methods = [
-'reaper_30x.-z_-i_-B_30_-C_77', # all alignment
-'illumina_30x.filtered'
-]
-
 rule all:
     input:
-        'data/plots/prec_recall_chr20.png'
-        #'data/plots/whole_genome_prec_recall.png'
-        #expand('data/vcfeval/{m}.{c}.done',m=methods, c=chroms+['all'])
+        'data/plots/prec_recall_chr20.png',
+        'data/plots/simulation_prec_recall_chr16.png'
 
-rule plot_pr_curve:
-    params: job_name = 'plot_pr_curve',
-            title = 'Precision Recall Curve for Reaper on PacBio Reads vs Standard Illumina'
-    input:
-        reaper30_rtg = 'data/vcfeval/reaper_30x.-z_-i_-B_30_-C_77/{chrom}.done',
-        reaper44_rtg = 'data/vcfeval/reaper_44x.-z_-i_-B_30_-C_77/{chrom}.done',
-        illumina_rtg = 'data/vcfeval/illumina_30x.filtered/{chrom}.done'
-    output:
-        png = 'data/plots/prec_recall_{chrom}.png'
-    run:
-        plot_vcfeval.plot_vcfeval(['data/vcfeval/illumina_30x/filtered.{}'.format(wildcards.chrom),'data/vcfeval/reaper_30x/{}'.format(wildcards.chrom),'data/vcfeval/reaper_44x/{}'.format(wildcards.chrom)],['Freebayes, Illumina 30x','Reaper, PacBio 30x','Reaper, PacBio 44x'],output.png,params.title)
+
+
+
+
+
 
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
 # therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
 rule vcfeval_rtgtools:
-    params: job_name = 'vcfeval_rtgtools.{calls_name}.{chrom}',
+    params: job_name = 'vcfeval_rtgtools.{dataset}.{calls_name}.{chrom}',
             region_arg = lambda wildcards: '--region={}'.format(wildcards.chrom) if wildcards.chrom != 'all' else ''
-    input:  calls_vcf = 'data/variants/{calls_name}/{chrom}.vcf.gz',
-            calls_ix = 'data/variants/{calls_name}/{chrom}.vcf.gz.tbi',
-            giab_ref = 'data/variants/GIAB/NA12878.SNVs_ONLY.vcf.gz',
-            giab_ix = 'data/variants/GIAB/NA12878.SNVs_ONLY.vcf.gz.tbi',
-            bed_filter ='data/variants/GIAB/high_confidence.bed',
+    input:  calls_vcf = 'data/{dataset}/variants/{calls_name}/{chrom}.vcf.gz',
+            calls_ix = 'data/{dataset}/variants/{calls_name}/{chrom}.vcf.gz.tbi',
+            ground_truth = 'data/{dataset}/variants/ground_truth/ground_truth.SNVs_ONLY.vcf.gz',
+            ground_truth_ix = 'data/{dataset}/variants/ground_truth/ground_truth.SNVs_ONLY.vcf.gz.tbi',
+            region_filter ='data/{dataset}/variants/ground_truth/region_filter.bed',
             hg19_sdf = 'data/genomes/hg19.sdf'
-    output: done = 'data/vcfeval/{calls_name}/{chrom}.done'
+    output: done = 'data/{dataset}/vcfeval/{calls_name}/{chrom}.done'
     shell:
         '''
         {RTGTOOLS} RTG_MEM=12g vcfeval \
         {params.region_arg} \
         -c {input.calls_vcf} \
-        -b {input.giab_ref} \
-        -e {input.bed_filter} \
+        -b {input.ground_truth} \
+        -e {input.region_filter} \
         -t {input.hg19_sdf} \
-        -o data/vcfeval/{wildcards.calls_name}/{wildcards.chrom};
-        cp data/vcfeval/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
+        -o data/{dataset}/vcfeval/{wildcards.calls_name}/{wildcards.chrom};
+        cp data/{dataset}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
         '''
 
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
 # therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
-rule rtg_filter_SNVs_GIAB:
-    params: job_name = 'rtg_filter_SNVs_GIAB',
-    input:  vcfgz = 'data/variants/GIAB/NA12878.vcf.gz'
-    output: vcfgz = 'data/variants/GIAB/NA12878.SNVs_ONLY.vcf.gz',
-            tbi = 'data/variants/GIAB/NA12878.SNVs_ONLY.vcf.gz.tbi'
+rule rtg_filter_SNVs_ground_truth:
+    params: job_name = 'rtg_filter_SNVs_ground_truth.{dataset}',
+    input:  vcfgz = 'data/{dataset}/variants/ground_truth/ground_truth.vcf.gz'
+    output: vcfgz = 'data/{dataset}/variants/ground_truth/ground_truth.SNVs_ONLY.vcf.gz',
+            #tbi = 'data/{dataset}/variants/ground_truth/ground_truth.SNVs_ONLY.vcf.gz.tbi'
     shell: '{RTGTOOLS} RTG_MEM=12g vcffilter --snps-only -i {input.vcfgz} -o {output.vcfgz}'
 
 from filter_SNVs import filter_SNVs
 rule filter_illumina_SNVs:
-    params: job_name = 'filter_SNVs_illumina.chr{chrnum}',
-    input:  vcf = 'data/variants/illumina_30x/chr{chrnum}.vcf'
-    output: vcf = 'data/variants/illumina_30x.filtered/chr{chrnum}.vcf'
+    params: job_name = 'filter_SNVs_illumina.{dataset}.chr{chrnum}',
+    input:  vcf = 'data/{dataset}/variants/illumina_{cov}x/chr{chrnum}.vcf'
+    output: vcf = 'data/{dataset}/variants/illumina_{cov}x.filtered/chr{chrnum}.vcf'
     run:
-        filter_SNVs(input.vcf, output.vcf, 52, density_count=10, density_len=500, density_qual=50)
+        cov_filter = int(float(wildcards.cov)*1.75)
+        filter_SNVs(input.vcf, output.vcf, cov_filter, density_count=10, density_len=500, density_qual=50)
 
 rule combine_chrom:
-    params: job_name = 'combine_chroms.{calls_name}',
-    input: expand('data/variants/{{calls_name}}/{chrom}.vcf',chrom=chroms)
-    output: 'data/variants/{calls_name}/all.vcf'
+    params: job_name = 'combine_chroms.{dataset}.{calls_name}',
+    input: expand('data/{{dataset}}/variants/{{calls_name}}/{chrom}.vcf',chrom=chroms)
+    output: 'data/{dataset}/variants/{calls_name}/all.vcf'
     shell:
         '''
         grep -P '^#' {input[0]} > {output}; # grep header
         cat {input} | grep -Pv '^#' >> {output}; # cat files, removing the headers.
         '''
 
-#rule combine_regions:
-#    params: job_name = 'combine_regions.reaper_{calls_name}',
-#    input: expand('data/variants/reaper_{{calls_name}}/{r}.vcf',r=regions)
-#    output: 'data/variants/reaper_{calls_name}/chr20.vcf'
-#    shell:
-#        '''
-#        grep -P '^#' {input[0]} > {output}; # grep header
-#        cat {input} | grep -Pv '^#' >> {output}; # cat files, removing the headers.
-#        '''
-
 rule run_reaper:
-    params: job_name = 'reaper.cov{cov}.chr{chrnum}',
-    input:  bam = 'data/aligned_reads/pacbio/pacbio.{cov}x.bam',
-            bai = 'data/aligned_reads/pacbio/pacbio.{cov}x.bam.bai',
+    params: job_name = 'reaper.{dataset}.cov{cov}.chr{chrnum}',
+    input:  bam = 'data/{dataset}/aligned_reads/pacbio/pacbio.{cov}x.bam',
+            bai = 'data/{dataset}/aligned_reads/pacbio/pacbio.{cov}x.bam.bai',
             ref    = 'data/genomes/hg19.fa',
             ref_ix = 'data/genomes/hg19.fa.fai'
-    output: vcf = 'data/variants/reaper_{cov,\d+}x.{options}/chr{chrnum}.vcf',
+    output: vcf = 'data/{dataset}/variants/reaper_{cov,\d+}x.{options}/chr{chrnum}.vcf',
     run:
         options_str = wildcards.options.replace('_',' ')
         shell('{REAPER} -r chr{wildcards.chrnum} {options_str} --bam {input.bam} --ref {input.ref} --out {output.vcf}')
 
 # Call 30x Illumina variants
 rule call_variants_Illumina:
-    params: job_name = 'call_illumina_30x',
-    input: bam = 'data/aligned_reads/illumina_30x/NIST_NA12878_HG001_HiSeq_300x_RMNISTHS_30xdownsample.bam',
-            bai = 'data/aligned_reads/illumina_30x/NIST_NA12878_HG001_HiSeq_300x_RMNISTHS_30xdownsample.bam.bai',
-            fa = 'data/genomes/hs37d5.fa',
-            fai = 'data/genomes/hs37d5.fa.fai'
-    output: vcf = 'data/variants/illumina_30x/chr{chrnum}.vcf'
-    shell:
-        '''
-        freebayes -f {input.fa} \
-        --standard-filters \
-        --region {wildcards.chrnum} \
-         --genotype-qualities \
-         {input.bam} \
-         | awk '{{if($0 !~ /^#/) print "chr"$0; else print $0}}' \
-          > {output.vcf}
-        '''
-        #--max-coverage 60 \
-
-# DOWNLOAD 30x Illumina reads
-rule download_Illumina_reads:
-    params: job_name = 'DOWNLOAD_Illumina_30x',
-    output: bam = 'data/aligned_reads/illumina_30x/NIST_NA12878_HG001_HiSeq_300x_RMNISTHS_30xdownsample.bam',
-            bai = 'data/aligned_reads/illumina_30x/NIST_NA12878_HG001_HiSeq_300x_RMNISTHS_30xdownsample.bam.bai',
-    shell:
-        '''
-        wget {Illumina_30x_BAM_URL} -O {output.bam};
-        wget {Illumina_30x_BAI_URL} -O {output.bai};
-        '''
+    params: job_name = 'call_illumina.{dataset}.{cov}x',
+    input: bam = 'data/{dataset}/aligned_reads/illumina/illumina.{cov}x.bam',
+            bai = 'data/{dataset}/aligned_reads/illumina/illumina.{cov}x.bam.bai',
+            hg19    = 'data/genomes/hg19.fa',
+            hg19_ix = 'data/genomes/hg19.fa.fai',
+            hs37d5 = 'data/genomes/hs37d5.fa',
+            hs37d5_ix = 'data/genomes/hs37d5.fa.fai'
+    output: vcf = 'data/{dataset}/variants/illumina_{cov}x/chr{chrnum}.vcf'
+    run:
+        if wildcards.dataset in ['NA12878']:
+            shell('''
+            freebayes -f {input.hs37d5} \
+            --standard-filters \
+            --region {wildcards.chrnum} \
+             --genotype-qualities \
+             {input.bam} \
+             | awk '{{if($0 !~ /^#/) print "chr"$0; else print $0}}' \
+              > {output.vcf}
+            ''')
+        else:
+            shell('''
+            freebayes -f {input.hg19} \
+            --standard-filters \
+            --region {wildcards.chrnum} \
+             --genotype-qualities \
+             {input.bam} \
+              > {output.vcf}
+            ''')
 
 # download hg19 reference, for the aligned pacbio reads
 rule download_hg19:
@@ -177,59 +159,6 @@ rule download_HS37D5:
     output: 'data/genomes/hs37d5.fa'
     shell: 'wget {HS37D5_URL} -O {output}.gz; gunzip {output}.gz'
 
-rule extract_chrom_GIAB_VCF:
-    params: job_name = 'extract_chr_GIAB_VCF.{chrnum}',
-    input:  'data/variants/GIAB/NA12878.vcf'
-    output: 'data/variants/GIAB/chr{chrnum}.vcf'
-    shell: '''cat {input} | grep -P '^{chrnum}\t' > {output}'''
-
-rule add_chr_GIAB_VCF:
-    params: job_name = 'add_chr_GIAB_VCF',
-    input:  gz = 'data/variants/GIAB/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_PGandRTGphasetransfer.vcf.gz'
-    output: vcf = 'data/variants/GIAB/NA12878.vcf'
-    shell:
-        '''
-        gunzip -c {input.gz} | \
-        awk '{{if($0 !~ /^#/) print "chr"$0; else print $0}}' \
-        > {output.vcf}
-        '''
-
-# DOWNLOAD GIAB VARIANTS
-rule download_GIAB_high_confidence_bed:
-    params: job_name = 'DOWNLOAD_GIAB_BED',
-    output: 'data/variants/GIAB/high_confidence.bed'
-    shell: '''wget -q -O- {GIAB_HIGH_CONF_URL} | awk '{{print "chr" $0;}}' > {output}'''
-
-# DOWNLOAD GIAB VARIANTS
-rule download_GIAB_VCF:
-    params: job_name = 'DOWNLOAD_GIAB_VCF',
-    output: 'data/variants/GIAB/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_PGandRTGphasetransfer.vcf.gz'
-    shell: 'wget {GIAB_VCF_URL} -O {output}'
-
-# SUBSAMPLE PACBIO BAM
-rule subsample_pacbio:
-    params: job_name = 'subsample_pacbio'
-    input: bam = 'data/aligned_reads/pacbio/pacbio.44x.bam',
-    output: bam = 'data/aligned_reads/pacbio/pacbio.{cov}x.bam',
-            bai = 'data/aligned_reads/pacbio/pacbio.{cov}x.bam.bai'
-    run:
-        subsample_frac = float(wildcards.cov) / 44.0
-        shell('''
-        {SAMTOOLS} view -hb {input.bam} -s {subsample_frac} > {output.bam};
-        {SAMTOOLS} index {output.bam} {output.bai}
-        ''')
-
-# DOWNLOAD PACBIO BAM
-rule download_pacbio:
-    params: job_name = 'download_pacbio'
-    output: bam = 'data/aligned_reads/pacbio/pacbio.44x.bam',
-            bai = 'data/aligned_reads/pacbio/pacbio.44x.bam.bai'
-    shell:
-        '''
-        wget {PACBIO_BAM_URL} -O {output.bam}
-        wget {PACBIO_BAI_URL} -O {output.bai}
-        '''
-
 # bgzip vcf
 rule index_vcf:
     params: job_name = lambda wildcards: 'tabix_vcf.{}'.format(str(wildcards.x).replace("/", "."))
@@ -251,8 +180,8 @@ rule index_fasta:
     output: fai = '{x}.fa.fai'
     shell:  '{SAMTOOLS} faidx {input.fa}'
 
-#rule index_bam:
-#    params: job_name = lambda wildcards: 'index_bam.{}'.format(str(wildcards.x).replace("/", "."))
-#    input:  bam = '{x}.bam'
-#    output: bai = '{x}.bam.bai'
-#    shell:  '{SAMTOOLS} index {input.bam} {output.bai}'
+rule index_bam:
+    params: job_name = lambda wildcards: 'index_bam.{}'.format(str(wildcards.x).replace("/", "."))
+    input:  bam = '{x}.bam'
+    output: bai = '{x}.bam.bai'
+    shell:  '{SAMTOOLS} index {input.bam} {output.bai}'

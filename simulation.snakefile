@@ -1,6 +1,9 @@
 
-SIMLORD = '/path/path_to_simlord'
-WGSIM = '/path/to/wgsim'
+SIMLORD = '/home/pedge/installed/opt/python/bin/simlord'
+WGSIM = '/opt/biotools/samtools/1.3/bin/wgsim'
+BWA = '/home/pedge/installed/bwa'
+BCFTOOLS = '/opt/biotools/bcftools/bin/bcftools'
+
 HG19_LEN = 3137161264
 
 rule plot_pr_curve_simulation:

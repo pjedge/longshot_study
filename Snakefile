@@ -24,20 +24,14 @@ BGZIP = 'bgzip'
 TABIX = 'tabix'
 
 # PARAMS
-chroms = ['chr{}'.format(i) for i in range(1,23)] #+ ['chrX']  # ['chr20']  #
+#chroms = ['chr{}'.format(i) for i in range(1,23)] + ['chrX']  # ['chr20']  #
 
 # DEFAULT
 
 rule all:
     input:
-        'data/plots/prec_recall_chr20.png',
-        'data/plots/simulation_prec_recall_chr16.png'
-
-
-
-
-
-
+        #'data/plots/NA12878_prec_recall_chr20.png',
+        'data/plots/simulation_prec_recall_all.png'
 
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
 # therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
@@ -59,8 +53,8 @@ rule vcfeval_rtgtools:
         -b {input.ground_truth} \
         -e {input.region_filter} \
         -t {input.hg19_sdf} \
-        -o data/{dataset}/vcfeval/{wildcards.calls_name}/{wildcards.chrom};
-        cp data/{dataset}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
+        -o data/{wildcards.dataset}/vcfeval/{wildcards.calls_name}/{wildcards.chrom};
+        cp data/{wildcards.dataset}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
         '''
 
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
@@ -159,7 +153,6 @@ rule download_HS37D5:
     output: 'data/genomes/hs37d5.fa'
     shell: 'wget {HS37D5_URL} -O {output}.gz; gunzip {output}.gz'
 
-# bgzip vcf
 rule index_vcf:
     params: job_name = lambda wildcards: 'tabix_vcf.{}'.format(str(wildcards.x).replace("/", "."))
     input:  '{x}.vcf.gz'
@@ -167,11 +160,25 @@ rule index_vcf:
     shell:  '{TABIX} -p vcf {input}'
 
 # bgzip vcf
-rule bgzip_vcf:
-    params: job_name = lambda wildcards: 'bgzip_vcf.{}'.format(str(wildcards.x).replace("/", "."))
-    input:  '{x}.vcf'
-    output: '{x}.vcf.gz'
+rule bgzip_vcf_calls:
+    params: job_name = 'bgzip_vcf_calls.{dataset}.{calls_name}.{chrom}'
+    input:  'data/{dataset}/variants/{calls_name}/{chrom}.vcf'
+    output: 'data/{dataset}/variants/{calls_name}/{chrom,(all|chr*)}.vcf.gz'
     shell:  '{BGZIP} -c {input} > {output}'
+
+# bgzip vcf
+rule bgzip_ground_truth:
+    params: job_name = 'bgzip_ground_truth.{dataset}'
+    input:  'data/{dataset}/variants/ground_truth/ground_truth.vcf'
+    output: 'data/{dataset}/variants/ground_truth/ground_truth.vcf.gz'
+    shell:  '{BGZIP} -c {input} > {output}'
+
+# gunzip fastq
+rule gunzip_fastq:
+    params: job_name = lambda wildcards: 'gunzip_fastq.{}'.format(str(wildcards.x).replace("/", "."))
+    input:  '{x}.fastq.gz'
+    output: '{x}.fastq'
+    shell:  'gunzip {input}'
 
 # index fasta reference
 rule index_fasta:
@@ -185,3 +192,10 @@ rule index_bam:
     input:  bam = '{x}.bam'
     output: bai = '{x}.bam.bai'
     shell:  '{SAMTOOLS} index {input.bam} {output.bai}'
+
+# BWA index
+rule bwa_index_fasta:
+    params: job_name = lambda wildcards: 'bwa_index_fasta.{}'.format(str(wildcards.x).replace("/", "."))
+    input:  '{x}.fa'
+    output: '{x}.fa.bwt'
+    shell: '{BWA} index {input}'

@@ -6,7 +6,7 @@ import itertools
 import numpy as np
 from numpy.random import choice
 
-VALID_CHROMS = set(['chr{}'.format(c) for c in range(1,23)]+['chrX','chrY','chrM'])
+VALID_CHROMS = set(['chr{}'.format(c) for c in range(1,23)]+['chrX'])
 
 # estimate prior probability of genotypes using strategy described here:
 # http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2694485/
@@ -78,6 +78,10 @@ def simulate_SNV_VCF(hg19_fasta, output_vcf):
 
     with pysam.FastaFile(hg19_fasta) as fasta, open(output_vcf,'w') as outv:
 
+        header = '''##fileformat=VCFv4.2
+##source=simulate_SNVs.py
+#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE'''
+
         for chrom in fasta.references:
             size = fasta.get_reference_length(chrom)
 
@@ -112,7 +116,8 @@ def simulate_SNV_VCF(hg19_fasta, output_vcf):
                     print("INVALID GENOTYPE ENCOUNTERED")
                     exit(1)
 
-                assert(chrom in VALID_CHROMS)
+                if(chrom not in VALID_CHROMS):
+                    continue
 
                 if genotype != (ref_allele,ref_allele) and 'N' not in genotype:
 

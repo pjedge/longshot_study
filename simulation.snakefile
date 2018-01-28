@@ -1,10 +1,13 @@
 
+import simulate_SNVs
+import pysam
+
 SIMLORD = '/home/pedge/installed/opt/python/bin/simlord'
-WGSIM = '/opt/biotools/samtools/1.3/bin/wgsim'
+DWGSIM = '/home/pedge/git/DWGSIM/dwgsim'
 BWA = '/home/pedge/installed/bwa'
 BCFTOOLS = '/opt/biotools/bcftools/bin/bcftools'
-
-HG19_LEN = 3137161264
+PYFAIDX = '/home/pedge/installed/opt/python/bin/faidx'
+chroms = ['chr{}'.format(i) for i in range(1,23)] + ['chrX']
 
 rule plot_pr_curve_simulation:
     params: job_name = 'plot_pr_curve_simulation',
@@ -45,43 +48,113 @@ rule generate_diploid_fasta:
         vcfgz = 'data/simulation/variants/ground_truth/ground_truth.vcf.gz',
         vcf_ix = 'data/simulation/variants/ground_truth/ground_truth.vcf.gz.tbi',
     output:
-        fasta = 'data/simulation/variants/ground_truth/ground_truth.fa'
+        fasta_hap1 = 'data/simulation/variants/ground_truth/ground_truth_hap1.fa',
+        fasta_hap2 = 'data/simulation/variants/ground_truth/ground_truth_hap2.fa'
     shell:
         '''
-        {BCFTOOLS} consensus -f {input.hg19} -H 1 {input.vcfgz} > {output.fasta}
-        {BCFTOOLS} consensus -f {input.hg19} -H 2 {input.vcfgz} >> {output.fasta}
+        {BCFTOOLS} consensus -f {input.hg19} -H 1 {input.vcfgz} > {output.fasta_hap1}
+        {BCFTOOLS} consensus -f {input.hg19} -H 2 {input.vcfgz} > {output.fasta_hap2}
         '''
 
-rule align_simulated_reads:
-    params: job_name = 'align_simulated_{read_type}.{cov}'
+rule join_diploid_fasta:
+    params: job_name = 'generate_diploid_fasta'
     input:
-        fastq   = 'data/simulation/fastq_reads/{read_type}/{read_type}.{cov}x.fq',
+        fasta_hap1 = 'data/simulation/variants/ground_truth/ground_truth_hap1.fa',
+        fasta_hap2 = 'data/simulation/variants/ground_truth/ground_truth_hap2.fa'
+    output:
+        joined_fasta =  'data/simulation/variants/ground_truth/ground_truth.fa'
+    run:
+        with open(input.fasta_hap1,'r') as inf1,  open(input.fasta_hap2,'r') as inf2, open(output.joined_fasta,'w') as outf:
+
+            printing = True
+            for line in inf1:
+                if line[0] == '>':
+                    if line[1:].strip() in chroms:
+                        printing = True
+                        print(line.strip() + '_hap1', file=outf)
+                    else:
+                        printing = False
+                else:
+                    if printing:
+                        print(line,end='',file=outf)
+
+            printing = True
+            for line in inf2:
+                if line[0] == '>':
+                    if line[1:].strip() in chroms:
+                        printing = True
+                        print(line.strip() + '_hap2', file=outf)
+                    else:
+                        printing = False
+                else:
+                    if printing:
+                        print(line,end='',file=outf)
+
+rule split_diploid_fasta:
+    params: job_name = 'split_diploid_fasta',
+            split_dir = 'data/simulation/variants/ground_truth/ground_truth_separate_chrom'
+    input: joined_fasta =  'data/simulation/variants/ground_truth/ground_truth.fa'
+    output: split_fasta = expand('data/simulation/variants/ground_truth/ground_truth_separate_chrom/{chrom}_hap{hap}.fa',chrom=chroms,hap=[1,2])
+    shell: 'cd {params.split_dir} && {PYFAIDX} -x ../ground_truth.fa'
+
+rule align_simulated_illumina:
+    params: job_name = 'align_simulated_illumina.{cov}'
+    input:
+        fastq   = 'data/simulation/fastq_reads/illumina/illumina.{cov}x.fastq',
         hg19    = 'data/genomes/hg19.fa',
-        hg19_ix = 'data/genomes/hg19.fa.fai'
+        hg19_ix = 'data/genomes/hg19.fa.fai',
+        hg19_bwt = 'data/genomes/hg19.fa.bwt'
     output:
-        bam = 'data/simulation/aligned_reads/{read_type}/{read_type}.{cov}x.bam'
-    run:
-        pb_flag = '-x pacbio' if wildcards.read_type == 'pacbio' else ''
-        shell('{BWA} mem {pb_flag} -T 0 {input.hg19} {input.fastq} | {SAMTOOLS} sort > {output.bam}')
+        bam = 'data/simulation/aligned_reads/illumina/illumina.{cov}x.bam'
+    shell: '{BWA} mem -p -t 16 -T 0 {input.hg19} {input.fastq} | {SAMTOOLS} sort -@ 16 > {output.bam}'
 
-rule simulate_reads:
-    params: job_name = 'simulate_{read_type}.{cov}'
+rule align_simulated_pacbio:
+    params: job_name = 'align_simulated_pacbio.{cov}'
     input:
-        diploid_fasta = 'data/simulation/variants/ground_truth/ground_truth.fa',
-        #diploid_fasta_ix = 'data/simulation/variants/ground_truth/ground_truth.fa.fai'
+        fastq   = 'data/simulation/fastq_reads/pacbio/pacbio.{cov}x.fastq',
+        hg19    = 'data/genomes/hg19.fa',
+        hg19_ix = 'data/genomes/hg19.fa.fai',
+        hg19_bwt = 'data/genomes/hg19.fa.bwt'
     output:
-        bam = 'data/simulation/fastq_reads/{read_type}/{read_type}.{cov}x.fq'
-    run:
+        bam = 'data/simulation/aligned_reads/pacbio/pacbio.{cov}x.bam'
+    shell: '{BWA} mem -x pacbio -t 16 -T 0 {input.hg19} {input.fastq} | {SAMTOOLS} sort -@ 16 > {output.bam}'
 
-        if wildcards.read_type == 'pacbio':
-            # run simlord
-            diploid_cov = int(float(wildcards.cov) / 2) # divide by two since the FASTA has twice the sequences, diploid
-            shell('{SIMLORD} -rr {input.diploid_fasta} --coverage {diploid_cov} --no-sam {output.bam}')
-        elif wildcards.read_type == 'illumina':
-            # run wgsim
-            short_read_len = 100
-            n_short_reads = int(HG19_LEN * float(wildcards.cov) / short_read_len)
-            shell('{WGSIM} -N {n_short_reads} -e 0.001 -r 0 -R 0 -1 {short_read_len} -S 11 -d0 -e0 {input.diploid_fasta} {output.bam} /dev/null')
-        else:
-            print("invalid read technology")
-            exit(1)
+rule combine_reads_fastq:
+    params: job_name = 'combine_{datatype}_fastq.{cov}',
+    input: expand('data/simulation/fastq_reads/{{datatype}}/separate_chrom/{chrom}.hap{hap}.{{datatype}}.{{cov}}x.fastq',chrom=chroms,hap=[1,2])
+    output: 'data/simulation/fastq_reads/{datatype}/{datatype}.{cov}x.fastq'
+    shell: 'cat {input} > {output}'
+
+rule simulate_illumina:
+    params: job_name = 'simulate_illumina.{chrom}.hap{hap}.{cov}',
+            output_prefix = 'data/simulation/fastq_reads/illumina/separate_chrom/{chrom}.hap{hap}.illumina.{cov}x'
+    input: diploid_fasta = 'data/simulation/variants/ground_truth/ground_truth_separate_chrom/{chrom}_hap{hap}.fa'
+    output:
+        fastq = 'data/simulation/fastq_reads/illumina/separate_chrom/{chrom}.hap{hap}.illumina.{cov}x.fastq.gz'
+    run:
+        chrom_len = 0
+        with pysam.FastaFile(input.diploid_fasta) as ff:
+            for ref in ff.references:
+                chrom_len += ff.get_reference_length(ref)
+
+        short_read_len = 100
+        haploid_cov = float(wildcards.cov) / 2.0 # the haploid coverage
+        n_read_pairs = int(chrom_len * haploid_cov / (2*short_read_len))
+        shell('''
+        {DWGSIM} -H -z 0 -1 {short_read_len} -2 {short_read_len} -N {n_read_pairs} \
+        -e 0.001 -E 0.001 -r 0 -R 0 -y 0 \
+        -o 2 {input.diploid_fasta} {params.output_prefix}
+        mv {params.output_prefix}.bfast.fastq.gz {params.output_prefix}.fastq.gz
+        ''')
+
+rule simulate_pacbio:
+    params: job_name = 'simulate_pacbio.{chrom}.hap{hap}.{cov}',
+            output_prefix = 'data/simulation/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x'
+    input: diploid_fasta = 'data/simulation/variants/ground_truth/ground_truth_separate_chrom/{chrom}_hap{hap}.fa'
+    output: fq = 'data/simulation/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x.fastq'
+    run:
+        diploid_cov = int(float(wildcards.cov) / 2.0)
+        shell('''
+        {SIMLORD} -rr {input.diploid_fasta} \
+        --coverage {diploid_cov} --no-sam {params.output_prefix}
+        ''')

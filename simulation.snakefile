@@ -98,32 +98,34 @@ rule split_diploid_fasta:
     shell: 'cd {params.split_dir} && {PYFAIDX} -x ../ground_truth.fa'
 
 rule align_simulated_illumina:
-    params: job_name = 'align_simulated_illumina.{cov}'
+    params: job_name = 'align_simulated_illumina.{chrom}.{hap}.{cov}',
+            sort_prefix = 'data/simulation/aligned_reads/illumina/separate_chrom/{chrom}.hap{hap}.illumina.{cov}x.tmp'
     input:
-        fastq   = 'data/simulation/fastq_reads/illumina/illumina.{cov}x.fastq',
+        fastq   = 'data/simulation/fastq_reads/illumina/separate_chrom/{chrom}.hap{hap}.illumina.{cov}x.fastq',
         hg19    = 'data/genomes/hg19.fa',
         hg19_ix = 'data/genomes/hg19.fa.fai',
         hg19_bwt = 'data/genomes/hg19.fa.bwt'
     output:
-        bam = 'data/simulation/aligned_reads/illumina/illumina.{cov}x.bam'
-    shell: '{BWA} mem -p -t 16 -T 0 {input.hg19} {input.fastq} | {SAMTOOLS} sort -@ 16 > {output.bam}'
+        bam = 'data/simulation/aligned_reads/illumina/separate_chrom/{chrom}.hap{hap}.illumina.{cov}x.bam'
+    shell: '{BWA} mem -p -t 4 -T 0 {input.hg19} {input.fastq} | {SAMTOOLS} sort -T {params.sort_prefix} -@ 4 > {output.bam}'
 
 rule align_simulated_pacbio:
-    params: job_name = 'align_simulated_pacbio.{cov}'
+    params: job_name = 'align_simulated_pacbio.{chrom}.{hap}.{cov}',
+            sort_prefix = 'data/simulation/aligned_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x.tmp'
     input:
-        fastq   = 'data/simulation/fastq_reads/pacbio/pacbio.{cov}x.fastq',
+        fastq   = 'data/simulation/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x.fastq',
         hg19    = 'data/genomes/hg19.fa',
         hg19_ix = 'data/genomes/hg19.fa.fai',
         hg19_bwt = 'data/genomes/hg19.fa.bwt'
     output:
-        bam = 'data/simulation/aligned_reads/pacbio/pacbio.{cov}x.bam'
-    shell: '{BWA} mem -x pacbio -t 16 -T 0 {input.hg19} {input.fastq} | {SAMTOOLS} sort -@ 16 > {output.bam}'
+        bam = 'data/simulation/aligned_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x.bam',
+    shell: '{BWA} mem -x pacbio -t 4 -T 0 {input.hg19} {input.fastq} | {SAMTOOLS} sort -T {params.sort_prefix} -@ 4 > {output.bam}'
 
-rule combine_reads_fastq:
-    params: job_name = 'combine_{datatype}_fastq.{cov}',
-    input: expand('data/simulation/fastq_reads/{{datatype}}/separate_chrom/{chrom}.hap{hap}.{{datatype}}.{{cov}}x.fastq',chrom=chroms,hap=[1,2])
-    output: 'data/simulation/fastq_reads/{datatype}/{datatype}.{cov}x.fastq'
-    shell: 'cat {input} > {output}'
+rule merge_bams:
+    params: job_name = 'merge_bams.{datatype}.{cov}',
+    input:  bams = expand('data/simulation/aligned_reads/{{datatype}}/separate_chrom/{chrom}.hap{hap}.{{datatype}}.{{cov}}x.bam',chrom=chroms,hap=[1,2])
+    output: bam = 'data/simulation/aligned_reads/{datatype}/{datatype}.{cov}x.bam'
+    shell: '{SAMTOOLS} merge -O bam {output.bam} {input.bams}'
 
 rule simulate_illumina:
     params: job_name = 'simulate_illumina.{chrom}.hap{hap}.{cov}',

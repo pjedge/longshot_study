@@ -22,6 +22,7 @@ REAPER         = '../target/release/reaper' # v0.1
 RTGTOOLS       = '/home/pedge/installed/rtg-tools-3.8.4/rtg' # v3.8.4, https://www.realtimegenomics.com/products/rtg-tools
 BGZIP = 'bgzip'
 TABIX = 'tabix'
+FREEBAYES      = '/home/pedge/git/freebayes/bin/freebayes'
 
 # PARAMS
 #chroms = ['chr{}'.format(i) for i in range(1,23)] + ['chrX']  # ['chr20']  #
@@ -30,8 +31,8 @@ TABIX = 'tabix'
 
 rule all:
     input:
-        #'data/plots/NA12878_prec_recall_chr20.png',
-        'data/plots/simulation_prec_recall_all.png'
+        'data/plots/NA12878_prec_recall_chr20.png',
+        #'data/plots/simulation_prec_recall_all.png'
 
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
 # therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
@@ -109,7 +110,7 @@ rule call_variants_Illumina:
     run:
         if wildcards.dataset in ['NA12878']:
             shell('''
-            freebayes -f {input.hs37d5} \
+            {FREEBAYES} -f {input.hs37d5} \
             --standard-filters \
             --region {wildcards.chrnum} \
              --genotype-qualities \
@@ -119,9 +120,9 @@ rule call_variants_Illumina:
             ''')
         else:
             shell('''
-            freebayes -f {input.hg19} \
+            {FREEBAYES} -f {input.hg19} \
             --standard-filters \
-            --region {wildcards.chrnum} \
+            --region chr{wildcards.chrnum} \
              --genotype-qualities \
              {input.bam} \
               > {output.vcf}
@@ -163,7 +164,7 @@ rule index_vcf:
 rule bgzip_vcf_calls:
     params: job_name = 'bgzip_vcf_calls.{dataset}.{calls_name}.{chrom}'
     input:  'data/{dataset}/variants/{calls_name}/{chrom}.vcf'
-    output: 'data/{dataset}/variants/{calls_name}/{chrom,(all|chr*)}.vcf.gz'
+    output: 'data/{dataset}/variants/{calls_name}/{chrom,(all|chr.+)}.vcf.gz'
     shell:  '{BGZIP} -c {input} > {output}'
 
 # bgzip vcf

@@ -10,11 +10,14 @@ __default__:
 vcfeval_rtgtools:
     ppn: 4
 
-vcfeval_rtgtools:
+align_simulated_illumina:
+    walltime: '20:00:00'
     ppn: 4
 
-align_simulated_illumina:
-    ppn: 16
-
 align_simulated_pacbio:
-    ppn: 16
+    walltime: '20:00:00'
+    ppn: 4
+
+merge_bams:
+    walltime: '100:00:00'
+    ppn: 4

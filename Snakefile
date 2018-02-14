@@ -86,6 +86,66 @@ rule combine_chrom:
         cat {input} | grep -Pv '^#' >> {output}; # cat files, removing the headers.
         '''
 
+####################################################################################################################
+chunksize = int(1e6)
+
+hg19_size_list = [('chr1', 249250621),
+ ('chr2', 243199373),
+ ('chr3', 198022430),
+ ('chr4', 191154276),
+ ('chr5', 180915260),
+ ('chr6', 171115067),
+ ('chr7', 159138663),
+ ('chr8', 146364022),
+ ('chr9', 141213431),
+ ('chr10', 135534747),
+ ('chr11', 135006516),
+ ('chr12', 133851895),
+ ('chr13', 115169878),
+ ('chr14', 107349540),
+ ('chr15', 102531392),
+ ('chr16', 90354753),
+ ('chr17', 81195210),
+ ('chr18', 78077248),
+ ('chr19', 59128983),
+ ('chr20', 63025520),
+ ('chr21', 48129895),
+ ('chr22', 51304566),
+ ('chrX', 155270560),
+ ('chrY', 59373566)]
+
+for chrom, chrlen in hg19_size_list:
+    for start in range(1,chrlen+1,chunksize):
+        end = start+chunksize-1 if start+chunksize-1 < chrlen else chrlen
+        chunklist.append((chrom,start,end))
+
+regions = ['{}.{}.{}'.format(chrom,start,stop) for chrom,start,stop in chunklist]
+chr20_regions = [x for x in regions if x[:6] == 'chr20.']
+
+rule combine_vcfs:
+    params: job_name = 'combine_chroms.{dataset}.cov{cov}.chr{chrnum}'
+    input: expand('data/{{dataset}}/variants/reaper_{{cov,\d+}}x.{{options}}/split_chrom/chr{r}.vcf',r=chr20_regions)
+    output: 'data/{dataset}/variants/reaper_{cov,\d+}x.{options}/chr20.vcf',
+    shell:
+        '''
+        grep -P "^#" {input[0]} > {output}
+        cat {input} | grep -Pv "^#" > {output}
+        '''
+
+rule run_reaper:
+    params: job_name = 'reaper.{dataset}.cov{cov}.chr{chrnum}.{start}.{stop}',
+    input:  bam = 'data/{dataset}/aligned_reads/pacbio/pacbio.{cov}x.bam',
+            bai = 'data/{dataset}/aligned_reads/pacbio/pacbio.{cov}x.bam.bai',
+            ref    = 'data/genomes/hg19.fa',
+            ref_ix = 'data/genomes/hg19.fa.fai'
+    output: vcf = 'data/{dataset}/variants/reaper_{cov,\d+}x.{options}/split_chrom/chr{chrnum}.{start}.{stop}.vcf',
+    run:
+        options_str = wildcards.options.replace('_',' ')
+        shell('{REAPER} -r chr{wildcards.chrnum}:{wildcards.start}-{wildcards.stop} {options_str} --bam {input.bam} --ref {input.ref} --out {output.vcf}')
+
+####################################################################################################################
+
+'''
 rule run_reaper:
     params: job_name = 'reaper.{dataset}.cov{cov}.chr{chrnum}',
     input:  bam = 'data/{dataset}/aligned_reads/pacbio/pacbio.{cov}x.bam',
@@ -96,7 +156,7 @@ rule run_reaper:
     run:
         options_str = wildcards.options.replace('_',' ')
         shell('{REAPER} -r chr{wildcards.chrnum} {options_str} --bam {input.bam} --ref {input.ref} --out {output.vcf}')
-
+'''
 # Call 30x Illumina variants
 rule call_variants_Illumina:
     params: job_name = 'call_illumina.{dataset}.{cov}x',

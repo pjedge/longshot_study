@@ -82,7 +82,7 @@ def plot_vcfeval(dirlist, labels, output_file, title):
     plt.ylim((0.99,1.0))
     plt.xlabel('Recall')
     plt.ylabel('Precision')
-    plt.legend()
+    plt.legend(loc='lower left')
     plt.tight_layout()
     plt.savefig(output_file)
 

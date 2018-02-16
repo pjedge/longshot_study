@@ -17,6 +17,7 @@ Illumina_30x_BAM_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/N
 # PATHS TO TOOLS
 TWOBITTOFASTA = 'twoBitToFa' # can be downloaded from 'http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/twoBitToFa'
 SAMTOOLS       = '/opt/biotools/samtools/1.3/bin/samtools' # v1.3
+MINIMAP2       = '/home/pedge/installed/minimap2/minimap2' #2.8-r703-dirty
 FASTQ_DUMP     = 'fastq-dump' # v2.5.2
 REAPER         = '../target/release/reaper' # v0.1
 RTGTOOLS       = '/home/pedge/installed/rtg-tools-3.8.4/rtg' # v3.8.4, https://www.realtimegenomics.com/products/rtg-tools
@@ -87,6 +88,8 @@ rule combine_chrom:
         '''
 
 ####################################################################################################################
+chunklist = []
+
 chunksize = int(1e6)
 
 hg19_size_list = [('chr1', 249250621),
@@ -123,13 +126,13 @@ regions = ['{}.{}.{}'.format(chrom,start,stop) for chrom,start,stop in chunklist
 chr20_regions = [x for x in regions if x[:6] == 'chr20.']
 
 rule combine_vcfs:
-    params: job_name = 'combine_chroms.{dataset}.cov{cov}.chr{chrnum}'
-    input: expand('data/{{dataset}}/variants/reaper_{{cov,\d+}}x.{{options}}/split_chrom/chr{r}.vcf',r=chr20_regions)
+    params: job_name = 'combine_chroms.{dataset}.cov{cov}.chr20'
+    input: expand('data/{{dataset}}/variants/reaper_{{cov,\d+}}x.{{options}}/split_chrom/{r}.vcf',r=chr20_regions)
     output: 'data/{dataset}/variants/reaper_{cov,\d+}x.{options}/chr20.vcf',
     shell:
         '''
         grep -P "^#" {input[0]} > {output}
-        cat {input} | grep -Pv "^#" > {output}
+        cat {input} | grep -Pv "^#" >> {output}
         '''
 
 rule run_reaper:

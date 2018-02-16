@@ -1,4 +1,6 @@
 
+FASTQUTILS = '/home/pedge/installed/ngsutils/bin/fastqutils'
+
 rule plot_pr_curve_NA12878:
     params: job_name = 'plot_pr_curve_NA12878',
             title = 'Precision Recall Curve for Reaper on NA12878: PacBio Reads vs Standard Illumina'
@@ -9,9 +11,9 @@ rule plot_pr_curve_NA12878:
     output:
         png = 'data/plots/NA12878_prec_recall_{chrom}.png'
     run:
-        plot_vcfeval.plot_vcfeval(['data/NA12878/vcfeval/illumina_30x/filtered.{}'.format(wildcards.chrom),
-                                   'data/NA12878/vcfeval/reaper_30x/{}'.format(wildcards.chrom),
-                                   'data/NA12878/vcfeval/reaper_44x/{}'.format(wildcards.chrom)],
+        plot_vcfeval.plot_vcfeval(['data/NA12878/vcfeval/illumina_30x.filtered/{}'.format(wildcards.chrom),
+                                   'data/NA12878/vcfeval/reaper_30x.-z_-C_52/{}'.format(wildcards.chrom),
+                                   'data/NA12878/vcfeval/reaper_44x.-z_-C_78/{}'.format(wildcards.chrom)],
                                    ['Freebayes, Illumina 30x',
                                    'Reaper, PacBio 30x',
                                    'Reaper, PacBio 44x'],
@@ -67,13 +69,47 @@ rule subsample_pacbio_NA12878:
         subsample_frac = float(wildcards.cov) / 44.0
         shell('''
         {SAMTOOLS} view -hb {input.bam} -s {subsample_frac} > {output.bam};
-        #{SAMTOOLS} index {output.bam} {output.bai}
         ''')
+
+# SORT REMAPPED PACBIO BAM
+rule merge_pacbio_bam_NA12878:
+    params: job_name = 'merge_pacbio_bam_NA12878'
+    input: expand('data/NA12878/aligned_reads/pacbio/split_remapped_bams/pacbio.44x.{i}.bam', i=list(range(1,101)))
+    output: 'data/NA12878/aligned_reads/pacbio/pacbio.44x.bam'
+    shell: '{SAMTOOLS} merge {output} {input}'
+
+# REALIGN PACBIO BAM WITH MINIMAP2
+rule remap_pacbio_bam_NA12878:
+    params: job_name = 'remap_pacbio_bam_NA12878.{i}',
+            sort_tmp = 'data/NA12878/aligned_reads/pacbio/split_remapped_bams/pacbio.44x.{i}.tmp'
+    input: fq  = 'data/NA12878/fastq_reads/pacbio/split_fastq/pacbio.44x.{i}.fastq',
+           ref = 'data/genomes/hg19.fa',
+    output: bam = 'data/NA12878/aligned_reads/pacbio/split_remapped_bams/pacbio.44x.{i}.bam',
+    shell:
+        '''
+        {MINIMAP2} -t 4 -ax map-pb {input.ref} {input.fq} | \
+        {SAMTOOLS} view -hb | \
+        {SAMTOOLS} sort -@ 4 -T {params.sort_tmp} -o {output.bam} -
+        '''
+
+# SPLIT FASTQ FOR PARALLELIZED MAPPING
+rule split_pacbio_fastq_NA12878:
+    params: job_name = 'split_pacbio_fastq_NA12878'
+    input: 'data/NA12878/fastq_reads/pacbio/pacbio.44x.fastq',
+    output: expand('data/NA12878/fastq_reads/pacbio/split_fastq/pacbio.44x.{i}.fastq',i=list(range(1,101)))
+    shell: '{FASTQUTILS} split {input} data/NA12878/fastq_reads/pacbio/split_fastq/pacbio.44x 100'
+
+# STRIP PACBIO BAM TO FASTQ
+rule pacbio_bam_to_fastq_NA12878:
+    params: job_name = 'pacbio_bam_to_fastq_NA12878'
+    input: 'data/NA12878/aligned_reads/pacbio/pacbio.bwamem.44x.bam',
+    output: 'data/NA12878/fastq_reads/pacbio/pacbio.44x.fastq',
+    shell: '{SAMTOOLS} fastq {input} > {output}'
 
 # DOWNLOAD PACBIO BAM
 rule download_pacbio_NA12878:
     params: job_name = 'download_pacbio_NA12878'
-    output: bam = 'data/NA12878/aligned_reads/pacbio/pacbio.44x.bam',
+    output: bam = 'data/NA12878/aligned_reads/pacbio/pacbio.bwamem.44x.bam',
             #bai = 'data/NA12878/aligned_reads/pacbio/pacbio.44x.bam.bai'
     shell:
         '''

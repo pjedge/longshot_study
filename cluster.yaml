@@ -5,7 +5,14 @@ __default__:
     group:           bansal-group
     qsub_stdout_dir: /oasis/tscc/scratch/pedge/reaper/stdout
     ppn:             1
-    walltime:        '50:00:00'
+    walltime:        '20:00:00'
+
+merge_pacbio_bam_NA12878:
+    walltime: '50:00:00'
+    
+remap_pacbio_bam_NA12878:
+    walltime: '20:00:00'
+    ppn: 4
 
 vcfeval_rtgtools:
     ppn: 4

@@ -10,6 +10,7 @@ include: "NA24149.snakefile" # AJ Father
 HG19_URL     = 'http://hgdownload.cse.ucsc.edu/goldenpath/hg19/bigZips/hg19.2bit'
 HS37D5_URL     = 'ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz'
 HG19_SDF_URL   = 'https://s3.amazonaws.com/rtg-datasets/references/hg19.sdf.zip'
+TG_v37_SDF_URL = 'https://s3.amazonaws.com/rtg-datasets/references/1000g_v37_phase2.sdf.zip'
 
 # PATHS TO TOOLS
 FASTQUTILS = '/home/pedge/installed/ngsutils/bin/fastqutils'
@@ -43,7 +44,7 @@ rule vcfeval_rtgtools:
             ground_truth = 'data/{dataset}/variants/ground_truth/ground_truth.SNVs_ONLY.vcf.gz',
             ground_truth_ix = 'data/{dataset}/variants/ground_truth/ground_truth.SNVs_ONLY.vcf.gz.tbi',
             region_filter ='data/{dataset}/variants/ground_truth/region_filter.bed',
-            hg19_sdf = 'data/genomes/hg19.sdf'
+            tg_sdf = 'data/genomes/1000g_v37_phase2.sdf'
     output: done = 'data/{dataset}/vcfeval/{calls_name}/{chrom}.done'
     shell:
         '''
@@ -52,7 +53,7 @@ rule vcfeval_rtgtools:
         -c {input.calls_vcf} \
         -b {input.ground_truth} \
         -e {input.region_filter} \
-        -t {input.hg19_sdf} \
+        -t {input.tg_sdf} \
         -o data/{wildcards.dataset}/vcfeval/{wildcards.calls_name}/{wildcards.chrom};
         cp data/{wildcards.dataset}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
         '''
@@ -153,6 +154,16 @@ rule download_hg19_sdf:
     shell:
         '''
         wget {HG19_SDF_URL} -O {output}.zip;
+        unzip {output}.zip -d data/genomes
+        '''
+
+# download 1000g_v37_phase2 sdf, for the aligned pacbio reads
+rule download_1000g_v37_phase2_sdf:
+    params: job_name = 'download_1000g_v37_phase2_sdf',
+    output: 'data/genomes/1000g_v37_phase2.sdf'
+    shell:
+        '''
+        wget {TG_v37_SDF_URL} -O {output}.zip;
         unzip {output}.zip -d data/genomes
         '''
 

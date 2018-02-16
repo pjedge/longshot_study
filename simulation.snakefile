@@ -33,18 +33,18 @@ rule plot_pr_curve_simulation:
 rule generate_simulated_SNVs:
     params: job_name = 'generate_simulated_SNVs'
     input:
-        hg19    = 'data/genomes/hg19.fa',
-        hg19_ix = 'data/genomes/hg19.fa.fai'
+        hs37d5    = 'data/genomes/hs37d5.fa',
+        hs37d5_ix = 'data/genomes/hs37d5.fa.fai'
     output:
         VCF = 'data/simulation/variants/ground_truth/ground_truth.vcf'
     run:
-        simulate_SNVs.simulate_SNV_VCF(input.hg19, output.VCF)
+        simulate_SNVs.simulate_SNV_VCF(input.hs37d5, output.VCF)
 
 rule generate_diploid_fasta:
     params: job_name = 'generate_diploid_fasta'
     input:
-        hg19    = 'data/genomes/hg19.fa',
-        hg19_ix = 'data/genomes/hg19.fa.fai',
+        hs37d5    = 'data/genomes/hs37d5.fa',
+        hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
         vcfgz = 'data/simulation/variants/ground_truth/ground_truth.vcf.gz',
         vcf_ix = 'data/simulation/variants/ground_truth/ground_truth.vcf.gz.tbi',
     output:
@@ -52,8 +52,8 @@ rule generate_diploid_fasta:
         fasta_hap2 = 'data/simulation/variants/ground_truth/ground_truth_hap2.fa'
     shell:
         '''
-        {BCFTOOLS} consensus -f {input.hg19} -H 1 {input.vcfgz} > {output.fasta_hap1}
-        {BCFTOOLS} consensus -f {input.hg19} -H 2 {input.vcfgz} > {output.fasta_hap2}
+        {BCFTOOLS} consensus -f {input.hs37d5} -H 1 {input.vcfgz} > {output.fasta_hap1}
+        {BCFTOOLS} consensus -f {input.hs37d5} -H 2 {input.vcfgz} > {output.fasta_hap2}
         '''
 
 rule join_diploid_fasta:
@@ -102,24 +102,24 @@ rule align_simulated_illumina:
             sort_prefix = 'data/simulation/aligned_reads/illumina/separate_chrom/{chrom}.hap{hap}.illumina.{cov}x.tmp'
     input:
         fastq   = 'data/simulation/fastq_reads/illumina/separate_chrom/{chrom}.hap{hap}.illumina.{cov}x.fastq',
-        hg19    = 'data/genomes/hg19.fa',
-        hg19_ix = 'data/genomes/hg19.fa.fai',
-        hg19_bwt = 'data/genomes/hg19.fa.bwt'
+        hs37d5    = 'data/genomes/hs37d5.fa',
+        hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
+        hs37d5_bwt = 'data/genomes/hs37d5.fa.bwt'
     output:
         bam = 'data/simulation/aligned_reads/illumina/separate_chrom/{chrom}.hap{hap}.illumina.{cov}x.bam'
-    shell: '{BWA} mem -p -t 4 -T 0 {input.hg19} {input.fastq} | {SAMTOOLS} sort -T {params.sort_prefix} -@ 4 > {output.bam}'
+    shell: '{BWA} mem -p -t 4 -T 0 {input.hs37d5} {input.fastq} | {SAMTOOLS} sort -T {params.sort_prefix} -@ 4 > {output.bam}'
 
 rule align_simulated_pacbio:
     params: job_name = 'align_simulated_pacbio.{chrom}.{hap}.{cov}',
             sort_prefix = 'data/simulation/aligned_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x.tmp'
     input:
         fastq   = 'data/simulation/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x.fastq',
-        hg19    = 'data/genomes/hg19.fa',
-        hg19_ix = 'data/genomes/hg19.fa.fai',
-        hg19_bwt = 'data/genomes/hg19.fa.bwt'
+        hs37d5    = 'data/genomes/hs37d5.fa',
+        hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
+        hs37d5_bwt = 'data/genomes/hs37d5.fa.bwt'
     output:
         bam = 'data/simulation/aligned_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x.bam',
-    shell: '{BWA} mem -x pacbio -t 4 -T 0 {input.hg19} {input.fastq} | {SAMTOOLS} sort -T {params.sort_prefix} -@ 4 > {output.bam}'
+    shell: '{BWA} mem -x pacbio -t 4 -T 0 {input.hs37d5} {input.fastq} | {SAMTOOLS} sort -T {params.sort_prefix} -@ 4 > {output.bam}'
 
 rule merge_bams:
     params: job_name = 'merge_bams.{datatype}.{cov}',

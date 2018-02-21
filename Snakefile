@@ -31,6 +31,9 @@ chroms = ['{}'.format(i) for i in range(1,23)] + ['X']
 
 rule all:
     input:
+        'data/plots/NA24385_prec_recall_20.png',
+        'data/plots/NA24143_prec_recall_20.png',
+        'data/plots/NA24149_prec_recall_20.png',
         'data/plots/NA12878_prec_recall_20.png',
         #'data/plots/simulation_prec_recall_all.png'
 
@@ -64,8 +67,7 @@ rule rtg_filter_SNVs_ground_truth:
     params: job_name = 'rtg_filter_SNVs_ground_truth.{dataset}',
     input:  vcfgz = 'data/{dataset}/variants/ground_truth/ground_truth.vcf.gz'
     output: vcfgz = 'data/{dataset}/variants/ground_truth/ground_truth.SNVs_ONLY.vcf.gz',
-            #tbi = 'data/{dataset}/variants/ground_truth/ground_truth.SNVs_ONLY.vcf.gz.tbi'
-    shell: '{RTGTOOLS} RTG_MEM=12g vcffilter --snps-only -i {input.vcfgz} -o {output.vcfgz}'
+    shell: '{RTGTOOLS} RTG_MEM=12g vcffilter --snps-only --no-index -i {input.vcfgz} -o {output.vcfgz}'
 
 from filter_SNVs import filter_SNVs
 rule filter_illumina_SNVs:
@@ -102,13 +104,13 @@ def remove_chr_from_vcf(in_vcf, out_vcf):
 
 rule run_reaper:
     params: job_name = 'reaper.{dataset}.cov{cov}.chr{chrom}',
-    input:  bam = 'data/{dataset}/aligned_reads/pacbio/pacbio.{cov}x.bam',
-            bai = 'data/{dataset}/aligned_reads/pacbio/pacbio.{cov}x.bam.bai',
+    input:  bam = 'data/{dataset}/aligned_reads/pacbio/pacbio.{aligner}.{chrom}.{cov}x.bam',
+            bai = 'data/{dataset}/aligned_reads/pacbio/pacbio.{aligner}.{chrom}.{cov}x.bam.bai',
             hg19    = 'data/genomes/hg19.fa',
             hg19_ix = 'data/genomes/hg19.fa.fai',
             hs37d5    = 'data/genomes/hs37d5.fa',
-            hs37d5_ix = 'data/genomes/hs37d5.fai'
-    output: vcf = 'data/{dataset}/variants/reaper_{cov,\d+}x.{options}/{chrom}.vcf',
+            hs37d5_ix = 'data/genomes/hs37d5.fa.fai'
+    output: vcf = 'data/{dataset}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.vcf',
     run:
         options_str = wildcards.options.replace('_',' ')
         if wildcards.dataset == 'NA12878':

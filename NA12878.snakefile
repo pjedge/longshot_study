@@ -8,15 +8,15 @@ rule plot_pr_curve_NA12878:
     params: job_name = 'plot_pr_curve_NA12878',
             title = 'Precision Recall Curve for Reaper on NA12878: PacBio Reads vs Standard Illumina'
     input:
-        reaper30_rtg = 'data/NA12878/vcfeval/reaper_30x.-z_-C_52/{chrom}.done',
-        reaper44_rtg = 'data/NA12878/vcfeval/reaper_44x.-z_-C_78/{chrom}.done',
+        reaper30_rtg = 'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-C_52/{chrom}.done',
+        reaper44_rtg = 'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z_-C_78/{chrom}.done',
         illumina_rtg = 'data/NA12878/vcfeval/illumina_30x.filtered/{chrom}.done'
     output:
         png = 'data/plots/NA12878_prec_recall_{chrom}.png'
     run:
         plot_vcfeval.plot_vcfeval(['data/NA12878/vcfeval/illumina_30x.filtered/{}'.format(wildcards.chrom),
-                                   'data/NA12878/vcfeval/reaper_30x.-z_-C_52/{}'.format(wildcards.chrom),
-                                   'data/NA12878/vcfeval/reaper_44x.-z_-C_78/{}'.format(wildcards.chrom)],
+                                   'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-C_52/{}'.format(wildcards.chrom),
+                                   'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z_-C_78/{}'.format(wildcards.chrom)],
                                    ['Freebayes, Illumina 30x',
                                    'Reaper, PacBio 30x',
                                    'Reaper, PacBio 44x'],
@@ -43,14 +43,21 @@ rule download_GIAB_VCF_NA12878:
 # SUBSAMPLE PACBIO BAM
 rule subsample_pacbio_NA12878:
     params: job_name = 'subsample_pacbio_NA12878'
-    input: bam = 'data/NA12878/aligned_reads/pacbio/pacbio.44x.bam',
-    output: bam = 'data/NA12878/aligned_reads/pacbio/pacbio.{cov}x.bam',
+    input: bam = 'data/NA12878/aligned_reads/pacbio/pacbio.{chrom}.44x.bam',
+    output: bam = 'data/NA12878/aligned_reads/pacbio/pacbio.{chrom}.{cov}x.bam',
     run:
         subsample_frac = float(wildcards.cov) / 44.0
         shell('{SAMTOOLS} view -hb {input.bam} -s {subsample_frac} > {output.bam}')
 
 # DOWNLOAD PACBIO BAM
+rule split_bam_pacbio_NA12878:
+    params: job_name = 'split_bam_pacbio_NA12878.{chrom}'
+    input: bam = 'data/NA12878/aligned_reads/pacbio/pacbio.blasr.all.44x.bam',
+    output: bam = 'data/NA12878/aligned_reads/pacbio/pacbio.blasr.{chrom}.44x.bam',
+    shell: '{SAMTOOLS} view -hb {input.bam} chr{wildcards.chrom} > {output.bam}'
+
+# DOWNLOAD PACBIO BAM
 rule download_pacbio_NA12878:
     params: job_name = 'download_pacbio_NA12878'
-    output: bam = 'data/NA12878/aligned_reads/pacbio/pacbio.44x.bam',
+    output: bam = 'data/NA12878/aligned_reads/pacbio/pacbio.blasr.all.44x.bam',
     shell: 'wget {NA12878_PACBIO_BAM_URL} -O {output.bam}'

@@ -31,10 +31,10 @@ chroms = ['{}'.format(i) for i in range(1,23)] + ['X']
 
 rule all:
     input:
-        'data/plots/NA24385_prec_recall_20.png',
+        #'data/plots/NA24385_prec_recall_20.png',
         'data/plots/NA24143_prec_recall_20.png',
-        'data/plots/NA24149_prec_recall_20.png',
-        'data/plots/NA12878_prec_recall_20.png',
+        #'data/plots/NA24149_prec_recall_20.png',
+        #'data/plots/NA12878_prec_recall_20.png',
         #'data/plots/simulation_prec_recall_all.png'
 
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
@@ -103,7 +103,7 @@ def remove_chr_from_vcf(in_vcf, out_vcf):
             print("\t".join(el),file=outf)
 
 rule run_reaper:
-    params: job_name = 'reaper.{dataset}.cov{cov}.chr{chrom}',
+    params: job_name = 'reaper.pacbio.{aligner}.{dataset}.cov{cov}.{options}.chr{chrom}',
     input:  bam = 'data/{dataset}/aligned_reads/pacbio/pacbio.{aligner}.{chrom}.{cov}x.bam',
             bai = 'data/{dataset}/aligned_reads/pacbio/pacbio.{aligner}.{chrom}.{cov}x.bam.bai',
             hg19    = 'data/genomes/hg19.fa',
@@ -111,14 +111,15 @@ rule run_reaper:
             hs37d5    = 'data/genomes/hs37d5.fa',
             hs37d5_ix = 'data/genomes/hs37d5.fa.fai'
     output: vcf = 'data/{dataset}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.vcf',
+            debug = 'data/{dataset}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug'
     run:
         options_str = wildcards.options.replace('_',' ')
         if wildcards.dataset == 'NA12878':
-            shell('{REAPER} -r chr{wildcards.chrom} {options_str} --bam {input.bam} --ref {input.hg19} --out {output.vcf}.tmp')
+            shell('{REAPER} -r chr{wildcards.chrom} -F -d {output.debug} {options_str} --bam {input.bam} --ref {input.hg19} --out {output.vcf}.tmp')
             # remove 'chr' from reference name in vcf
             remove_chr_from_vcf(output.vcf+'.tmp',output.vcf)
         else:
-            shell('{REAPER} -r {wildcards.chrom} {options_str} --bam {input.bam} --ref {input.hs37d5} --out {output.vcf}')
+            shell('{REAPER} -r {wildcards.chrom} -F -d {output.debug} {options_str} --bam {input.bam} --ref {input.hs37d5} --out {output.vcf}')
 
 # Call 30x Illumina variants
 rule call_variants_Illumina:

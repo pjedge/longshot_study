@@ -31,10 +31,10 @@ chroms = ['{}'.format(i) for i in range(1,23)] + ['X']
 
 rule all:
     input:
-        #'data/plots/NA24385_prec_recall_20.png',
+        'data/plots/NA24385_prec_recall_20.png',
         'data/plots/NA24143_prec_recall_20.png',
-        #'data/plots/NA24149_prec_recall_20.png',
-        #'data/plots/NA12878_prec_recall_20.png',
+        'data/plots/NA24149_prec_recall_20.png',
+        'data/plots/NA12878_prec_recall_20.png',
         #'data/plots/simulation_prec_recall_all.png'
 
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs

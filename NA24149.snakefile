@@ -9,13 +9,13 @@ rule plot_pr_curve_NA24149:
     params: job_name = 'plot_pr_curve_NA24149',
             title = 'Precision Recall Curve for Reaper on NA24149: PacBio Reads vs Standard Illumina'
     input:
-        reaper70_rtg = 'data/NA24149/vcfeval/reaper.pacbio.blasr.32x.-z_-C_56/{chrom}.done',
+        reaper70_rtg = 'data/NA24149/vcfeval/reaper.pacbio.blasr.32x.-z/{chrom}.done',
         illumina_rtg = 'data/NA24149/vcfeval/illumina_60x.filtered/{chrom}.done'
     output:
         png = 'data/plots/NA24149_prec_recall_{chrom}.png'
     run:
         plot_vcfeval.plot_vcfeval(['data/NA24149/vcfeval/illumina_60x.filtered/{}'.format(wildcards.chrom),
-                                   'data/NA24149/vcfeval/reaper.pacbio.blasr.32x.-z_-C_56/{}'.format(wildcards.chrom)],
+                                   'data/NA24149/vcfeval/reaper.pacbio.blasr.32x.-z/{}'.format(wildcards.chrom)],
                                    ['Freebayes, Illumina 60x',
                                    'Reaper, PacBio 32x'],
                                    output.png,params.title)

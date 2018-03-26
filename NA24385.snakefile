@@ -8,21 +8,21 @@ rule plot_pr_curve_NA24385:
     params: job_name = 'plot_pr_curve_NA24385',
             title = 'Precision Recall Curve for Reaper on NA24385: PacBio Reads vs Standard Illumina'
     input:
-        reaper20_rtg = 'data/NA24385/vcfeval/reaper.pacbio.blasr.20x.-z_-C_35/{chrom}.done',
-        reaper30_rtg = 'data/NA24385/vcfeval/reaper.pacbio.blasr.30x.-z_-C_52/{chrom}.done',
-        reaper40_rtg = 'data/NA24385/vcfeval/reaper.pacbio.blasr.40x.-z_-C_70/{chrom}.done',
-        reaper50_rtg = 'data/NA24385/vcfeval/reaper.pacbio.blasr.50x.-z_-C_87/{chrom}.done',
-        reaper69_rtg = 'data/NA24385/vcfeval/reaper.pacbio.blasr.69x.-z_-C_120/{chrom}.done',
+        reaper20_rtg = 'data/NA24385/vcfeval/reaper.pacbio.blasr.20x.-z/{chrom}.done',
+        reaper30_rtg = 'data/NA24385/vcfeval/reaper.pacbio.blasr.30x.-z/{chrom}.done',
+        reaper40_rtg = 'data/NA24385/vcfeval/reaper.pacbio.blasr.40x.-z/{chrom}.done',
+        reaper50_rtg = 'data/NA24385/vcfeval/reaper.pacbio.blasr.50x.-z/{chrom}.done',
+        reaper69_rtg = 'data/NA24385/vcfeval/reaper.pacbio.blasr.69x.-z/{chrom}.done',
         illumina_rtg = 'data/NA24385/vcfeval/illumina_60x.filtered/{chrom}.done'
     output:
         png = 'data/plots/NA24385_prec_recall_{chrom}.png'
     run:
         plot_vcfeval.plot_vcfeval(['data/NA24385/vcfeval/illumina_60x.filtered/{}'.format(wildcards.chrom),
-                                   'data/NA24385/vcfeval/reaper.pacbio.blasr.20x.-z_-C_35/{}'.format(wildcards.chrom),
-                                   'data/NA24385/vcfeval/reaper.pacbio.blasr.30x.-z_-C_52/{}'.format(wildcards.chrom),
-                                   'data/NA24385/vcfeval/reaper.pacbio.blasr.40x.-z_-C_70/{}'.format(wildcards.chrom),
-                                   'data/NA24385/vcfeval/reaper.pacbio.blasr.50x.-z_-C_87/{}'.format(wildcards.chrom),
-                                   'data/NA24385/vcfeval/reaper.pacbio.blasr.69x.-z_-C_120/{}'.format(wildcards.chrom),],
+                                   'data/NA24385/vcfeval/reaper.pacbio.blasr.20x.-z/{}'.format(wildcards.chrom),
+                                   'data/NA24385/vcfeval/reaper.pacbio.blasr.30x.-z/{}'.format(wildcards.chrom),
+                                   'data/NA24385/vcfeval/reaper.pacbio.blasr.40x.-z/{}'.format(wildcards.chrom),
+                                   'data/NA24385/vcfeval/reaper.pacbio.blasr.50x.-z/{}'.format(wildcards.chrom),
+                                   'data/NA24385/vcfeval/reaper.pacbio.blasr.69x.-z/{}'.format(wildcards.chrom),],
                                    ['Freebayes, Illumina 60x',
                                    'Reaper, PacBio 20x',
                                    'Reaper, PacBio 30x',

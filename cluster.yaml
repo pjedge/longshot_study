@@ -7,6 +7,10 @@ __default__:
     ppn:             1
     walltime:        '20:00:00'
 
+run_reaper:
+    walltime: '50:00:00'
+    ppn: 2
+
 merge_pacbio_bam_NA12878:
     walltime: '50:00:00'
     

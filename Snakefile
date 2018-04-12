@@ -221,3 +221,33 @@ rule bwa_index_fasta:
     input:  '{x}.fa'
     output: '{x}.fa.bwt'
     shell: '{BWA} index {input}'
+
+rule backup_reaper_run:
+    shell:
+        '''
+        rm -rf data/BAK
+        mkdir data/BAK
+
+        mkdir -p data/BAK/NA12878/variants
+        mkdir -p data/BAK/NA12878/vcfeval
+        mv data/NA12878/variants/reaper* data/BAK/NA12878/variants
+        mv data/NA12878/vcfeval/reaper* data/BAK/NA12878/vcfeval
+
+        mkdir -p data/BAK/NA24143/variants
+        mkdir -p data/BAK/NA24143/vcfeval
+        mv data/NA24143/variants/reaper* data/BAK/NA24143/variants
+        mv data/NA24143/vcfeval/reaper* data/BAK/NA24143/vcfeval
+
+        mkdir -p data/BAK/NA24149/variants
+        mkdir -p data/BAK/NA24149/vcfeval
+        mv data/NA24149/variants/reaper* data/BAK/NA24149/variants
+        mv data/NA24149/vcfeval/reaper* data/BAK/NA24149/vcfeval
+
+        mkdir -p data/BAK/NA24385/variants
+        mkdir -p data/BAK/NA24385/vcfeval
+        mv data/NA24385/variants/reaper* data/BAK/NA24385/variants
+        mv data/NA24385/vcfeval/reaper* data/BAK/NA24385/vcfeval
+
+        mkdir data/BAK/plots
+        mv data/plots data/BAK/plots
+        '''

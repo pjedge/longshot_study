@@ -53,7 +53,7 @@ rule download_GIAB_VCF_NA24385:
 rule subsample_pacbio_NA24385:
     params: job_name = 'subsample_pacbio_NA24385.{chrom}'
     input: bam = 'data/NA24385/aligned_reads/pacbio/pacbio.ngmlr.{chrom}.69x.bam',
-    output: bam = 'data/NA24385/aligned_reads/pacbio/pacbio.ngmlr.{chrom}.{cov}x.bam',
+    output: bam = 'data/NA24385/aligned_reads/pacbio/pacbio.ngmlr.{chrom}.{cov,\d+}x.bam',
     run:
         subsample_frac = float(wildcards.cov) / 69.0
         shell('{SAMTOOLS} view -hb {input.bam} -s {subsample_frac} > {output.bam}')
@@ -61,14 +61,14 @@ rule subsample_pacbio_NA24385:
 # SPLIT PACBIO BAM
 rule split_bam_pacbio_NA24385_NGMLR:
     params: job_name = 'split_bam_pacbio_NA24385.{chrom}'
-    input: bam = 'data/NA24385/aligned_reads/pacbio/pacbio.nglmr.all.69x.bam',
-    output: bam = 'data/NA24385/aligned_reads/pacbio/pacbio.nglmr.{chrom}.69x.bam',
+    input: bam = 'data/NA24385/aligned_reads/pacbio/pacbio.ngmlr.all.69x.bam',
+    output: bam = 'data/NA24385/aligned_reads/pacbio/pacbio.ngmlr.{chrom}.69x.bam',
     shell: '{SAMTOOLS} view -hb {input.bam} chr{wildcards.chrom} > {output.bam}'
 
 # DOWNLOAD PACBIO BAM
 rule download_pacbio_NA24385_NGMLR:
     params: job_name = 'download_pacbio_NA24385'
-    output: bam = 'data/NA24385/aligned_reads/pacbio/pacbio.nglmr.all.69x.bam',
+    output: bam = 'data/NA24385/aligned_reads/pacbio/pacbio.ngmlr.all.69x.bam',
     shell: 'wget {NA24385_PACBIO_NGMLR_BAM_URL} -O {output.bam}'
 
 # DOWNLOAD PACBIO BAM

@@ -49,7 +49,7 @@ rule subsample_pacbio_NA12878:
         subsample_frac = float(wildcards.cov) / 44.0
         shell('{SAMTOOLS} view -hb {input.bam} -s {subsample_frac} > {output.bam}')
 
-# DOWNLOAD PACBIO BAM
+# SPLIT PACBIO BAM
 rule split_bam_pacbio_NA12878:
     params: job_name = 'split_bam_pacbio_NA12878.{chrom}'
     input: bam = 'data/NA12878/aligned_reads/pacbio/pacbio.blasr.all.44x.bam',

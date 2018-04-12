@@ -43,7 +43,7 @@ rule split_bam_pacbio_NA24143_NGMLR:
     params: job_name = 'split_bam_pacbio_NA24143.{chrom}'
     input: bam = 'data/NA24143/aligned_reads/pacbio/pacbio.ngmlr.all.30x.bam',
     output: bam = 'data/NA24143/aligned_reads/pacbio/pacbio.ngmlr.{chrom}.30x.bam',
-    shell: '{SAMTOOLS} view -hb {input.bam} chr{wildcards.chrom} > {output.bam}'
+    shell: '{SAMTOOLS} view -hb {input.bam} {wildcards.chrom} > {output.bam}'
 
 # DOWNLOAD PACBIO BAM
 rule download_pacbio_NA24143_NGMLR:

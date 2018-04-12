@@ -63,7 +63,7 @@ rule split_bam_pacbio_NA24385_NGMLR:
     params: job_name = 'split_bam_pacbio_NA24385.{chrom}'
     input: bam = 'data/NA24385/aligned_reads/pacbio/pacbio.ngmlr.all.69x.bam',
     output: bam = 'data/NA24385/aligned_reads/pacbio/pacbio.ngmlr.{chrom}.69x.bam',
-    shell: '{SAMTOOLS} view -hb {input.bam} chr{wildcards.chrom} > {output.bam}'
+    shell: '{SAMTOOLS} view -hb {input.bam} {wildcards.chrom} > {output.bam}'
 
 # DOWNLOAD PACBIO BAM
 rule download_pacbio_NA24385_NGMLR:

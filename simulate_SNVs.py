@@ -6,7 +6,7 @@ import itertools
 import numpy as np
 from numpy.random import choice
 
-VALID_CHROMS = set(['chr{}'.format(c) for c in range(1,23)]+['chrX'])
+VALID_CHROMS = set(['{}'.format(c) for c in range(1,23)]+['X'])
 
 # estimate prior probability of genotypes using strategy described here:
 # http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2694485/
@@ -20,8 +20,8 @@ def create_phased_genotype_selector():
 
     alleles = ['A','C','G','T']
     genotypes = list(itertools.combinations_with_replacement(alleles,2))
-    het_snp_rate = 0.0005
-    hom_snp_rate = 0.001
+    hom_snp_rate = 0.0005
+    het_snp_rate = 0.001
     diploid_genotype_priors = dict()
     haploid_genotype_priors = dict()
     transition = {'A':'G','G':'A','T':'C','C':'T'}
@@ -30,12 +30,12 @@ def create_phased_genotype_selector():
 
         # priors on haploid alleles
         haploid_genotype_priors[allele] = dict()
-        haploid_genotype_priors[allele][allele] = 1 - hom_snp_rate
-        haploid_genotype_priors[allele][transition[allele]] = hom_snp_rate / 6 * 4
+        haploid_genotype_priors[allele][allele] = 1 - het_snp_rate
+        haploid_genotype_priors[allele][transition[allele]] = het_snp_rate / 6 * 4
         for transversion in alleles:
             if transversion in haploid_genotype_priors[allele]:
                 continue
-            haploid_genotype_priors[allele][transversion] =  hom_snp_rate / 6
+            haploid_genotype_priors[allele][transversion] =  het_snp_rate / 6
 
         diploid_genotype_priors[allele] = []
         for G in genotypes:
@@ -46,9 +46,9 @@ def create_phased_genotype_selector():
             elif g1 == g2 and g1 != allele:
                 # transitions are 4 times as likely as transversions
                 if g1 == transition[allele]:
-                    diploid_genotype_priors[allele].append(het_snp_rate / 6 * 4)
+                    diploid_genotype_priors[allele].append(hom_snp_rate / 6 * 4)
                 else:
-                    diploid_genotype_priors[allele].append(het_snp_rate / 6)
+                    diploid_genotype_priors[allele].append(hom_snp_rate / 6)
             else: # else it's the product of the haploid priors
                     diploid_genotype_priors[allele].append(haploid_genotype_priors[allele][g1] * haploid_genotype_priors[allele][g2])
 

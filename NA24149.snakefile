@@ -41,14 +41,14 @@ rule download_GIAB_VCF_NA24149:
 # SPLIT PACBIO BAM
 rule split_bam_pacbio_NA24149_NGMLR:
     params: job_name = 'split_bam_pacbio_NA24149.{chrom}'
-    input: bam = 'data/NA24149/aligned_reads/pacbio/pacbio.nglmr.all.32x.bam',
-    output: bam = 'data/NA24149/aligned_reads/pacbio/pacbio.nglmr.{chrom}.32x.bam',
-    shell: '{SAMTOOLS} view -hb {input.bam} chr{wildcards.chrom} > {output.bam}'
+    input: bam = 'data/NA24149/aligned_reads/pacbio/pacbio.ngmlr.all.32x.bam',
+    output: bam = 'data/NA24149/aligned_reads/pacbio/pacbio.ngmlr.{chrom}.32x.bam',
+    shell: '{SAMTOOLS} view -hb {input.bam} {wildcards.chrom} > {output.bam}'
 
 # DOWNLOAD PACBIO BAM
 rule download_pacbio_NA24149_NGMLR:
     params: job_name = 'download_pacbio_NA24149'
-    output: bam = 'data/NA24149/aligned_reads/pacbio/pacbio.nglmr.all.32x.bam',
+    output: bam = 'data/NA24149/aligned_reads/pacbio/pacbio.ngmlr.all.32x.bam',
     shell: 'wget {NA24149_PACBIO_NGMLR_BAM_URL} -O {output.bam}'
 
 # DOWNLOAD PACBIO BAM

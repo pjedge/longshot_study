@@ -7,15 +7,15 @@ DWGSIM = '/home/pedge/git/DWGSIM/dwgsim'
 BWA = '/home/pedge/installed/bwa'
 BCFTOOLS = '/opt/biotools/bcftools/bin/bcftools'
 PYFAIDX = '/home/pedge/installed/opt/python/bin/faidx'
-chroms = ['chr{}'.format(i) for i in range(1,23)] + ['chrX']
+chroms = ['{}'.format(i) for i in range(1,23)] + ['X']
 
 rule plot_pr_curve_simulation:
     params: job_name = 'plot_pr_curve_simulation',
             title = 'Precision Recall Curve for Reaper on Simulated Data: PacBio Reads vs Standard Illumina'
     input:
-        reaper30_rtg = 'data/simulation/vcfeval/reaper_30x.-z_-i_-B_30_-C_52/{chrom}.done',
-        reaper45_rtg = 'data/simulation/vcfeval/reaper_45x.-z_-i_-B_30_-C_78/{chrom}.done',
-        reaper60_rtg = 'data/simulation/vcfeval/reaper_60x.-z_-i_-B_30_-C_105/{chrom}.done',
+        reaper30_rtg = 'data/simulation/vcfeval/reaper_30x.-z/{chrom}.done',
+        reaper45_rtg = 'data/simulation/vcfeval/reaper_45x.-z/{chrom}.done',
+        reaper60_rtg = 'data/simulation/vcfeval/reaper_60x.-z/{chrom}.done',
         illumina_rtg = 'data/simulation/vcfeval/illumina_30x.filtered/{chrom}.done'
     output:
         png = 'data/plots/simulation_prec_recall_{chrom}.png'

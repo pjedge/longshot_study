@@ -9,13 +9,13 @@ rule plot_pr_curve_NA24143:
     params: job_name = 'plot_pr_curve_NA24143',
             title = 'Precision Recall Curve for Reaper on NA24143: PacBio Reads vs Standard Illumina'
     input:
-        reaper30_rtg = 'data/NA24143/vcfeval/reaper.pacbio.nglmr.30x.-z/{chrom}.done',
+        reaper30_rtg = 'data/NA24143/vcfeval/reaper.pacbio.ngmlr.30x.-z/{chrom}.done',
         illumina_rtg = 'data/NA24143/vcfeval/illumina_60x.filtered/{chrom}.done'
     output:
         png = 'data/plots/NA24143_prec_recall_{chrom}.png'
     run:
         plot_vcfeval.plot_vcfeval(['data/NA24143/vcfeval/illumina_60x.filtered/{}'.format(wildcards.chrom),
-                                   'data/NA24143/vcfeval/reaper.pacbio.nglmr.30x.-z/{}'.format(wildcards.chrom)],
+                                   'data/NA24143/vcfeval/reaper.pacbio.ngmlr.30x.-z/{}'.format(wildcards.chrom)],
                                    ['Freebayes, Illumina 60x',
                                    'Reaper, PacBio 30x'],
                                    output.png,params.title)
@@ -41,14 +41,14 @@ rule download_GIAB_VCF_NA24143:
 # SPLIT PACBIO BAM
 rule split_bam_pacbio_NA24143_NGMLR:
     params: job_name = 'split_bam_pacbio_NA24143.{chrom}'
-    input: bam = 'data/NA24143/aligned_reads/pacbio/pacbio.nglmr.all.30x.bam',
-    output: bam = 'data/NA24143/aligned_reads/pacbio/pacbio.nglmr.{chrom}.30x.bam',
-    shell: '{SAMTOOLS} view -hb {input.bam} chr{wildcards.chrom} > {output.bam}'
+    input: bam = 'data/NA24143/aligned_reads/pacbio/pacbio.ngmlr.all.30x.bam',
+    output: bam = 'data/NA24143/aligned_reads/pacbio/pacbio.ngmlr.{chrom}.30x.bam',
+    shell: '{SAMTOOLS} view -hb {input.bam} {wildcards.chrom} > {output.bam}'
 
 # DOWNLOAD PACBIO BAM
 rule download_pacbio_NA24143_NGMLR:
     params: job_name = 'download_pacbio_NA24143'
-    output: bam = 'data/NA24143/aligned_reads/pacbio/pacbio.nglmr.all.30x.bam',
+    output: bam = 'data/NA24143/aligned_reads/pacbio/pacbio.ngmlr.all.30x.bam',
     shell: 'wget {NA24143_PACBIO_NGMLR_BAM_URL} -O {output.bam}'
 
 # DOWNLOAD PACBIO BAM

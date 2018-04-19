@@ -39,6 +39,8 @@ def plot_vcfeval(dirlist, labels, output_file, title):
         print("need to define larger color pallet to plot this many datasets.")
         exit(1)
 
+    print("LABEL QUAL F1 PREC RECALL")
+
     for color, path, label in zip(colors, dirlist,labels):
 
         total_baseline = None
@@ -60,13 +62,22 @@ def plot_vcfeval(dirlist, labels, output_file, title):
                     score.append(el[0])
                     #assert(el[1] == el[3])
 
+                    qual = el[0]
                     TPb = el[1]
                     TPc = el[3]
                     FN = total_baseline - el[1]
                     FP = el[2]
 
-                    precisions.append(TPc/(TPc+FP))
-                    recalls.append(TPb/(TPb+FN))
+                    prec = TPc/(TPc+FP)
+                    rec = TPb/(TPb+FN)
+                    precisions.append(prec)
+                    recalls.append(rec)
+
+                    f1_score = 2.0 * ((prec * rec) / (prec + rec))
+
+                    print("{} {} {} {} {}".format(label, qual, f1_score, prec, rec))
+
+
 
         plt.plot(recalls, precisions, color=color,label=label,linewidth=2,alpha=0.75)
 

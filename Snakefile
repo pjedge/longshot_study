@@ -61,6 +61,19 @@ rule vcfeval_rtgtools:
         cp data/{wildcards.dataset}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
         '''
 
+rule generate_coverage_bed:
+    params: job_name = ,
+    job_name = lambda wildcards: 'generate_coverage_bed.{}.cov_greater_than_{}'.format(str(wildcards.x).replace("/", "."), str(wildcards.cov))
+    input:  '{x}.bam'
+    output: '{x}.cov_greater_than_{cov, d+}.bed',
+    shell:
+        '''
+        {SAMTOOLS} view -q 30 {input} -hb | \
+        {BEDTOOLS} genomecov -bga -ibam - | \
+        awk '$4 > 20' | \
+        {BEDTOOLS} merge -i - > {output}
+        '''
+
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
 # therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
 rule rtg_filter_SNVs_ground_truth:

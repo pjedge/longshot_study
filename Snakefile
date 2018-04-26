@@ -31,11 +31,13 @@ chroms = ['{}'.format(i) for i in range(1,23)] + ['X']
 
 rule all:
     input:
-        'data/plots/NA24385_prec_recall_all.png',
-        'data/plots/NA24143_prec_recall_all.png',
-        'data/plots/NA24149_prec_recall_all.png',
-        'data/plots/NA12878_prec_recall_all.png',
-        'data/plots/simulation_prec_recall_all.png'
+        'data/plots/NA24385_prec_recall_1.png',
+        'data/plots/NA24143_prec_recall_1.png',
+        'data/plots/NA24149_prec_recall_1.png',
+        'data/plots/NA12878_prec_recall_1.png',
+        'data/plots/simulation_prec_recall_1.png',
+        'data/plots/simulation_prec_recall_in_segdups_1.png'
+
 
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
 # therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
@@ -73,9 +75,9 @@ from filter_SNVs import filter_SNVs
 rule filter_illumina_SNVs:
     params: job_name = 'filter_SNVs_illumina.{dataset}.chr{chrom}',
     input:  vcf = 'data/{dataset}/variants/illumina_{cov}x/{chrom}.vcf'
-    output: vcf = 'data/{dataset}/variants/illumina_{cov}x.filtered/{chrom}.vcf'
+    output: vcf = 'data/{dataset}/variants/illumina_{cov}x.filtered/{chrom,(\d+|X|Y)}.vcf'
     run:
-        cov_filter = int(float(wildcards.cov)*1.75)
+        cov_filter = int(float(wildcards.cov)*2)
         filter_SNVs(input.vcf, output.vcf, cov_filter, density_count=10, density_len=500, density_qual=50)
 
 rule combine_chrom:
@@ -110,7 +112,7 @@ rule run_reaper:
             hg19_ix = 'data/genomes/hg19.fa.fai',
             hs37d5    = 'data/genomes/hs37d5.fa',
             hs37d5_ix = 'data/genomes/hs37d5.fa.fai'
-    output: vcf = 'data/{dataset}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.vcf',
+    output: vcf = 'data/{dataset}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.vcf',
             debug = 'data/{dataset}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug'
     run:
         options_str = wildcards.options.replace('_',' ')
@@ -128,7 +130,7 @@ rule call_variants_Illumina:
             bai = 'data/{dataset}/aligned_reads/illumina/illumina.{cov}x.bam.bai',
             hs37d5 = 'data/genomes/hs37d5.fa',
             hs37d5_ix = 'data/genomes/hs37d5.fa.fai'
-    output: vcf = 'data/{dataset}/variants/illumina_{cov}x/{chrom}.vcf'
+    output: vcf = 'data/{dataset}/variants/illumina_{cov}x/{chrom,(\d+|X|Y)}.vcf'
     shell:
         '''
         {FREEBAYES} -f {input.hs37d5} \

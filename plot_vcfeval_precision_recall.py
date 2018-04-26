@@ -27,15 +27,13 @@ def parseargs():
     args = parser.parse_args()
     return args
 
-colors = ['r','k','#ccccff','#9999ff','#8080ff','#6666ff','#3333ff']
-
-def plot_vcfeval(dirlist, labels, output_file, title):
+def plot_vcfeval(dirlist, labels, output_file, title, colors=['r','#3333ff','#ccccff','#9999ff','#8080ff','#6666ff'], xlim=(0.6,1.0), ylim=(0.95,1.0)):
 
     plt.figure();
     ax1 = plt.subplot(111);
     plt.title(title)
 
-    if len(dirlist) == len(colors):
+    if len(dirlist) > len(colors):
         print("need to define larger color pallet to plot this many datasets.")
         exit(1)
 
@@ -89,8 +87,8 @@ def plot_vcfeval(dirlist, labels, output_file, title):
     plt.tick_params(axis="both", which="both", bottom="off", top="off",
                 labelbottom="on", left="off", right="off", labelleft="on")
 
-    plt.xlim((0.75,1.0))
-    plt.ylim((0.99,1.0))
+    plt.xlim(xlim)
+    plt.ylim(ylim)
     plt.xlabel('Recall')
     plt.ylabel('Precision')
     plt.legend(loc='lower left')

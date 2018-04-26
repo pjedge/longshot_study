@@ -20,7 +20,8 @@ rule plot_pr_curve_NA12878:
                                    ['Freebayes, Illumina 30x',
                                    'Reaper, PacBio 30x',
                                    'Reaper, PacBio 44x'],
-                                   output.png,params.title)
+                                   output.png,params.title,
+                                   colors=['r','#8080ff','#3333ff'])
 
 # DOWNLOAD 30x Illumina reads
 rule download_Illumina_reads_NA12878:

@@ -82,6 +82,8 @@ def simulate_SNV_VCF(hg19_fasta, output_vcf):
 ##source=simulate_SNVs.py
 #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE'''
 
+        print(header ,file=outv)
+
         for chrom in fasta.references:
             size = fasta.get_reference_length(chrom)
 

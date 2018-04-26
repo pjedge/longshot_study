@@ -9,6 +9,23 @@ BCFTOOLS = '/opt/biotools/bcftools/bin/bcftools'
 PYFAIDX = '/home/pedge/installed/opt/python/bin/faidx'
 chroms = ['{}'.format(i) for i in range(1,23)] + ['X']
 
+rule calculate_mapping_accuracy:
+    params: job_name = 'calculate_mapping_accuracy{segdup_or_not}'
+    input:  bam = 'data/simulation/aligned_reads/pacbio/pacbio.60x{segdup_or_not}.bam'
+    output: plot = 'data/plots/chr1_simulated_60x_pacbio_mismapped_read_distribution{segdup_or_not}.png',
+            acc = 'data/output/chr1_simulated_60x_pacbio_mapping_accuracy{segdup_or_not}.txt'
+    run:
+        acc = mapping_accuracy.mapping_accuracy(input.bam, output.plot)
+        with open(output.acc,'w') as outf:
+            print('mapping_accuracy={}'.format(acc),file=outf)
+
+rule filter_chr1_segdup:
+    params: job_name = 'generate_simulated_SNVs'
+    input:  bam = 'data/simulation/aligned_reads/pacbio/pacbio.60x.bam',
+            bed = 'genome_tracks/segmental_duplications_0.99_similar_1000g.bed'
+    output: bam = 'data/simulation/aligned_reads/pacbio/pacbio.60x.segdup.bam'
+    shell: '{BEDTOOLS} intersect -a {input.bam} -b {input.bed} -wa > {output.bam}'
+
 rule plot_pr_curve_simulation:
     params: job_name = 'plot_pr_curve_simulation',
             title = 'Precision Recall Curve for Reaper on Simulated Data: PacBio Reads vs Standard Illumina'

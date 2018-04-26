@@ -35,7 +35,9 @@ rule all:
         'data/plots/NA24143_prec_recall_all.png',
         'data/plots/NA24149_prec_recall_all.png',
         'data/plots/NA12878_prec_recall_all.png',
-        'data/plots/simulation_prec_recall_all.png'
+        'data/plots/simulation_prec_recall_all.png',
+        'data/plots/chr1_simulated_60x_pacbio_mismapped_read_distribution.segdup.png',
+        'data/plots/chr1_simulated_60x_pacbio_mismapped_read_distribution.png'
 
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
 # therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
@@ -59,6 +61,17 @@ rule vcfeval_rtgtools:
         -t {input.tg_sdf} \
         -o data/{wildcards.dataset}/vcfeval/{wildcards.calls_name}/{wildcards.chrom};
         cp data/{wildcards.dataset}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
+        '''
+
+rule get_AK_trio_cov_gt_20:
+    params: job_name = '',
+    job_name = lambda wildcards: 'generate_coverage_bed.{}.cov_greater_than_{}'.format(str(wildcards.x).replace("/", "."), str(wildcards.cov))
+    input:  ''
+    output: parents_bed = 'data/NA24385/duplicated_regions/pacbio_ngmlr_{chrom}',
+    shell:
+        '''
+        {BEDTOOLS} intersect -a {NA24143_bed} -b {NA24149_bed} > {output.parents_bed}
+        {BEDTOOLS} intersect -a {NA24143_bed} -b {NA24149_bed} > {output.trio_bed}
         '''
 
 rule generate_coverage_bed:

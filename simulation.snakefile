@@ -1,6 +1,7 @@
 
 import simulate_SNVs
 import pysam
+import mapping_accuracy
 
 SIMLORD = '/home/pedge/installed/opt/python/bin/simlord'
 DWGSIM = '/home/pedge/git/DWGSIM/dwgsim'
@@ -8,13 +9,13 @@ BWA = '/home/pedge/installed/bwa'
 BCFTOOLS = '/opt/biotools/bcftools/bin/bcftools'
 PYFAIDX = '/home/pedge/installed/opt/python/bin/faidx'
 chroms = ['{}'.format(i) for i in range(1,23)] + ['X']
-
+BEDTOOLS = '/opt/biotools/bedtools/bin/bedtools'
 
 ##################################################################################################################
 # VCFeval and plotting for segmental duplications as opposed to whole genome
 rule plot_pr_curve_simulation_segmental_duplications:
     params: job_name = 'plot_pr_curve_simulation_segmental_duplications',
-            title = 'Precision Recall Curve for Reaper on Simulated Data: PacBio Reads vs Short Reads in Segmental Duplications'
+            title = 'Simulated Data: PacBio Reads vs Short Reads in Segmental Duplications'
     input:
         reaper20_rtg = 'data/simulation/vcfeval_segdup/reaper.pacbio.bwa.20x.-z/{chrom}.done',
         reaper30_rtg = 'data/simulation/vcfeval_segdup/reaper.pacbio.bwa.30x.-z/{chrom}.done',
@@ -46,7 +47,8 @@ rule plot_pr_curve_simulation_segmental_duplications:
                                    output.png,params.title,
                                    colors=['#f99a9a','#fc6c6c','#ff4747','#ff0707','#9999ff','#8080ff','#6666ff','#3333ff'],
                                    xlim=(0,1.0),
-                                   ylim=(0,1.0))
+                                   ylim=(0.98,1.0),
+                                   legendloc='upper right')
 
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
 # therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
@@ -73,7 +75,22 @@ rule vcfeval_rtgtools_segmental_duplications:
         '''
 ##################################################################################################################
 
+rule calculate_mapping_accuracy:
+    params: job_name = 'calculate_mapping_accuracy{segdup_or_not}{chrom}'
+    input:  bam = 'data/simulation/aligned_reads/pacbio/pacbio.bwa.{chrom}.60x{segdup_or_not}bam'
+    output: plot = 'data/plots/chr{chrom}_simulated_60x_pacbio_mismapped_read_distribution{segdup_or_not}png',
+            acc = 'data/output/chr{chrom}_simulated_60x_pacbio_mapping_accuracy{segdup_or_not}txt'
+    run:
+        acc = mapping_accuracy.mapping_accuracy(input.bam, output.plot)
+        with open(output.acc,'w') as outf:
+            print('mapping_accuracy={}'.format(acc),file=outf)
 
+rule filter_chr1_segdup:
+    params: job_name = 'filter_chr1_segdup.{chrom}'
+    input:  bam = 'data/simulation/aligned_reads/pacbio/pacbio.bwa.{chrom}.60x.bam',
+            bed = 'genome_tracks/segmental_duplications_0.99_similar_1000g.bed'
+    output: bam = 'data/simulation/aligned_reads/pacbio/pacbio.bwa.{chrom}.60x.segdup.bam'
+    shell: '{BEDTOOLS} intersect -a {input.bam} -b {input.bed} -wa > {output.bam}'
 
 rule plot_pr_curve_simulation:
     params: job_name = 'plot_pr_curve_simulation',
@@ -108,8 +125,8 @@ rule plot_pr_curve_simulation:
                                    'Reaper, PacBio 80x'],
                                    output.png,params.title,
                                    colors=['#f99a9a','#fc6c6c','#ff4747','#ff0707','#9999ff','#8080ff','#6666ff','#3333ff'],
-                                   xlim=(0.75,1.0),
-                                   ylim=(0.98,1.0))
+                                   xlim=(0.8,1.0),
+                                   ylim=(0.99,1.0))
 
 rule generate_simulated_SNVs:
     params: job_name = 'generate_simulated_SNVs'

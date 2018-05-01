@@ -27,7 +27,14 @@ def parseargs():
     args = parser.parse_args()
     return args
 
-def plot_vcfeval(dirlist, labels, output_file, title, colors=['r','#3333ff','#ccccff','#9999ff','#8080ff','#6666ff'], xlim=(0.6,1.0), ylim=(0.95,1.0)):
+def plot_vcfeval(dirlist, labels, output_file, title, colors=['r','#3333ff','#ccccff','#9999ff','#8080ff','#6666ff'], xlim=(0.6,1.0), ylim=(0.95,1.0), legendloc='lower left'):
+
+
+    # add a small amount of padding to the xlim and ylim so that grid lines show up on the borders
+    xpad = (xlim[1] - xlim[0])/100
+    ypad = (ylim[1] - ylim[0])/100
+    xlim = (xlim[0]-xpad, xlim[1]+xpad)
+    ylim = (ylim[0]-ypad, ylim[1]+ypad)
 
     plt.figure();
     ax1 = plt.subplot(111);
@@ -77,13 +84,14 @@ def plot_vcfeval(dirlist, labels, output_file, title, colors=['r','#3333ff','#cc
 
 
 
-        plt.plot(recalls, precisions, color=color,label=label,linewidth=2,alpha=0.75)
+        plt.plot(recalls, precisions, color=color,label=label,linewidth=3,alpha=0.75)
 
     plt.grid(True,color='grey',linestyle='--',alpha=0.5)
-    #ax1.spines["top"].set_visible(False)
-    #ax1.spines["right"].set_visible(False)
-    #ax1.spines["bottom"].set_visible(False)
-    #ax1.spines["left"].set_visible(False)
+   
+    ax1.spines["top"].set_visible(False)
+    ax1.spines["right"].set_visible(False)
+    ax1.spines["bottom"].set_visible(False)
+    ax1.spines["left"].set_visible(False)
     plt.tick_params(axis="both", which="both", bottom="off", top="off",
                 labelbottom="on", left="off", right="off", labelleft="on")
 
@@ -91,8 +99,9 @@ def plot_vcfeval(dirlist, labels, output_file, title, colors=['r','#3333ff','#cc
     plt.ylim(ylim)
     plt.xlabel('Recall')
     plt.ylabel('Precision')
-    plt.legend(loc='lower left')
+    plt.legend(loc=legendloc)
     plt.tight_layout()
+    ax1.set_axisbelow(True)
     plt.savefig(output_file)
 
 if __name__ == '__main__':

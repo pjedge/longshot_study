@@ -21,7 +21,8 @@ rule plot_pr_curve_NA12878:
                                    'Reaper, PacBio 30x',
                                    'Reaper, PacBio 44x'],
                                    output.png,params.title,
-                                   colors=['r','#8080ff','#3333ff'])
+                                   colors=['r','#8080ff','#3333ff'],
+                                   xlim=(0.8,1.0),ylim=(0.985,1.0))
 
 # DOWNLOAD 30x Illumina reads
 rule download_Illumina_reads_NA12878:

@@ -18,7 +18,8 @@ rule plot_pr_curve_NA24149:
                                    'data/NA24149/vcfeval/reaper.pacbio.ngmlr.32x.-z/{}'.format(wildcards.chrom)],
                                    ['Freebayes, Illumina 60x',
                                    'Reaper, PacBio 32x'],
-                                   output.png,params.title)
+                                   output.png,params.title,
+                                   xlim=(0.6,1.0),ylim=(0.975,1.0))
 
 # DOWNLOAD 60x Illumina reads
 rule download_Illumina_reads_NA24149:

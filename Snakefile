@@ -1,4 +1,5 @@
 import plot_vcfeval_precision_recall as plot_vcfeval
+from replace_empty_gt_with_reference import replace_empty_gt_with_reference
 
 include: "simulation.snakefile"
 include: "NA12878.snakefile"
@@ -36,8 +37,10 @@ rule all:
         'data/plots/NA24149_prec_recall_1.png',
         'data/plots/NA12878_prec_recall_1.png',
         'data/plots/simulation_prec_recall_1.png',
-        'data/plots/simulation_prec_recall_in_segdups_1.png'
-
+        'data/plots/simulation_prec_recall_in_segdups_1.png',
+        'data/plots/chr1_simulated_60x_pacbio_mismapped_read_distribution.segdup.png',
+        'data/plots/chr1_simulated_60x_pacbio_mismapped_read_distribution.png',
+        'data/AK_trio/duplicated_regions/trio_shared_variant_sites/mendelian/1.vcf.gz'
 
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
 # therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
@@ -181,7 +184,7 @@ rule index_vcf:
     params: job_name = lambda wildcards: 'tabix_vcf.{}'.format(str(wildcards.x).replace("/", "."))
     input:  '{x}.vcf.gz'
     output: '{x}.vcf.gz.tbi'
-    shell:  '{TABIX} -p vcf {input}'
+    shell:  '{TABIX} -f -p vcf {input}'
 
 # bgzip vcf
 rule bgzip_vcf_calls:

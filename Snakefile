@@ -6,6 +6,7 @@ include: "NA12878.snakefile"
 include: "NA24385.snakefile" # AJ Son
 include: "NA24143.snakefile" # AJ Mother
 include: "NA24149.snakefile" # AJ Father
+include: "aj_trio.snakefile" #
 
 # DATA URLs
 HG19_URL     = 'http://hgdownload.cse.ucsc.edu/goldenpath/hg19/bigZips/hg19.2bit'
@@ -40,7 +41,7 @@ rule all:
         'data/plots/simulation_prec_recall_in_segdups_1.png',
         'data/plots/chr1_simulated_60x_pacbio_mismapped_read_distribution.segdup.png',
         'data/plots/chr1_simulated_60x_pacbio_mismapped_read_distribution.png',
-        'data/AK_trio/duplicated_regions/trio_shared_variant_sites/mendelian/1.vcf.gz'
+        'data/aj_trio/duplicated_regions/trio_shared_variant_sites/mendelian/1.vcf.gz'
 
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
 # therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
@@ -124,7 +125,7 @@ rule run_reaper:
             # remove 'chr' from reference name in vcf
             remove_chr_from_vcf(output.vcf+'.tmp',output.vcf)
         else:
-            shell('{REAPER} -r {wildcards.chrom} -F -d {output.debug} {options_str} --bam {input.bam} --ref {input.hs37d5} --out {output.vcf}')
+            shell('{REAPER} -r {wildcards.chrom} -F -d {output.debug} {options_str} -s {wildcards.dataset} --bam {input.bam} --ref {input.hs37d5} --out {output.vcf}')
 
 # Call 30x Illumina variants
 rule call_variants_Illumina:

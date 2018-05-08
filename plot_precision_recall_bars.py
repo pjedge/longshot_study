@@ -1,10 +1,11 @@
 import matplotlib as mpl
-mpl.use('Agg')
+#mpl.use('Agg')
 from matplotlib import pyplot as plt
 import pickle
 import os
 import gzip
 import argparse
+import numpy as np
 
 
 mpl.rc('legend', fontsize=9)
@@ -40,7 +41,7 @@ def get_precision_recall(vcfeval_dir, gq_cutoff):
     precision = None
     qual = None
 
-    with gzip.open(os.path.join(path,'snp_roc.tsv.gz'),mode='rt') as inf:
+    with gzip.open(os.path.join(vcfeval_dir,'snp_roc.tsv.gz'),mode='rt') as inf:
 
         for line in inf:
             if line[0] == '#':
@@ -75,44 +76,121 @@ def get_precision_recall(vcfeval_dir, gq_cutoff):
 
     return (precision, recall)
 
-def plot_precision_recall_bars(dirlist, gq_cutoff, labels, output_file, title):
+def plot_precision_recall_bars(pacbio_dirlist_genome, illumina_dirlist_genome, pacbio_dirlist_segdup, illumina_dirlist_segdup, gq_cutoff, labels, output_file, title):
 
-    IND = np.array([0,1,2,3,4,5])  # the x locations for the groups
+    plt.figure(figsize=(12,5))
+    mpl.rcParams['axes.titlepad'] = 20
 
-    precisions, recalls = zip(*[get_precision_recall(d, gq_cutoff) for d in dirlist])
-    ind = np.array([0,0.5,1,1.5,2,2.5]) # the x locations for the groups
-    width = 0.04
+    ax = plt.subplot(111)
+
+    width = 0.08
     alpha1 = 0.8
 
-    plt.bar(ind+width, precisions, color='k',
-            ecolor='black', # black error bar color
-            alpha=alpha1,      # transparency
-            width=width,      # smaller bar width
-            align='center',
-            label='Precision')
-    plt.bar(ind+2*width, recalls, color='grey',
-            ecolor='black', # black error bar color
-            alpha=alpha1,      # transparency
-            width=width,      # smaller bar width
-            align='center',
-           label='Recall')
+    def make_subplot(ind, pacbio_dirlist, illumina_dirlist,add_label=False):
 
-    # add some text for labels, title and axes ticks
-    #plt.xlim(-0.5,6)
+        pacbio_precisions, pacbio_recalls = zip(*[get_precision_recall(d, gq_cutoff) for d in pacbio_dirlist])
+        illumina_precisions, illumina_recalls = zip(*[get_precision_recall(d, gq_cutoff) for d in illumina_dirlist])
 
+        pacbio_FDR = [1.0 - v for v in pacbio_precisions]
+        pacbio_FNR = [1.0 - v for v in pacbio_recalls]
+        illumina_FDR = [1.0 - v for v in illumina_precisions]
+        illumina_FNR = [1.0 - v for v in illumina_recalls]
+
+        l1 = 'FDR, PacBio' if add_label else None
+        l2 = 'FNR, PacBio' if add_label else None
+        l3 = 'FDR, Illumina' if add_label else None
+        l4 = 'FNR, Illumina' if add_label else None
+
+        plt.bar(ind+width, pacbio_FDR, color='#2200ff',
+                ecolor='black', # black error bar color
+                alpha=alpha1,      # transparency
+                width=width,      # smaller bar width
+                align='center',
+                label=l1)
+        plt.bar(ind+2*width, pacbio_FNR, color='#6d57f9',
+                ecolor='black', # black error bar color
+                alpha=alpha1,      # transparency
+                width=width,      # smaller bar width
+                align='center',
+               label=l2)
+        plt.bar(ind+3*width, illumina_FDR, color='#ff1900',
+                ecolor='black', # black error bar color
+                alpha=alpha1,      # transparency
+                width=width,      # smaller bar width
+                align='center',
+                label=l3)
+        plt.bar(ind+4*width, illumina_FNR, color='#fc6a5a',
+                ecolor='black', # black error bar color
+                alpha=alpha1,      # transparency
+                width=width,      # smaller bar width
+                align='center',
+               label=l4)
+        # add some text for labels, title and axes ticks
+        #plt.xlim(-0.5,6)
+
+
+    ind1 = [0,0.5,1,1.5]
+    ind2 = [2.5,3,3.5,4]
+    make_subplot(np.array(ind1), pacbio_dirlist_genome, illumina_dirlist_genome, add_label=True)
+    make_subplot(np.array(ind2), pacbio_dirlist_segdup, illumina_dirlist_segdup)
+
+    ind = np.array(ind1 + ind2)
     #ax.set_ylabel('Error Rate')
-    ax.set_xticks(IND+1.5*width)
-    ax.set_xticklabels(labels)
+    ax.set_xticks(ind+2.5*width)
+    ax.set_xticklabels(labels+labels)
 
+
+    ax.yaxis.grid(True,color='grey', alpha=0.5, linestyle='--')
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+    plt.tick_params(axis="both", which="both", bottom="off", top="off",
+                labelbottom="on", left="off", right="off", labelleft="on")
+
+    ax.set_yscale('log')
     #plt.xlim(())
-    #plt.ylim(ylim)
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
-    plt.legend(loc='upper left')
-    plt.tight_layout()
-    ax1.set_axisbelow(True)
-    plt.savefig(output_file)
+    #plt.ylim((0,1.0))
+    #plt.legend(loc='upper left')
+    plt.xlabel(" ",labelpad=20)
 
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.92)
+    t = plt.suptitle(title)
+
+    ax.set_axisbelow(True)
+
+    ticklabelpad = mpl.rcParams['xtick.major.pad']
+    # Add the label as annotation. The "5" is the padding betweent the right side
+    # of the axis and the label...
+    ax.annotate('Whole Genome', xy=(0.18,-0.1), xytext=(5, -ticklabelpad), ha='left', va='top',
+                xycoords='axes fraction', textcoords='offset points')
+    ax.annotate('Segmental Duplications Only', xy=(0.68,-0.1), xytext=(5, -ticklabelpad), ha='left', va='top',
+                xycoords='axes fraction', textcoords='offset points')
+
+    # credit to https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot
+    # Shrink current axis by 20%
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width * 0.85, box.height])
+    # Put a legend to the right of the current axis
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+    plt.show()
+    #plt.savefig(output_file)
+
+'''
 if __name__ == '__main__':
     args = parseargs()
     plot_vcfeval(args.input_dirs, args.labels, args.output_file, args.title)
+'''
+covs = [20,30,40,80]
+(plot_precision_recall_bars(
+    ['data/simulation/vcfeval/reaper.pacbio.bwa.{}x.-z/1'.format(c) for c in covs],
+    ['data/simulation/vcfeval/illumina_{}x.filtered/1'.format(c) for c in covs],
+    ['data/simulation/vcfeval_segdup/reaper.pacbio.bwa.{}x.-z/1'.format(c) for c in covs],
+    ['data/simulation/vcfeval_segdup/illumina_{}x.filtered/1'.format(c) for c in covs],
+    50,
+    ['{}x\ncoverage'.format(c) for c in covs],
+    'test_bars.png',
+    'Accuracy of Reaper on Simulated Pacbio Reads at Different Coverages'
+))

@@ -40,16 +40,17 @@ rule merge_SNVs_gt_30_trio:
 # filter variants for aj trio individuals for positions that have at least 30x coverage in all 3 datasets
 rule filter_SNVs_gt_30_trio:
     params: job_name = 'filter_SNVs_gt_30_trio.{id}.{callset}.{chrom}'
-    input:  trio_bed = 'data/aj_trio/duplicated_regions/trio_covered_regions/{chrom}.cov_greater_than_30.trio_intersect.bed',
+    input:  region_bed = 'data/aj_trio/duplicated_regions/trio_covered_regions/{chrom}.cov_greater_than_30.trio_intersect.segmental_duplications.bed',
             vcfgz = 'data/{id}/variants/{callset}/{chrom}.vcf.gz'
     output: vcfgz = 'data/aj_trio/duplicated_regions/trio_shared_variant_sites/{id}/{callset}/{chrom, (\d+|X|Y)}.vcf.gz',
-    shell: '{RTGTOOLS} RTG_MEM=12g vcffilter --bed-regions={input.trio_bed} -i {input.vcfgz} -o {output.vcfgz}'
+    shell: '{RTGTOOLS} RTG_MEM=12g vcffilter --bed-regions={input.region_bed} -i {input.vcfgz} -o {output.vcfgz}'
 
 rule get_aj_trio_cov_gt_30:
     params: job_name = 'get_aj_trio_cov_gt_30.{chrom}'
     input:  NA24143_bed = 'data/NA24143/aligned_reads/pacbio/pacbio.ngmlr.{chrom}.30x.cov_greater_than_30.bed',
             NA24149_bed = 'data/NA24149/aligned_reads/pacbio/pacbio.ngmlr.{chrom}.32x.cov_greater_than_30.bed',
             NA24385_bed = 'data/NA24385/aligned_reads/pacbio/pacbio.ngmlr.{chrom}.69x.cov_greater_than_30.bed',
+            segdup_bed =  'genome_tracks/segmental_duplications_0.99_similar_1000g.bed'
     output: parents_bed = 'data/aj_trio/duplicated_regions/trio_covered_regions/{chrom}.cov_greater_than_30.parents_intersect.bed',
             trio_bed = 'data/aj_trio/duplicated_regions/trio_covered_regions/{chrom}.cov_greater_than_30.trio_intersect.bed',
             trio_segdup_bed = 'data/aj_trio/duplicated_regions/trio_covered_regions/{chrom}.cov_greater_than_30.trio_intersect.segmental_duplications.bed',
@@ -57,6 +58,7 @@ rule get_aj_trio_cov_gt_30:
         '''
         {BEDTOOLS} intersect -a {input.NA24143_bed} -b {input.NA24149_bed} > {output.parents_bed}
         {BEDTOOLS} intersect -a {output.parents_bed} -b {input.NA24385_bed} > {output.trio_bed}
+        {BEDTOOLS} intersect -a {output.trio_bed} -b {input.segdup_bed} > {output.trio_segdup_bed}
         '''
 
 rule generate_coverage_bed:
@@ -68,6 +70,6 @@ rule generate_coverage_bed:
         shell('''
         {SAMTOOLS} view -F 3844 -q 30 {input} -hb | \
         {BEDTOOLS} genomecov -bga -ibam - | \
-        awk "$4 > 30 && $4 < {maxcov}" | \
+        awk '$4 > 30 && $4 < {maxcov}' | \
         {BEDTOOLS} merge -i - > {output}
         ''')

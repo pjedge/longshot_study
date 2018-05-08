@@ -7,6 +7,7 @@ include: "NA24385.snakefile" # AJ Son
 include: "NA24143.snakefile" # AJ Mother
 include: "NA24149.snakefile" # AJ Father
 include: "aj_trio.snakefile" #
+include: "paper_tables_and_figures.snakefile"
 
 # DATA URLs
 HG19_URL     = 'http://hgdownload.cse.ucsc.edu/goldenpath/hg19/bigZips/hg19.2bit'

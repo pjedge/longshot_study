@@ -28,7 +28,7 @@ rule plot_pr_curve_simulation_segmental_duplications:
     output:
         png = 'data/plots/simulation_prec_recall_in_segdups_{chrom,(\d+|X|Y|all)}.png'
     run:
-        plot_vcfeval.plot_vcfeval(['data/simulation/vcfeval_segdup/illumina_20x.filtered/{}'.format(wildcards.chrom),
+        ptf.plot_vcfeval(['data/simulation/vcfeval_segdup/illumina_20x.filtered/{}'.format(wildcards.chrom),
                                    'data/simulation/vcfeval_segdup/illumina_30x.filtered/{}'.format(wildcards.chrom),
                                    'data/simulation/vcfeval_segdup/illumina_40x.filtered/{}'.format(wildcards.chrom),
                                    'data/simulation/vcfeval_segdup/illumina_80x.filtered/{}'.format(wildcards.chrom),
@@ -107,7 +107,7 @@ rule plot_pr_curve_simulation:
     output:
         png = 'data/plots/simulation_prec_recall_{chrom,(\d+|X|Y|all)}.png'
     run:
-        plot_vcfeval.plot_vcfeval(['data/simulation/vcfeval/illumina_20x.filtered/{}'.format(wildcards.chrom),
+        ptf.plot_vcfeval(['data/simulation/vcfeval/illumina_20x.filtered/{}'.format(wildcards.chrom),
                                    'data/simulation/vcfeval/illumina_30x.filtered/{}'.format(wildcards.chrom),
                                    'data/simulation/vcfeval/illumina_40x.filtered/{}'.format(wildcards.chrom),
                                    'data/simulation/vcfeval/illumina_80x.filtered/{}'.format(wildcards.chrom),

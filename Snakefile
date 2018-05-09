@@ -1,4 +1,5 @@
-import plot_vcfeval_precision_recall as plot_vcfeval
+import paper_tables_and_figures as ptf
+import time
 from replace_empty_gt_with_reference import replace_empty_gt_with_reference
 
 include: "simulation.snakefile"
@@ -109,6 +110,22 @@ def remove_chr_from_vcf(in_vcf, out_vcf):
             assert(el[0] in hs37d5_chroms)
             print("\t".join(el),file=outf)
 
+rule add_runtimes:
+    params: job_name = 'add_runtimes.{dataset}.{calls_name}',
+    input: expand('data/{{dataset}}/variants/{{calls_name}}/{chrom}.vcf.runtime',chrom=chroms)
+    output: 'data/{dataset}/variants/{calls_name}/all.vcf.runtime'
+    run:
+        t = datetime.timedelta(hours=0, minutes=0, seconds=0)
+        for f in input:
+            with open(f,'r') as inf:
+                hh, mm, ss = [float(val) for val in inf.readline().strip().split(':')] # credit to https://stackoverflow.com/questions/19234771/adding-a-timedelta-of-the-type-hh-mm-ss-ms-to-a-datetime-object
+                t += datetime.timedelta(hours=hh, minutes=mm, seconds=ss)
+
+        runtime = time.strftime('%H:%M:%S', time.gmtime(t))
+        with open(output,'w') as outf:
+            print(runtime,file=outf)
+
+
 rule run_reaper:
     params: job_name = 'reaper.pacbio.{aligner}.{dataset}.cov{cov}.{options}.chr{chrom}',
     input:  bam = 'data/{dataset}/aligned_reads/pacbio/pacbio.{aligner}.{chrom}.{cov}x.bam',
@@ -118,15 +135,24 @@ rule run_reaper:
             hs37d5    = 'data/genomes/hs37d5.fa',
             hs37d5_ix = 'data/genomes/hs37d5.fa.fai'
     output: vcf = 'data/{dataset}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.vcf',
-            debug = 'data/{dataset}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug'
+            debug = 'data/{dataset}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug',
+            runtime = 'data/{dataset}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.vcf.runtime'
     run:
         options_str = wildcards.options.replace('_',' ')
         if wildcards.dataset == 'NA12878':
+            t1 = time.time()
             shell('{REAPER} -r chr{wildcards.chrom} -F -d {output.debug} {options_str} --bam {input.bam} --ref {input.hg19} --out {output.vcf}.tmp')
+            t2 = time.time()
             # remove 'chr' from reference name in vcf
             remove_chr_from_vcf(output.vcf+'.tmp',output.vcf)
         else:
+            t1 = time.time()
             shell('{REAPER} -r {wildcards.chrom} -F -d {output.debug} {options_str} -s {wildcards.dataset} --bam {input.bam} --ref {input.hs37d5} --out {output.vcf}')
+            t2 = time.time()
+
+        runtime = time.strftime('%H:%M:%S', time.gmtime(t2-t1))
+        with open(output.runtime,'w') as outf:
+            print(runtime,file=outf)
 
 # Call 30x Illumina variants
 rule call_variants_Illumina:
@@ -135,16 +161,23 @@ rule call_variants_Illumina:
             bai = 'data/{dataset}/aligned_reads/illumina/illumina.{cov}x.bam.bai',
             hs37d5 = 'data/genomes/hs37d5.fa',
             hs37d5_ix = 'data/genomes/hs37d5.fa.fai'
-    output: vcf = 'data/{dataset}/variants/illumina_{cov}x/{chrom,(\d+|X|Y)}.vcf'
-    shell:
-        '''
+    output: vcf = 'data/{dataset}/variants/illumina_{cov}x/{chrom,(\d+|X|Y)}.vcf',
+            runtime = 'data/{dataset}/variants/illumina_{cov}x/{chrom,(\d+|X|Y)}.vcf.runtime'
+    run:
+        t1 = time.time()
+        shell('''
         {FREEBAYES} -f {input.hs37d5} \
         --standard-filters \
         --region {wildcards.chrom} \
          --genotype-qualities \
          {input.bam} \
           > {output.vcf}
-        '''
+        ''')
+        t2 = time.time()
+        runtime = time.strftime('%H:%M:%S', time.gmtime(t2-t1))
+        with open(output.runtime,'w') as outf:
+            print(runtime,file=outf)
+
 
 # download hg19 reference, for the aligned pacbio reads
 rule download_hg19:

@@ -1,11 +1,12 @@
 import matplotlib as mpl
-#mpl.use('Agg')
+mpl.use('Agg')
 from matplotlib import pyplot as plt
 import pickle
 import os
 import gzip
 import argparse
 import numpy as np
+import re
 
 
 mpl.rc('legend', fontsize=9)
@@ -16,7 +17,7 @@ mpl.rc('axes', labelsize=9)
 mpl.rcParams.update({'font.size': 9})
 mpl.rc('lines', linewidth=1.5)
 mpl.rc('mathtext',default='regular')
-'''
+
 def parseargs():
 
     parser = argparse.ArgumentParser(description='this tool is meant to make precision-recall curves from RTGtools vcfeval data, that are prettier than those from RTGtools rocplot function.')
@@ -27,7 +28,85 @@ def parseargs():
 
     args = parser.parse_args()
     return args
-'''
+
+def plot_vcfeval(dirlist, labels, output_file, title, colors=['r','#3333ff','#ccccff','#9999ff','#8080ff','#6666ff'], xlim=(0.6,1.0), ylim=(0.95,1.0), legendloc='lower left'):
+
+
+    # add a small amount of padding to the xlim and ylim so that grid lines show up on the borders
+    xpad = (xlim[1] - xlim[0])/100
+    ypad = (ylim[1] - ylim[0])/100
+    xlim = (xlim[0]-xpad, xlim[1]+xpad)
+    ylim = (ylim[0]-ypad, ylim[1]+ypad)
+
+    plt.figure();
+    ax1 = plt.subplot(111);
+    plt.title(title)
+
+    if len(dirlist) > len(colors):
+        print("need to define larger color pallet to plot this many datasets.")
+        exit(1)
+
+    print("LABEL QUAL F1 PREC RECALL")
+
+    for color, path, label in zip(colors, dirlist,labels):
+
+        total_baseline = None
+        score = []
+        recalls = []
+        precisions = []
+
+        with gzip.open(os.path.join(path,'snp_roc.tsv.gz'),mode='rt') as inf:
+
+            for line in inf:
+                if line[0] == '#':
+                    if '#total baseline variants:' in line:
+                        total_baseline = float(line.strip().split()[3])
+                    continue
+                else:
+                    el = [float(x) for x in line.strip().split()]
+                    assert(len(el) == 4)
+
+                    score.append(el[0])
+                    #assert(el[1] == el[3])
+
+                    qual = el[0]
+                    TPb = el[1]
+                    TPc = el[3]
+                    FN = total_baseline - el[1]
+                    FP = el[2]
+
+                    prec = TPc/(TPc+FP)
+                    rec = TPb/(TPb+FN)
+                    precisions.append(prec)
+                    recalls.append(rec)
+
+                    f1_score = 2.0 * ((prec * rec) / (prec + rec))
+
+                    print("{} {} {} {} {}".format(label, qual, f1_score, prec, rec))
+
+
+
+        plt.plot(recalls, precisions, color=color,label=label,linewidth=3,alpha=0.75)
+
+    plt.grid(True,color='grey',linestyle='--',alpha=0.5)
+
+    ax1.spines["top"].set_visible(False)
+    ax1.spines["right"].set_visible(False)
+    ax1.spines["bottom"].set_visible(False)
+    ax1.spines["left"].set_visible(False)
+    plt.tick_params(axis="both", which="both", bottom="off", top="off",
+                labelbottom="on", left="off", right="off", labelleft="on")
+
+    plt.xlim(xlim)
+    plt.ylim(ylim)
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.legend(loc=legendloc)
+    plt.tight_layout()
+    ax1.set_axisbelow(True)
+    plt.savefig(output_file)
+
+
 # input:
 # vcfeval_dir: directory containing vcfeval output
 # gq_cutoff: a Genotype Quality value to set as the cutoff for variants e.g. 30 or 50
@@ -172,3 +251,63 @@ def plot_precision_recall_bars_simulation(pacbio_dirlist_genome, illumina_dirlis
 
     #plt.show()
     plt.savefig(output_file)
+
+genomes_table_files = namedtuple('genomes_table_files', ['vcfeval_dir', 'vcfstats_genome', 'vcfstats_outside_GIAB', 'runtime'], verbose=True)
+genomes_table_entry = namedtuple('genomes_table_entry', ['SNVs_called', 'precision', 'recall', 'outside_GIAB', 'runtime'], verbose=True)
+genomes_table = namedtuple('genome_table', 'NA12878', 'NA24385', 'NA24149', 'NA24143')
+
+def get_snp_count(vcfstats_file):
+    snps_re = re.compile("\nSNPs\s+: (\d+)\n")
+    with open(vcfstats_file,'r') as inf:
+        fstr = inf.read()
+        return int(snps_re.findall(fstr)[0])
+
+def make_table_4_genomes(NA12878_table_files, NA24385_table_files,
+                         NA24149_table_files, NA24143_table_files, gq_cutoff):
+
+    def generate_table_line(table_files):
+
+        precision, recall = get_precision_recall(table_files.vcfeval_dir, gq_cutoff)
+        with open(table_files.runtime,'r') as inf:
+            hh, mm, ss = inf.readline().strip().split(':')
+        runtime = hh + ':' + mm
+
+        snvs_total = get_snp_count(table_files.vcfstats_genome)
+        snvs_outside_giab = get_snp_count(table_files.vcfstats_outside_GIAB)
+
+        return genomes_table_entry(SNVs_called=snvs_total, precision=precision, recall=recall,
+                                   outside_GIAB=snvs_outside_GIAB, runtime=runtime)
+
+    NA12878 = generate_table_line(NA12878_table_files)
+    NA24385 = generate_table_line(NA24385_table_files)
+    NA24149 = generate_table_line(NA24149_table_files)
+    NA24143 = generate_table_line(NA24143_table_files)
+
+    s = '''
+\begin{{table}}[htbp]
+\centering
+\begin{{tabular}}{{lrrrrr}}
+\hline
+Genome      & SNVs    & Precision     & Recall    & Outside GIAB  & Run time  \\
+            & called    &    &  & high-confidence       & (hours)          \\
+ \hline
+NA12878   & {} & {:.3f} & {:.3f} & {} & {} \\
+AJ son    & {} & {:.3f} & {:.3f} & {} & {} \\
+AJ father & {} & {:.3f} & {:.3f} & {} & {} \\
+AJ mother & {} & {:.3f} & {:.3f} & {} & {} \\
+\hline
+\end{{tabular}}
+\caption{{{{\bf Summary of variants called on GIAB genomes.}}}}
+\label{{tab:stats}}
+\end{{table}}
+'''.format(table.NA12878.SNVs_called, table.NA12878.precision, table.NA12878.recall, table.NA12878.outside_GIAB, table.NA12878.runtime,
+           table.NA24385.SNVs_called, table.NA24385.precision, table.NA24385.recall, table.NA24385.outside_GIAB, table.NA24385.runtime,
+           table.NA24149.SNVs_called, table.NA24149.precision, table.NA24149.recall, table.NA24149.outside_GIAB, table.NA24149.runtime,
+           table.NA24143.SNVs_called, table.NA24143.precision, table.NA24143.recall, table.NA24143.outside_GIAB, table.NA24143.runtime)
+
+    with open(outfile,'w') as outf:
+        print(s, file=outf)
+
+if __name__ == '__main__':
+    args = parseargs()
+    plot_vcfeval(args.input_dirs, args.labels, args.output_file, args.title)

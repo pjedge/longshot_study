@@ -17,7 +17,7 @@ rule plot_pr_curve_NA24385:
     output:
         png = 'data/plots/NA24385_prec_recall_{chrom}.png'
     run:
-        plot_vcfeval.plot_vcfeval(['data/NA24385/vcfeval/illumina_60x.filtered/{}'.format(wildcards.chrom),
+        ptf.plot_vcfeval(['data/NA24385/vcfeval/illumina_60x.filtered/{}'.format(wildcards.chrom),
                                    'data/NA24385/vcfeval/reaper.pacbio.ngmlr.20x.-z/{}'.format(wildcards.chrom),
                                    'data/NA24385/vcfeval/reaper.pacbio.ngmlr.30x.-z/{}'.format(wildcards.chrom),
                                    'data/NA24385/vcfeval/reaper.pacbio.ngmlr.40x.-z/{}'.format(wildcards.chrom),

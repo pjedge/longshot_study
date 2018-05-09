@@ -14,7 +14,7 @@ rule plot_pr_curve_NA12878:
     output:
         png = 'data/plots/NA12878_prec_recall_{chrom}.png'
     run:
-        plot_vcfeval.plot_vcfeval(['data/NA12878/vcfeval/illumina_30x.filtered/{}'.format(wildcards.chrom),
+        ptf.plot_vcfeval(['data/NA12878/vcfeval/illumina_30x.filtered/{}'.format(wildcards.chrom),
                                    'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z/{}'.format(wildcards.chrom),
                                    'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z/{}'.format(wildcards.chrom)],
                                    ['Freebayes, Illumina 30x',

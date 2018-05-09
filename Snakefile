@@ -1,5 +1,5 @@
 import paper_tables_and_figures as ptf
-import time
+import time, datetime
 from replace_empty_gt_with_reference import replace_empty_gt_with_reference
 
 include: "simulation.snakefile"
@@ -43,7 +43,10 @@ rule all:
         'data/plots/simulation_prec_recall_in_segdups_1.png',
         'data/plots/chr1_simulated_60x_pacbio_mismapped_read_distribution.segdup.png',
         'data/plots/chr1_simulated_60x_pacbio_mismapped_read_distribution.png',
-        'data/aj_trio/duplicated_regions/trio_shared_variant_sites/mendelian/1.vcf.gz'
+        'data/aj_trio/duplicated_regions/trio_shared_variant_sites/mendelian/1.vcf.gz',
+        'data/output/four_GIAB_genomes_table.1.GQ50.tex',
+        'data/plots/simulation_pr_barplot_genome_vs_segdup.1.GQ50.png'
+
 
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
 # therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.

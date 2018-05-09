@@ -7,6 +7,7 @@ import gzip
 import argparse
 import numpy as np
 import re
+from collections import namedtuple
 
 
 mpl.rc('legend', fontsize=9)
@@ -158,7 +159,7 @@ def get_precision_recall(vcfeval_dir, gq_cutoff):
 def plot_precision_recall_bars_simulation(pacbio_dirlist_genome, illumina_dirlist_genome, pacbio_dirlist_segdup, illumina_dirlist_segdup, gq_cutoff, labels, output_file):
 
     plt.figure(figsize=(7,5))
-    mpl.rcParams['axes.titlepad'] = 50
+    #mpl.rcParams['axes.titlepad'] = 50
 
     width = 0.15
     alpha1 = 0.6
@@ -252,9 +253,8 @@ def plot_precision_recall_bars_simulation(pacbio_dirlist_genome, illumina_dirlis
     #plt.show()
     plt.savefig(output_file)
 
-genomes_table_files = namedtuple('genomes_table_files', ['vcfeval_dir', 'vcfstats_genome', 'vcfstats_outside_GIAB', 'runtime'], verbose=True)
-genomes_table_entry = namedtuple('genomes_table_entry', ['SNVs_called', 'precision', 'recall', 'outside_GIAB', 'runtime'], verbose=True)
-genomes_table = namedtuple('genome_table', 'NA12878', 'NA24385', 'NA24149', 'NA24143')
+genomes_table_files = namedtuple('genomes_table_files', ['vcfeval_dir', 'vcfstats_genome', 'vcfstats_outside_GIAB', 'runtime'])
+genomes_table_entry = namedtuple('genomes_table_entry', ['SNVs_called', 'precision', 'recall', 'outside_GIAB', 'runtime'])
 
 def get_snp_count(vcfstats_file):
     snps_re = re.compile("\nSNPs\s+: (\d+)\n")

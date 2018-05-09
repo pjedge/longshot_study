@@ -221,7 +221,7 @@ def plot_precision_recall_bars_simulation(pacbio_dirlist_genome, illumina_dirlis
     ax.set_xticks(np.array(ind)+1.5*width)
     ax.set_xticklabels(labels+labels)
 
-    #ax.set_yscale('log')
+    #ax.set_yscale('log')NA12878_prec_recall_{chrom}
     #plt.xlim(())
     #plt.ylim((0,1.0))
     #plt.legend(loc='upper left')

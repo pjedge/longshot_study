@@ -45,8 +45,58 @@ rule all:
         'data/plots/chr1_simulated_60x_pacbio_mismapped_read_distribution.png',
         'data/aj_trio/duplicated_regions/trio_shared_variant_sites/mendelian/1.vcf.gz',
         'data/output/four_GIAB_genomes_table.1.GQ50.tex',
-        'data/plots/simulation_pr_barplot_genome_vs_segdup.1.GQ50.png'
+        'data/plots/simulation_pr_barplot_genome_vs_segdup.1.GQ50.png',
+        'data/plots/effect_of_haplotyping.giab_individuals.prec_recall_1.png',
+        'data/plots/effect_of_haplotyping.NA12878.prec_recall_1.png',
 
+
+# NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
+# therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
+rule vcfeval_rtgtools_hap_iteration:
+    params: job_name = 'vcfeval_rtgtools.round_{r}_hap.{dataset}.{calls_name}.{chrom}',
+            region_arg = lambda wildcards: '--region={}'.format(wildcards.chrom) if wildcards.chrom != 'all' else ''
+    input:  calls_vcf = 'data/{dataset}/variants/{calls_name}/{chrom}.debug/3.{r}.haplotype_genotype_iteration.vcf.gz',
+            calls_ix = 'data/{dataset}/variants/{calls_name}/{chrom}.debug/3.{r}.haplotype_genotype_iteration.vcf.gz.tbi',
+            ground_truth = 'data/{dataset}/variants/ground_truth/ground_truth.SNVs_ONLY.vcf.gz',
+            ground_truth_ix = 'data/{dataset}/variants/ground_truth/ground_truth.SNVs_ONLY.vcf.gz.tbi',
+            region_filter ='data/{dataset}/variants/ground_truth/region_filter.bed',
+            tg_sdf = 'data/genomes/1000g_v37_phase2.sdf'
+    output: done = 'data/{dataset}/vcfeval_3.{r}/{calls_name}/{chrom}.done'
+    shell:
+        '''
+        {RTGTOOLS} RTG_MEM=12g vcfeval \
+        {params.region_arg} \
+        -c {input.calls_vcf} \
+        -b {input.ground_truth} \
+        -e {input.region_filter} \
+        -t {input.tg_sdf} \
+        -o data/{wildcards.dataset}/vcfeval_3.{wildcards.r}/{wildcards.calls_name}/{wildcards.chrom};
+        cp data/{wildcards.dataset}/vcfeval_3.{wildcards.r}/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
+        '''
+
+# NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
+# therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
+rule vcfeval_rtgtools_no_haplotype_info:
+    params: job_name = 'vcfeval_rtgtools_no_haplotype_info.{dataset}.{calls_name}.{chrom}',
+            region_arg = lambda wildcards: '--region={}'.format(wildcards.chrom) if wildcards.chrom != 'all' else ''
+    input:  calls_vcf = 'data/{dataset}/variants/{calls_name}/{chrom}.debug/2.0.realigned_genotypes.vcf.gz',
+            calls_ix = 'data/{dataset}/variants/{calls_name}/{chrom}.debug/2.0.realigned_genotypes.vcf.gz.tbi',
+            ground_truth = 'data/{dataset}/variants/ground_truth/ground_truth.SNVs_ONLY.vcf.gz',
+            ground_truth_ix = 'data/{dataset}/variants/ground_truth/ground_truth.SNVs_ONLY.vcf.gz.tbi',
+            region_filter ='data/{dataset}/variants/ground_truth/region_filter.bed',
+            tg_sdf = 'data/genomes/1000g_v37_phase2.sdf'
+    output: done = 'data/{dataset}/vcfeval_no_haps/{calls_name}/{chrom}.done'
+    shell:
+        '''
+        {RTGTOOLS} RTG_MEM=12g vcfeval \
+        {params.region_arg} \
+        -c {input.calls_vcf} \
+        -b {input.ground_truth} \
+        -e {input.region_filter} \
+        -t {input.tg_sdf} \
+        -o data/{wildcards.dataset}/vcfeval_no_haps/{wildcards.calls_name}/{wildcards.chrom};
+        cp data/{wildcards.dataset}/vcfeval_no_haps/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
+        '''
 
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
 # therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
@@ -76,7 +126,8 @@ rule vcfeval_rtgtools:
 # therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
 rule rtg_filter_SNVs_ground_truth:
     params: job_name = 'rtg_filter_SNVs_ground_truth.{dataset}',
-    input:  vcfgz = 'data/{dataset}/variants/ground_truth/ground_truth.vcf.gz'
+    input:  vcfgz = 'data/{dataset}/variants/ground_truth/ground_truth.vcf.gz',
+            tbi   = 'data/{dataset}/variants/ground_truth/ground_truth.vcf.gz.tbi'
     output: vcfgz = 'data/{dataset}/variants/ground_truth/ground_truth.SNVs_ONLY.vcf.gz',
     shell: '{RTGTOOLS} RTG_MEM=12g vcffilter --snps-only --no-index -i {input.vcfgz} -o {output.vcfgz}'
 
@@ -139,6 +190,7 @@ rule run_reaper:
             hs37d5_ix = 'data/genomes/hs37d5.fa.fai'
     output: vcf = 'data/{dataset}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.vcf',
             debug = 'data/{dataset}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug',
+            no_hap_vcf = 'data/{dataset}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug/2.0.realigned_genotypes.vcf',
             runtime = 'data/{dataset}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.vcf.runtime'
     run:
         options_str = wildcards.options.replace('_',' ')
@@ -148,6 +200,9 @@ rule run_reaper:
             t2 = time.time()
             # remove 'chr' from reference name in vcf
             remove_chr_from_vcf(output.vcf+'.tmp',output.vcf)
+            # remove 'chr' from no-haplotype version of vcf
+            remove_chr_from_vcf(output.no_hap_vcf, output.no_hap_vcf+'.tmp')
+            shell('mv {debug_no_hap_vcf}.tmp {debug_no_hap_vcf}')
         else:
             t1 = time.time()
             shell('{REAPER} -r {wildcards.chrom} -F -d {output.debug} {options_str} -s {wildcards.dataset} --bam {input.bam} --ref {input.hs37d5} --out {output.vcf}')
@@ -229,6 +284,13 @@ rule bgzip_vcf_calls:
     params: job_name = 'bgzip_vcf_calls.{dataset}.{calls_name}.{chrom}'
     input:  'data/{dataset}/variants/{calls_name}/{chrom}.vcf'
     output: 'data/{dataset}/variants/{calls_name}/{chrom,(all|X|\d+)}.vcf.gz'
+    shell:  '{BGZIP} -c {input} > {output}'
+
+# bgzip vcf
+rule bgzip_debug_vcf_calls:
+    params: job_name = 'bgzip_no_hap_vcf_calls.{x}.{dataset}.{calls_name}.{chrom}'
+    input:  'data/{dataset}/variants/{calls_name}/{chrom}.debug/{x}.vcf'
+    output: 'data/{dataset}/variants/{calls_name}/{chrom,(all|X|\d+)}.debug/{x}.vcf.gz'
     shell:  '{BGZIP} -c {input} > {output}'
 
 # bgzip vcf

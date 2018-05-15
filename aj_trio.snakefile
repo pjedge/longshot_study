@@ -41,7 +41,8 @@ rule merge_SNVs_gt_30_trio:
 rule filter_SNVs_gt_30_trio:
     params: job_name = 'filter_SNVs_gt_30_trio.{id}.{callset}.{chrom}'
     input:  region_bed = 'data/aj_trio/duplicated_regions/trio_covered_regions/{chrom}.cov_greater_than_30.trio_intersect.segmental_duplications.bed',
-            vcfgz = 'data/{id}/variants/{callset}/{chrom}.vcf.gz'
+            vcfgz = 'data/{id}/variants/{callset}/{chrom}.vcf.gz',
+            tbi = 'data/{id}/variants/{callset}/{chrom}.vcf.gz.tbi'
     output: vcfgz = 'data/aj_trio/duplicated_regions/trio_shared_variant_sites/{id}/{callset}/{chrom, (\d+|X|Y)}.vcf.gz',
     shell: '{RTGTOOLS} RTG_MEM=12g vcffilter --bed-regions={input.region_bed} -i {input.vcfgz} -o {output.vcfgz}'
 

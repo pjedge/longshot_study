@@ -263,7 +263,8 @@ def get_snp_count(vcfstats_file):
         return int(snps_re.findall(fstr)[0])
 
 def make_table_4_genomes(NA12878_table_files, NA24385_table_files,
-                         NA24149_table_files, NA24143_table_files, gq_cutoff):
+                         NA24149_table_files, NA24143_table_files,
+                         gq_cutoff, outfile):
 
     def generate_table_line(table_files):
 
@@ -276,7 +277,7 @@ def make_table_4_genomes(NA12878_table_files, NA24385_table_files,
         snvs_outside_giab = get_snp_count(table_files.vcfstats_outside_GIAB)
 
         return genomes_table_entry(SNVs_called=snvs_total, precision=precision, recall=recall,
-                                   outside_GIAB=snvs_outside_GIAB, runtime=runtime)
+                                   outside_GIAB=snvs_outside_giab, runtime=runtime)
 
     NA12878 = generate_table_line(NA12878_table_files)
     NA24385 = generate_table_line(NA24385_table_files)
@@ -284,26 +285,26 @@ def make_table_4_genomes(NA12878_table_files, NA24385_table_files,
     NA24143 = generate_table_line(NA24143_table_files)
 
     s = '''
-\begin{{table}}[htbp]
-\centering
-\begin{{tabular}}{{lrrrrr}}
-\hline
-Genome      & SNVs    & Precision     & Recall    & Outside GIAB  & Run time  \\
-            & called    &    &  & high-confidence       & (hours)          \\
- \hline
-NA12878   & {} & {:.3f} & {:.3f} & {} & {} \\
-AJ son    & {} & {:.3f} & {:.3f} & {} & {} \\
-AJ father & {} & {:.3f} & {:.3f} & {} & {} \\
-AJ mother & {} & {:.3f} & {:.3f} & {} & {} \\
-\hline
-\end{{tabular}}
-\caption{{{{\bf Summary of variants called on GIAB genomes.}}}}
-\label{{tab:stats}}
-\end{{table}}
-'''.format(table.NA12878.SNVs_called, table.NA12878.precision, table.NA12878.recall, table.NA12878.outside_GIAB, table.NA12878.runtime,
-           table.NA24385.SNVs_called, table.NA24385.precision, table.NA24385.recall, table.NA24385.outside_GIAB, table.NA24385.runtime,
-           table.NA24149.SNVs_called, table.NA24149.precision, table.NA24149.recall, table.NA24149.outside_GIAB, table.NA24149.runtime,
-           table.NA24143.SNVs_called, table.NA24143.precision, table.NA24143.recall, table.NA24143.outside_GIAB, table.NA24143.runtime)
+\\begin{{table}}[htbp]
+\\centering
+\\begin{{tabular}}{{lrrrrr}}
+\\hline
+Genome      & SNVs    & Precision     & Recall    & Outside GIAB  & Run time  \\\\
+            & called    &    &  & high-confidence       & (hours)          \\\\
+\\hline
+NA12878   & {} & {:.3f} & {:.3f} & {} & {} \\\\
+AJ son    & {} & {:.3f} & {:.3f} & {} & {} \\\\
+AJ father & {} & {:.3f} & {:.3f} & {} & {} \\\\
+AJ mother & {} & {:.3f} & {:.3f} & {} & {} \\\\
+\\hline
+\\end{{tabular}}
+\\caption{{{{\\bf Summary of variants called on GIAB genomes.}}}}
+\\label{{tab:stats}}
+\\end{{table}}
+'''.format(NA12878.SNVs_called, NA12878.precision, NA12878.recall, NA12878.outside_GIAB, NA12878.runtime,
+           NA24385.SNVs_called, NA24385.precision, NA24385.recall, NA24385.outside_GIAB, NA24385.runtime,
+           NA24149.SNVs_called, NA24149.precision, NA24149.recall, NA24149.outside_GIAB, NA24149.runtime,
+           NA24143.SNVs_called, NA24143.precision, NA24143.recall, NA24143.outside_GIAB, NA24143.runtime)
 
     with open(outfile,'w') as outf:
         print(s, file=outf)

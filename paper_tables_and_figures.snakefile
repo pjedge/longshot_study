@@ -1,49 +1,94 @@
 from paper_tables_and_figures import genomes_table_files
 
+rule plot_pr_curve_NA12878_impact_of_haplotyping:
+    params: job_name = 'plot_pr_curve_NA12878_impact_of_haplotyping',
+            title = 'NA12878: Impact of Haplotype Information on PacBio Variant Calling with Reaper'
+    input:
+        NA12878_3_0 = 'data/NA12878/vcfeval_3.0/reaper.pacbio.blasr.44x.-z/{chrom}.done',
+        NA12878_no_hap = 'data/NA12878/vcfeval_no_haps/reaper.pacbio.blasr.44x.-z/{chrom}.done'
+    output:
+        png = 'data/plots/effect_of_haplotyping.NA12878.prec_recall_{chrom}.png'
+    run:
+        ptf.plot_vcfeval([input.NA12878_3_0[:-5], input.NA12878_no_hap[:-5]],
+                         ['NA12878, 44x (one round hap)',  'NA12878, 44x (no hap)'],
+                           output.png,params.title,
+                           colors=['b','y'],
+                           xlim=(0.9,1.0),ylim=(0.99,1.0))
+
+rule plot_pr_curve_impact_of_haplotyping:
+    params: job_name = 'plot_pr_curve_impact_of_haplotyping',
+            title = 'Impact of Haplotype Information on PacBio Variant Calling with Reaper'
+    input:
+        NA12878_hap = 'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z/{chrom}.done',
+        NA24385_hap = 'data/NA24385/vcfeval/reaper.pacbio.ngmlr.69x.-z/{chrom}.done',
+        NA24149_hap = 'data/NA24149/vcfeval/reaper.pacbio.ngmlr.32x.-z/{chrom}.done',
+        NA24143_hap = 'data/NA24143/vcfeval/reaper.pacbio.ngmlr.30x.-z/{chrom}.done',
+        NA12878_no_hap = 'data/NA12878/vcfeval_no_haps/reaper.pacbio.blasr.44x.-z/{chrom}.done',
+        NA24385_no_hap = 'data/NA24385/vcfeval_no_haps/reaper.pacbio.ngmlr.69x.-z/{chrom}.done',
+        NA24149_no_hap = 'data/NA24149/vcfeval_no_haps/reaper.pacbio.ngmlr.32x.-z/{chrom}.done',
+        NA24143_no_hap = 'data/NA24143/vcfeval_no_haps/reaper.pacbio.ngmlr.30x.-z/{chrom}.done'
+    output:
+        png = 'data/plots/effect_of_haplotyping.giab_individuals.prec_recall_{chrom}.png'
+    run:
+        ptf.plot_vcfeval([input.NA12878_hap[:-5], input.NA12878_no_hap[:-5],
+                          input.NA24385_hap[:-5], input.NA24385_no_hap[:-5],
+                          input.NA24149_hap[:-5], input.NA24149_no_hap[:-5],
+                          input.NA24143_hap[:-5], input.NA24143_no_hap[:-5]],
+                         ['NA12878, 44x (hap)', 'NA12878, 44x (no hap)',
+                          'NA24385, 69x (hap)', 'NA24385, 69x (no hap)',
+                          'NA24149, 32x (hap)', 'NA24149, 32x (no hap)',
+                          'NA24143, 30x (hap)', 'NA24143, 30x (no hap)'],
+                           output.png,params.title,
+                           colors=['#ff0000','#ff4f4f', # red
+                                   '#02fc0a','#4af950', # green
+                                   '#0400fc','#514efc', # blue
+                                   '#ffff02','#ffff6b'], # yellow
+                           xlim=(0.5,1.0),ylim=(0.95,1.0))
+
 rule make_four_genomes_table:
     params: job_name = 'make_four_genomes_table.{chrom}.{GQ}'
     input:
-        NA12878_vcfeval_dir = 'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z/{chrom}.done',
+        NA12878_vcfeval = 'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z/{chrom}.done',
         NA12878_vcfstats_genome = 'data/NA12878/variants/reaper.pacbio.blasr.44x.-z/{chrom}.GQ{GQ}.vcf.stats',
         NA12878_vcfstats_outside_giab = 'data/NA12878/variants/reaper.pacbio.blasr.44x.-z/{chrom}.outside_GIAB.GQ{GQ}.vcf.stats',
         NA12878_runtime = 'data/NA12878/variants/reaper.pacbio.blasr.44x.-z/{chrom}.vcf.runtime',
-        NA24385_vcfeval_dir = 'data/NA24385/vcfeval/reaper.pacbio.ngmlr.69x.-z/{chrom}.done',
+        NA24385_vcfeval = 'data/NA24385/vcfeval/reaper.pacbio.ngmlr.69x.-z/{chrom}.done',
         NA24385_vcfstats_genome = 'data/NA24385/variants/reaper.pacbio.ngmlr.69x.-z/{chrom}.GQ{GQ}.vcf.stats',
         NA24385_vcfstats_outside_giab = 'data/NA24385/variants/reaper.pacbio.ngmlr.69x.-z/{chrom}.outside_GIAB.GQ{GQ}.vcf.stats',
         NA24385_runtime = 'data/NA24385/variants/reaper.pacbio.ngmlr.69x.-z/{chrom}.vcf.runtime',
-        NA24149_vcfeval_dir = 'data/NA24149/vcfeval/reaper.pacbio.ngmlr.32x.-z/{chrom}.done',
+        NA24149_vcfeval = 'data/NA24149/vcfeval/reaper.pacbio.ngmlr.32x.-z/{chrom}.done',
         NA24149_vcfstats_genome = 'data/NA24149/variants/reaper.pacbio.ngmlr.32x.-z/{chrom}.GQ{GQ}.vcf.stats',
         NA24149_vcfstats_outside_giab = 'data/NA24149/variants/reaper.pacbio.ngmlr.32x.-z/{chrom}.outside_GIAB.GQ{GQ}.vcf.stats',
         NA24149_runtime = 'data/NA24149/variants/reaper.pacbio.ngmlr.32x.-z/{chrom}.vcf.runtime',
-        NA24143_vcfeval_dir = 'data/NA24143/vcfeval/reaper.pacbio.ngmlr.30x.-z/{chrom}.done',
+        NA24143_vcfeval = 'data/NA24143/vcfeval/reaper.pacbio.ngmlr.30x.-z/{chrom}.done',
         NA24143_vcfstats_genome = 'data/NA24143/variants/reaper.pacbio.ngmlr.30x.-z/{chrom}.GQ{GQ}.vcf.stats',
         NA24143_vcfstats_outside_giab = 'data/NA24143/variants/reaper.pacbio.ngmlr.30x.-z/{chrom}.outside_GIAB.GQ{GQ}.vcf.stats',
         NA24143_runtime = 'data/NA24143/variants/reaper.pacbio.ngmlr.30x.-z/{chrom}.vcf.runtime',
     output:
         table = 'data/output/four_GIAB_genomes_table.{chrom}.GQ{GQ}.tex'
     run:
-        NA12878_table_files = genomes_table_files(input.NA12878_vcfeval_dir,
+        NA12878_table_files = genomes_table_files(input.NA12878_vcfeval[:-5],
                                                   input.NA12878_vcfstats_genome,
                                                   input.NA12878_vcfstats_outside_giab,
                                                   input.NA12878_runtime)
 
-        NA24385_table_files = genomes_table_files(input.NA24385_vcfeval_dir,
+        NA24385_table_files = genomes_table_files(input.NA24385_vcfeval[:-5],
                                                   input.NA24385_vcfstats_genome,
                                                   input.NA24385_vcfstats_outside_giab,
                                                   input.NA24385_runtime)
 
-        NA24149_table_files = genomes_table_files(input.NA24149_vcfeval_dir,
+        NA24149_table_files = genomes_table_files(input.NA24149_vcfeval[:-5],
                                                   input.NA24149_vcfstats_genome,
                                                   input.NA24149_vcfstats_outside_giab,
                                                   input.NA24149_runtime)
 
-        NA24143_table_files = genomes_table_files(input.NA24143_vcfeval_dir,
+        NA24143_table_files = genomes_table_files(input.NA24143_vcfeval[:-5],
                                                   input.NA24143_vcfstats_genome,
                                                   input.NA24143_vcfstats_outside_giab,
                                                   input.NA24143_runtime)
         ptf.make_table_4_genomes(NA12878_table_files, NA24385_table_files,
                                  NA24149_table_files, NA24143_table_files,
-                                 gq_cutoff=float(wildcards.GQ))
+                                 float(wildcards.GQ), output.table)
 
 rule vcf_stats:
     params: job_name = lambda wildcards: 'vcf_stats.{}'.format(str(wildcards.x).replace("/", "."))

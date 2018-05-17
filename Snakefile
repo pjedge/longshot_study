@@ -33,7 +33,7 @@ BWA = '/home/pedge/installed/bwa'
 BCFTOOLS = '/opt/biotools/bcftools/bin/bcftools'
 PYFAIDX = '/home/pedge/installed/opt/python/bin/faidx'
 chroms = ['{}'.format(i) for i in range(1,23)] + ['X']
-BEDTOOLS = '/opt/biotools/bedtools/bin/bedtools'
+BEDTOOLS = 'bedtools' # v 2.27
 
 # DEFAULT
 rule all:
@@ -250,13 +250,13 @@ rule download_1000g_v37_phase2_sdf:
         '''
 
 rule download_HS37D5:
-    params: job_name = 'download_hs37d',
+    params: job_name = 'download_hs37d5',
     output: 'data/genomes/hs37d5.fa'
     shell: 'wget {HS37D5_URL} -O {output}.gz; gunzip {output}.gz'
 
 rule convert_genome_track_to_1000g:
-    params: job_name = 'download_hs37d',
-    input: track = 'genome_tracks/{track}_hg19.bed.gz'
+    params: job_name = 'convert_genome_track_to_1000g.{track}',
+    input: track = 'genome_tracks/{track}_hg19.bed.gz',
            names = 'genome_tracks/names.txt'
     output: track = 'genome_tracks/{track}_1000g.bed.gz'
     shell:
@@ -294,11 +294,18 @@ rule bgzip_ground_truth:
     output: 'data/{dataset}/variants/ground_truth/ground_truth.vcf.gz'
     shell:  '{BGZIP} -c {input} > {output}'
 
-# gunzip
-rule gunzip:
-    params: job_name = lambda wildcards: 'gunzip.{}'.format(str(wildcards.x).replace("/", "."))
-    input:  '{x}.gz'
-    output: '{x}'
+# gunzip fasta
+rule gunzip_fasta:
+    params: job_name = lambda wildcards: 'gunzip_fasta.{}'.format(str(wildcards.x).replace("/", "."))
+    input:  '{x}.fa.gz'
+    output: '{x}.fa'
+    shell:  'gunzip {input}'
+
+# gunzip_bed
+rule gunzip_bed:
+    params: job_name = lambda wildcards: 'gunzip_bed.{}'.format(str(wildcards.x).replace("/", "."))
+    input:  '{x}.bed.gz'
+    output: '{x}.bed'
     shell:  'gunzip -c {input} > {output}'
 
 # index fasta reference

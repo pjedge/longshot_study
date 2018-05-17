@@ -62,7 +62,7 @@ def plot_vcfeval(dirlist, labels, output_file, title, colors=['r','#3333ff','#cc
                     el = [float(x) for x in line.strip().split()]
                     assert(len(el) == 8)
                     #quals.append(el[0])
-                    precisions.append(el[5]))
+                    precisions.append(el[5])
                     recalls.append(el[6])
 
         plt.plot(recalls, precisions, color=color,label=label,linewidth=3,alpha=0.75)
@@ -97,7 +97,7 @@ def get_precision_recall(vcfeval_dir, gq_cutoff):
     precision = None
     qual = None
 
-    with gzip.open(os.path.join(path,'snp_roc.tsv.gz'),mode='rt') as inf:
+    with gzip.open(os.path.join(vcfeval_dir,'snp_roc.tsv.gz'),mode='rt') as inf:
 
         for line in inf:
             if line[0] == '#':
@@ -110,7 +110,7 @@ def get_precision_recall(vcfeval_dir, gq_cutoff):
                     break
 
                 qual = new_qual
-                precision = el[5])
+                precision = el[5]
                 recall = el[6]
 
     # this should be true for large enough datasets, like we will look at,

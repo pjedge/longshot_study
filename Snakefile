@@ -215,11 +215,24 @@ rule download_HS37D5:
     output: 'data/genomes/hs37d5.fa'
     shell: 'wget {HS37D5_URL} -O {output}.gz; gunzip {output}.gz'
 
-rule index_vcf:
-    params: job_name = lambda wildcards: 'tabix_vcf.{}'.format(str(wildcards.x).replace("/", "."))
-    input:  '{x}.vcf.gz'
-    output: '{x}.vcf.gz.tbi'
-    shell:  '{TABIX} -f -p vcf {input}'
+rule convert_genome_track_to_1000g:
+    params: job_name = 'download_hs37d',
+    input: track = 'genome_tracks/{track}_hg19.bed.gz'
+           names = 'genome_tracks/names.txt'
+    output: track = 'genome_tracks/{track}_1000g.bed.gz'
+    shell:
+        '''
+        gunzip -c {input.track} | \
+        python3 filter_bed_chroms.py | \
+        bedtools sort -g {input.names} | \
+        bgzip -c > {output.track}
+        '''
+
+rule tabix_index:
+    params: job_name = lambda wildcards: 'tabix_index.{}'.format(str(wildcards.x).replace("/", "."))
+    input:  '{x}.{filetype}.gz'
+    output: '{x}.{filetype}.gz.tbi'
+    shell:  '{TABIX} -f -p {wildcards.filetype} {input}'
 
 # bgzip vcf
 rule bgzip_vcf_calls:
@@ -235,12 +248,12 @@ rule bgzip_ground_truth:
     output: 'data/{dataset}/variants/ground_truth/ground_truth.vcf.gz'
     shell:  '{BGZIP} -c {input} > {output}'
 
-# gunzip fastq
-rule gunzip_fastq:
-    params: job_name = lambda wildcards: 'gunzip_fastq.{}'.format(str(wildcards.x).replace("/", "."))
-    input:  '{x}.fastq.gz'
-    output: '{x}.fastq'
-    shell:  'gunzip {input}'
+# gunzip
+rule gunzip:
+    params: job_name = lambda wildcards: 'gunzip.{}'.format(str(wildcards.x).replace("/", "."))
+    input:  '{x}.gz'
+    output: '{x}'
+    shell:  'gunzip -c {input} > {output}'
 
 # index fasta reference
 rule index_fasta:

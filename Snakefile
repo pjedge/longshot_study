@@ -1,5 +1,5 @@
 import paper_tables_and_figures as ptf
-import time, datetime
+import time
 from replace_empty_gt_with_reference import replace_empty_gt_with_reference
 
 include: "simulation.snakefile"
@@ -23,7 +23,7 @@ SAMTOOLS       = '/opt/biotools/samtools/1.3/bin/samtools' # v1.3
 MINIMAP2       = '/home/pedge/installed/minimap2/minimap2' #2.8-r703-dirty
 FASTQ_DUMP     = 'fastq-dump' # v2.5.2
 REAPER         = '../target/release/reaper' # v0.1
-RTGTOOLS       = '/home/pedge/installed/rtg-tools-3.8.4/rtg' # v3.8.4, https://www.realtimegenomics.com/products/rtg-tools
+RTGTOOLS       = 'rtg' #'/home/pedge/installed/rtg-tools-3.8.4/rtg' # v3.8.4, https://www.realtimegenomics.com/products/rtg-tools
 BGZIP = 'bgzip'
 TABIX = 'tabix'
 FREEBAYES      = '/home/pedge/git/freebayes/bin/freebayes'
@@ -47,47 +47,21 @@ rule all:
         'data/output/four_GIAB_genomes_table.1.GQ50.tex',
         'data/plots/simulation_pr_barplot_genome_vs_segdup.1.GQ50.png',
         'data/plots/effect_of_haplotyping.giab_individuals.prec_recall_1.png',
-        'data/plots/effect_of_haplotyping.NA12878.prec_recall_1.png',
+        #'data/plots/effect_of_haplotyping.NA12878.prec_recall_1.png',
 
-
-# NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
-# therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
-rule vcfeval_rtgtools_hap_iteration:
-    params: job_name = 'vcfeval_rtgtools.round_{r}_hap.{dataset}.{calls_name}.{chrom}',
-            region_arg = lambda wildcards: '--region={}'.format(wildcards.chrom) if wildcards.chrom != 'all' else ''
-    input:  calls_vcf = 'data/{dataset}/variants/{calls_name}/{chrom}.debug/3.{r}.haplotype_genotype_iteration.vcf.gz',
-            calls_ix = 'data/{dataset}/variants/{calls_name}/{chrom}.debug/3.{r}.haplotype_genotype_iteration.vcf.gz.tbi',
-            ground_truth = 'data/{dataset}/variants/ground_truth/ground_truth.SNVs_ONLY.vcf.gz',
-            ground_truth_ix = 'data/{dataset}/variants/ground_truth/ground_truth.SNVs_ONLY.vcf.gz.tbi',
-            region_filter ='data/{dataset}/variants/ground_truth/region_filter.bed',
-            tg_sdf = 'data/genomes/1000g_v37_phase2.sdf'
-    output: done = 'data/{dataset}/vcfeval_3.{r}/{calls_name}/{chrom}.done'
-    shell:
-        '''
-        {RTGTOOLS} RTG_MEM=12g vcfeval \
-        {params.region_arg} \
-        -c {input.calls_vcf} \
-        -b {input.ground_truth} \
-        -e {input.region_filter} \
-        -t {input.tg_sdf} \
-        -o data/{wildcards.dataset}/vcfeval_3.{wildcards.r}/{wildcards.calls_name}/{wildcards.chrom};
-        cp data/{wildcards.dataset}/vcfeval_3.{wildcards.r}/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
-        '''
-
-# NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
-# therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
 rule vcfeval_rtgtools_no_haplotype_info:
     params: job_name = 'vcfeval_rtgtools_no_haplotype_info.{dataset}.{calls_name}.{chrom}',
             region_arg = lambda wildcards: '--region={}'.format(wildcards.chrom) if wildcards.chrom != 'all' else ''
     input:  calls_vcf = 'data/{dataset}/variants/{calls_name}/{chrom}.debug/2.0.realigned_genotypes.vcf.gz',
             calls_ix = 'data/{dataset}/variants/{calls_name}/{chrom}.debug/2.0.realigned_genotypes.vcf.gz.tbi',
-            ground_truth = 'data/{dataset}/variants/ground_truth/ground_truth.SNVs_ONLY.vcf.gz',
-            ground_truth_ix = 'data/{dataset}/variants/ground_truth/ground_truth.SNVs_ONLY.vcf.gz.tbi',
+            ground_truth = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
+            ground_truth_ix = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz.tbi',
             region_filter ='data/{dataset}/variants/ground_truth/region_filter.bed',
             tg_sdf = 'data/genomes/1000g_v37_phase2.sdf'
     output: done = 'data/{dataset}/vcfeval_no_haps/{calls_name}/{chrom}.done'
     shell:
         '''
+        rm -rf data/{wildcards.dataset}/vcfeval_no_haps/{wildcards.calls_name}/{wildcards.chrom}
         {RTGTOOLS} RTG_MEM=12g vcfeval \
         {params.region_arg} \
         -c {input.calls_vcf} \
@@ -98,20 +72,19 @@ rule vcfeval_rtgtools_no_haplotype_info:
         cp data/{wildcards.dataset}/vcfeval_no_haps/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
         '''
 
-# NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
-# therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
 rule vcfeval_rtgtools:
     params: job_name = 'vcfeval_rtgtools.{dataset}.{calls_name}.{chrom}',
             region_arg = lambda wildcards: '--region={}'.format(wildcards.chrom) if wildcards.chrom != 'all' else ''
     input:  calls_vcf = 'data/{dataset}/variants/{calls_name}/{chrom}.vcf.gz',
             calls_ix = 'data/{dataset}/variants/{calls_name}/{chrom}.vcf.gz.tbi',
-            ground_truth = 'data/{dataset}/variants/ground_truth/ground_truth.SNVs_ONLY.vcf.gz',
-            ground_truth_ix = 'data/{dataset}/variants/ground_truth/ground_truth.SNVs_ONLY.vcf.gz.tbi',
+            ground_truth = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
+            ground_truth_ix = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz.tbi',
             region_filter ='data/{dataset}/variants/ground_truth/region_filter.bed',
             tg_sdf = 'data/genomes/1000g_v37_phase2.sdf'
     output: done = 'data/{dataset}/vcfeval/{calls_name}/{chrom}.done'
     shell:
         '''
+        rm -rf data/{wildcards.dataset}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}
         {RTGTOOLS} RTG_MEM=12g vcfeval \
         {params.region_arg} \
         -c {input.calls_vcf} \
@@ -122,14 +95,19 @@ rule vcfeval_rtgtools:
         cp data/{wildcards.dataset}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
         '''
 
-# NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
-# therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
-rule rtg_filter_SNVs_ground_truth:
-    params: job_name = 'rtg_filter_SNVs_ground_truth.{dataset}',
+rule rtg_decompose_variants_ground_truth:
+    params: job_name = 'rtg_decompose_variants_ground_truth.{dataset}',
     input:  vcfgz = 'data/{dataset}/variants/ground_truth/ground_truth.vcf.gz',
             tbi   = 'data/{dataset}/variants/ground_truth/ground_truth.vcf.gz.tbi'
-    output: vcfgz = 'data/{dataset}/variants/ground_truth/ground_truth.SNVs_ONLY.vcf.gz',
-    shell: '{RTGTOOLS} RTG_MEM=12g vcffilter --snps-only --no-index -i {input.vcfgz} -o {output.vcfgz}'
+    output: vcfgz = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.vcf.gz',
+    shell: '{RTGTOOLS} RTG_MEM=12g vcfdecompose --break-mnps --break-indels -i {input.vcfgz} -o {output.vcfgz}'
+
+rule rtg_filter_SNVs_ground_truth:
+    params: job_name = 'rtg_filter_SNVs_ground_truth.{dataset}',
+    input:  vcfgz = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.vcf.gz',
+            tbi   = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.vcf.gz.tbi'
+    output: vcfgz = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
+    shell: '{RTGTOOLS} RTG_MEM=12g vcffilter --snps-only -i {input.vcfgz} -o {output.vcfgz}'
 
 from filter_SNVs import filter_SNVs
 rule filter_illumina_SNVs:
@@ -202,7 +180,7 @@ rule run_reaper:
             remove_chr_from_vcf(output.vcf+'.tmp',output.vcf)
             # remove 'chr' from no-haplotype version of vcf
             remove_chr_from_vcf(output.no_hap_vcf, output.no_hap_vcf+'.tmp')
-            shell('mv {debug_no_hap_vcf}.tmp {debug_no_hap_vcf}')
+            shell('mv {output.no_hap_vcf}.tmp {output.no_hap_vcf}')
         else:
             t1 = time.time()
             shell('{REAPER} -r {wildcards.chrom} -F -d {output.debug} {options_str} -s {wildcards.dataset} --bam {input.bam} --ref {input.hs37d5} --out {output.vcf}')

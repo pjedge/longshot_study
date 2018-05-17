@@ -1,5 +1,6 @@
 from paper_tables_and_figures import genomes_table_files
 
+'''
 rule plot_pr_curve_NA12878_impact_of_haplotyping:
     params: job_name = 'plot_pr_curve_NA12878_impact_of_haplotyping',
             title = 'NA12878: Impact of Haplotype Information on PacBio Variant Calling with Reaper'
@@ -14,6 +15,7 @@ rule plot_pr_curve_NA12878_impact_of_haplotyping:
                            output.png,params.title,
                            colors=['b','y'],
                            xlim=(0.9,1.0),ylim=(0.99,1.0))
+'''
 
 rule plot_pr_curve_impact_of_haplotyping:
     params: job_name = 'plot_pr_curve_impact_of_haplotyping',
@@ -104,30 +106,30 @@ rule filter_vcf_outside_GIAB:
     input:  vcfgz = 'data/{dataset}/variants/{calls_name}/{chrom}.vcf.gz',
             region_filter = 'data/{dataset}/variants/ground_truth/region_filter.bed'
     output: vcfgz = 'data/{dataset}/variants/{calls_name}/{chrom}.outside_GIAB.GQ{GQ}.vcf.gz',
-    shell: '{RTGTOOLS} RTG_MEM=12g vcffilter --exclude-bed={input.region_filter} -g {wildcards.GQ} --no-index -i {input.vcfgz} -o {output.vcfgz}'
+    shell: '{RTGTOOLS} RTG_MEM=12g vcffilter --exclude-bed={input.region_filter} -g {wildcards.GQ} -i {input.vcfgz} -o {output.vcfgz}'
 
 rule filter_vcf_GQ:
     params: job_name = 'filter_vcf_GQ.{dataset}.{calls_name}.{chrom}.GQ{GQ}'
     input:  vcfgz = 'data/{dataset}/variants/{calls_name}/{chrom}.vcf.gz'
     output: vcfgz = 'data/{dataset}/variants/{calls_name}/{chrom}.GQ{GQ}.vcf.gz',
-    shell: '{RTGTOOLS} RTG_MEM=12g vcffilter -g {wildcards.GQ} --no-index -i {input.vcfgz} -o {output.vcfgz}'
+    shell: '{RTGTOOLS} RTG_MEM=12g vcffilter -g {wildcards.GQ} -i {input.vcfgz} -o {output.vcfgz}'
 
 sim_covs = [20,30,40,80]
 rule plot_simulation_pr_bars:
     params: job_name = 'plot_simulation_pr_bars.{chrom}.GQ{GQ}'
     input:
-        reaper_genome = expand('data/simulation/vcfeval/reaper.pacbio.bwa.{c}x.-z/{{chrom}}',c=sim_covs),
-        illumina_genome = expand('data/simulation/vcfeval/illumina_{c}x.filtered/{{chrom}}',c=sim_covs),
-        reaper_segdup = expand('data/simulation/vcfeval_segdup/reaper.pacbio.bwa.{c}x.-z/{{chrom}}',c=sim_covs),
-        illumina_segdup = expand('data/simulation/vcfeval_segdup/illumina_{c}x.filtered/{{chrom}}',c=sim_covs),
+        reaper_genome = expand('data/simulation/vcfeval/reaper.pacbio.bwa.{c}x.-z/{{chrom}}.done',c=sim_covs),
+        illumina_genome = expand('data/simulation/vcfeval/illumina_{c}x.filtered/{{chrom}}.done',c=sim_covs),
+        reaper_segdup = expand('data/simulation/vcfeval_segdup/reaper.pacbio.bwa.{c}x.-z/{{chrom}}.done',c=sim_covs),
+        illumina_segdup = expand('data/simulation/vcfeval_segdup/illumina_{c}x.filtered/{{chrom}}.done',c=sim_covs),
     output:
         png = 'data/plots/simulation_pr_barplot_genome_vs_segdup.{chrom}.GQ{GQ}.png'
     run:
         ptf.plot_precision_recall_bars_simulation(
-            list(input.reaper_genome),
-            list(input.illumina_genome),
-            list(input.reaper_segdup),
-            list(input.illumina_segdup),
+            [x[:-5] for x in input.reaper_genome],
+            [x[:-5] for x in input.illumina_genome],
+            [x[:-5] for x in input.reaper_segdup],
+            [x[:-5] for x in input.illumina_segdup],
             float(wildcards.GQ),
             sim_covs,
             output.png)

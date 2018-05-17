@@ -3,14 +3,6 @@ import simulate_SNVs
 import pysam
 import mapping_accuracy
 
-SIMLORD = '/home/pedge/installed/opt/python/bin/simlord'
-DWGSIM = '/home/pedge/git/DWGSIM/dwgsim'
-BWA = '/home/pedge/installed/bwa'
-BCFTOOLS = '/opt/biotools/bcftools/bin/bcftools'
-PYFAIDX = '/home/pedge/installed/opt/python/bin/faidx'
-chroms = ['{}'.format(i) for i in range(1,23)] + ['X']
-BEDTOOLS = '/opt/biotools/bedtools/bin/bedtools'
-
 ##################################################################################################################
 # VCFeval and plotting for segmental duplications as opposed to whole genome
 rule plot_pr_curve_simulation_segmental_duplications:
@@ -57,13 +49,14 @@ rule vcfeval_rtgtools_segmental_duplications:
             region_arg = lambda wildcards: '--region={}'.format(wildcards.chrom) if wildcards.chrom != 'all' else ''
     input:  calls_vcf = 'data/{dataset}/variants/{calls_name}/{chrom}.vcf.gz',
             calls_ix = 'data/{dataset}/variants/{calls_name}/{chrom}.vcf.gz.tbi',
-            ground_truth = 'data/{dataset}/variants/ground_truth/ground_truth.SNVs_ONLY.vcf.gz',
-            ground_truth_ix = 'data/{dataset}/variants/ground_truth/ground_truth.SNVs_ONLY.vcf.gz.tbi',
+            ground_truth = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
+            ground_truth_ix = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz.tbi',
             region_filter ='genome_tracks/segmental_duplications_0.99_similar_1000g.bed',
             tg_sdf = 'data/genomes/1000g_v37_phase2.sdf'
     output: done = 'data/{dataset}/vcfeval_segdup/{calls_name}/{chrom,(\d+|X|Y|all)}.done'
     shell:
         '''
+        rm -rf data/{wildcards.dataset}/vcfeval_segdup/{wildcards.calls_name}/{wildcards.chrom}
         {RTGTOOLS} RTG_MEM=12g vcfeval \
         {params.region_arg} \
         -c {input.calls_vcf} \

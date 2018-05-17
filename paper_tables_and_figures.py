@@ -47,12 +47,9 @@ def plot_vcfeval(dirlist, labels, output_file, title, colors=['r','#3333ff','#cc
         print("need to define larger color pallet to plot this many datasets.")
         exit(1)
 
-    print("LABEL QUAL F1 PREC RECALL")
-
     for color, path, label in zip(colors, dirlist,labels):
 
-        total_baseline = None
-        score = []
+        #quals = []
         recalls = []
         precisions = []
 
@@ -60,32 +57,13 @@ def plot_vcfeval(dirlist, labels, output_file, title, colors=['r','#3333ff','#cc
 
             for line in inf:
                 if line[0] == '#':
-                    if '#total baseline variants:' in line:
-                        total_baseline = float(line.strip().split()[3])
                     continue
                 else:
                     el = [float(x) for x in line.strip().split()]
-                    assert(len(el) == 4)
-
-                    score.append(el[0])
-                    #assert(el[1] == el[3])
-
-                    qual = el[0]
-                    TPb = el[1]
-                    TPc = el[3]
-                    FN = total_baseline - el[1]
-                    FP = el[2]
-
-                    prec = TPc/(TPc+FP)
-                    rec = TPb/(TPb+FN)
-                    precisions.append(prec)
-                    recalls.append(rec)
-
-                    f1_score = 2.0 * ((prec * rec) / (prec + rec))
-
-                    print("{} {} {} {} {}".format(label, qual, f1_score, prec, rec))
-
-
+                    assert(len(el) == 8)
+                    #quals.append(el[0])
+                    precisions.append(el[5]))
+                    recalls.append(el[6])
 
         plt.plot(recalls, precisions, color=color,label=label,linewidth=3,alpha=0.75)
 
@@ -115,37 +93,25 @@ def plot_vcfeval(dirlist, labels, output_file, title, colors=['r','#3333ff','#cc
 # (precision, recall) : the precision and recall values for variants above the GQ cutoff
 def get_precision_recall(vcfeval_dir, gq_cutoff):
 
-    total_baseline = None
-    score = []
     recall = None
     precision = None
     qual = None
 
-    with gzip.open(os.path.join(vcfeval_dir,'snp_roc.tsv.gz'),mode='rt') as inf:
+    with gzip.open(os.path.join(path,'snp_roc.tsv.gz'),mode='rt') as inf:
 
         for line in inf:
             if line[0] == '#':
-                if '#total baseline variants:' in line:
-                    total_baseline = float(line.strip().split()[3])
                 continue
             else:
                 el = [float(x) for x in line.strip().split()]
-                assert(len(el) == 4)
-
-                score.append(el[0])
-
-                new_qual = float(el[0])
-                TPb = el[1]
-                TPc = el[3]
-                FN = total_baseline - el[1]
-                FP = el[2]
-
+                assert(len(el) == 8)
+                new_qual = el[0]
                 if new_qual < gq_cutoff:
                     break
 
                 qual = new_qual
-                precision = TPc/(TPc+FP)
-                recall = TPb/(TPb+FN)
+                precision = el[5])
+                recall = el[6]
 
     # this should be true for large enough datasets, like we will look at,
     # and it's a nice sanity check
@@ -222,7 +188,7 @@ def plot_precision_recall_bars_simulation(pacbio_dirlist_genome, illumina_dirlis
     ax.set_xticks(np.array(ind)+1.5*width)
     ax.set_xticklabels(labels+labels)
 
-    #ax.set_yscale('log')
+    #ax.set_yscale('log')NA12878_prec_recall_{chrom}
     #plt.xlim(())
     #plt.ylim((0,1.0))
     #plt.legend(loc='upper left')

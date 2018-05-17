@@ -27,12 +27,15 @@ RTGTOOLS       = '/home/pedge/installed/rtg-tools-3.8.4/rtg' # v3.8.4, https://w
 BGZIP = 'bgzip'
 TABIX = 'tabix'
 FREEBAYES      = '/home/pedge/git/freebayes/bin/freebayes'
-
-# PARAMS
+SIMLORD = '/home/pedge/installed/opt/python/bin/simlord'
+DWGSIM = '/home/pedge/git/DWGSIM/dwgsim'
+BWA = '/home/pedge/installed/bwa'
+BCFTOOLS = '/opt/biotools/bcftools/bin/bcftools'
+PYFAIDX = '/home/pedge/installed/opt/python/bin/faidx'
 chroms = ['{}'.format(i) for i in range(1,23)] + ['X']
+BEDTOOLS = '/opt/biotools/bedtools/bin/bedtools'
 
 # DEFAULT
-
 rule all:
     input:
         'data/plots/NA24385_prec_recall_1.png',
@@ -224,7 +227,7 @@ rule convert_genome_track_to_1000g:
         '''
         gunzip -c {input.track} | \
         python3 filter_bed_chroms.py | \
-        bedtools sort -g {input.names} | \
+        {BEDTOOLS} sort -g {input.names} | \
         bgzip -c > {output.track}
         '''
 

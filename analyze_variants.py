@@ -45,10 +45,8 @@ def analyze_variants(chrom_name, calls_vcfgz, ground_truth_vcfgz, str_tabix_bed_
 
             total += 1
             assert(call.chrom == chrom_name)
-            # does the variant border on a homopolymer of length 3?
-            has_homopol3 = has_homopolymer(ref, call.chrom, call.pos, 3, 3)
-            # does the variant border on a homopolymer of length 6?
-            has_homopol6 = has_homopolymer(ref, call.chrom, call.pos, 6, 6)
+            # does the variant border on a homopolymer of length 5?
+            has_homopol5 = has_homopolymer(ref, call.chrom, call.pos, 5, 5)
 
             # does the variant occur within 30 bp of a true indel?
             near_indel = False
@@ -79,23 +77,36 @@ def analyze_variants(chrom_name, calls_vcfgz, ground_truth_vcfgz, str_tabix_bed_
             for row in sine_bed.fetch(call.chrom, call.pos-1-sine_pad, call.pos+sine_pad, parser=pysam.asBed()):
                 in_SINE = True
 
+            observed_categories = 0
             # iterate appropriate counts
-            if has_homopol3:
-                counts['Borders on homopolymer length >= 3:'] += 1
-            if has_homopol6:
-                counts['Borders on homopolymer length >= 6:'] += 1
+            if has_homopol5:
+                counts['Inside homopolymer length >= 5:'] += 1
+                observed_categories += 1
             if near_indel:
                 counts['Near indel:'] += 1
+                observed_categories += 1
             if in_STR:
                 counts['Inside STR:'] += 1
+                observed_categories += 1
             if in_LINE:
                 counts['Inside LINE:'] += 1
+                observed_categories += 1
             if in_SINE:
                 counts['Inside SINE:'] += 1
+                observed_categories += 1
+
+            if observed_categories >= 2:
+                counts['Multiple categories:'] += 1
 
     for category, count in counts.items():
+        if category == 'Multiple categories:':
+            continue
+
         # pad the category string
         assert(len(category) <= 40)
         category += ''.join([' ']*(40-len(category)))
 
-        print("{} {:.3f}".format(category, count))
+        print("{} {:.3f}".format(category, count / total))
+
+    print('\nNote that these categories are not mutually exclusive and there may be overlap!')
+    print('{} {:.3f}'.format('Multiple categories:', counts['Multiple categories:'] / total))

@@ -1,4 +1,5 @@
 import paper_tables_and_figures as ptf
+from analyze_variants import analyze_variants
 import time
 from replace_empty_gt_with_reference import replace_empty_gt_with_reference
 
@@ -46,7 +47,9 @@ rule all:
         'data/plots/simulation_prec_recall_in_segdups_1.png',
         'data/plots/chr1_simulated_60x_pacbio_mismapped_read_distribution.segdup.png',
         'data/plots/chr1_simulated_60x_pacbio_mismapped_read_distribution.png',
-        'data/aj_trio/duplicated_regions/trio_shared_variant_sites/mendelian/1.vcf.gz'
+        'data/aj_trio/duplicated_regions/trio_shared_variant_sites/mendelian/1.vcf.gz',
+        'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z/1/fp.variant_analysis.txt',
+        'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z/1/fn.variant_analysis.txt'
 
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
 # therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
@@ -71,6 +74,28 @@ rule vcfeval_rtgtools:
         -o data/{wildcards.dataset}/vcfeval/{wildcards.calls_name}/{wildcards.chrom};
         cp data/{wildcards.dataset}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
         '''
+
+rule analyze_variants:
+    params: job_name = 'analyze_variants.{dataset}.{fp_or_fn}.{chrom}.{calls_name}',
+    input:  calls = 'data/{dataset}/vcfeval/{calls_name}/{chrom}/{fp_or_fn}.vcf.gz',
+            ground_truth = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
+            str_bed = 'genome_tracks/STRs_1000g.bed.gz',
+            str_bed_ix = 'genome_tracks/STRs_1000g.bed.gz.tbi',
+            line_bed = 'genome_tracks/LINEs_1000g.bed.gz',
+            line_bed_ix = 'genome_tracks/LINEs_1000g.bed.gz.tbi',
+            sine_bed = 'genome_tracks/SINEs_1000g.bed.gz',
+            sine_bed_ix = 'genome_tracks/SINEs_1000g.bed.gz.tbi',
+            ref_fa = 'data/genomes/hs37d5.fa',
+            ref_fai = 'data/genomes/hs37d5.fa.fai'
+    output: txt = 'data/{dataset}/vcfeval/{calls_name}/{chrom}/{fp_or_fn}.variant_analysis.txt'
+    run:
+        analyze_variants(chrom_name = wildcards.chrom,
+                         calls_vcfgz = input.calls,
+                         ground_truth_vcfgz = input.ground_truth,
+                         str_tabix_bed_file = input.str_bed,
+                         line_tabix_bed_file = input.line_bed,
+                         sine_tabix_bed_file = input.sine_bed,
+                         ref_fa = input.ref_fa)
 
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
 # therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.

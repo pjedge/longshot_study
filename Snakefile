@@ -1,4 +1,5 @@
 import paper_tables_and_figures as ptf
+from analyze_variants import analyze_variants
 import time
 from replace_empty_gt_with_reference import replace_empty_gt_with_reference
 
@@ -50,7 +51,8 @@ rule all:
         'data/output/four_GIAB_genomes_table.1.GQ50.tex',
         'data/plots/simulation_pr_barplot_genome_vs_segdup.1.GQ50.png',
         'data/plots/effect_of_haplotyping.giab_individuals.prec_recall_1.png',
-        #'data/plots/effect_of_haplotyping.NA12878.prec_recall_1.png',
+        'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z/1/fp.variant_analysis.txt',
+        'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z/1/fn.variant_analysis.txt'
 
 rule vcfeval_rtgtools_no_haplotype_info:
     params: job_name = 'vcfeval_rtgtools_no_haplotype_info.{dataset}.{calls_name}.{chrom}',
@@ -104,6 +106,28 @@ rule rtg_decompose_variants_ground_truth:
             tbi   = 'data/{dataset}/variants/ground_truth/ground_truth.vcf.gz.tbi'
     output: vcfgz = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.vcf.gz',
     shell: '{RTGTOOLS} RTG_MEM=12g vcfdecompose --break-mnps --break-indels -i {input.vcfgz} -o {output.vcfgz}'
+
+rule analyze_variants:
+    params: job_name = 'analyze_variants.{dataset}.{fp_or_fn}.{chrom}.{calls_name}',
+    input:  calls = 'data/{dataset}/vcfeval/{calls_name}/{chrom}/{fp_or_fn}.vcf.gz',
+            ground_truth = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
+            str_bed = 'genome_tracks/STRs_1000g.bed.gz',
+            str_bed_ix = 'genome_tracks/STRs_1000g.bed.gz.tbi',
+            line_bed = 'genome_tracks/LINEs_1000g.bed.gz',
+            line_bed_ix = 'genome_tracks/LINEs_1000g.bed.gz.tbi',
+            sine_bed = 'genome_tracks/SINEs_1000g.bed.gz',
+            sine_bed_ix = 'genome_tracks/SINEs_1000g.bed.gz.tbi',
+            ref_fa = 'data/genomes/hs37d5.fa',
+            ref_fai = 'data/genomes/hs37d5.fa.fai'
+    output: txt = 'data/{dataset}/vcfeval/{calls_name}/{chrom}/{fp_or_fn}.variant_analysis.txt'
+    run:
+        analyze_variants(chrom_name = wildcards.chrom,
+                         calls_vcfgz = input.calls,
+                         ground_truth_vcfgz = input.ground_truth,
+                         str_tabix_bed_file = input.str_bed,
+                         line_tabix_bed_file = input.line_bed,
+                         sine_tabix_bed_file = input.sine_bed,
+                         ref_fa = input.ref_fa)
 
 rule rtg_filter_SNVs_ground_truth:
     params: job_name = 'rtg_filter_SNVs_ground_truth.{dataset}',

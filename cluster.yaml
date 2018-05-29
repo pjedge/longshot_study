@@ -8,12 +8,12 @@ __default__:
     walltime:        '20:00:00'
 
 run_reaper:
-    walltime: '50:00:00'
+    walltime: '160:00:00'
     ppn: 2
 
 merge_pacbio_bam_NA12878:
     walltime: '50:00:00'
-    
+
 remap_pacbio_bam_NA12878:
     walltime: '20:00:00'
     ppn: 4
@@ -25,10 +25,26 @@ align_simulated_illumina:
     walltime: '20:00:00'
     ppn: 4
 
-align_simulated_pacbio:
-    walltime: '20:00:00'
+align_simulated_pacbio_bwa:
+    walltime: '50:00:00'
     ppn: 4
 
+align_simulated_pacbio_blasr:
+    walltime: '50:00:00'
+    ppn: 4
+
+align_simulated_pacbio_ngmlr:
+    walltime: '50:00:00'
+    ppn: 4
+
+align_simulated_pacbio_minimap2:
+    walltime: '50:00:00'
+    ppn: 4
+
+sort_simulated_pacbio_blasr:
+    walltime: '50:00:00'
+    ppn: 4
+    
 merge_bams:
     walltime: '100:00:00'
     ppn: 4

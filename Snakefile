@@ -20,8 +20,7 @@ TG_v37_SDF_URL = 'https://s3.amazonaws.com/rtg-datasets/references/1000g_v37_pha
 # PATHS TO TOOLS
 FASTQUTILS = '/home/pedge/installed/ngsutils/bin/fastqutils'
 TWOBITTOFASTA = 'twoBitToFa' # can be downloaded from 'http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/twoBitToFa'
-SAMTOOLS       = '/opt/biotools/samtools/1.3/bin/samtools' # v1.3
-MINIMAP2       = '/home/pedge/installed/minimap2/minimap2' #2.8-r703-dirty
+SAMTOOLS       = 'samtools' # v1.3
 FASTQ_DUMP     = 'fastq-dump' # v2.5.2
 REAPER         = '../target/release/reaper' # v0.1
 RTGTOOLS       = 'rtg' #'/home/pedge/installed/rtg-tools-3.8.4/rtg' # v3.8.4, https://www.realtimegenomics.com/products/rtg-tools
@@ -31,6 +30,9 @@ FREEBAYES      = '/home/pedge/git/freebayes/bin/freebayes'
 SIMLORD = '/home/pedge/installed/opt/python/bin/simlord'
 DWGSIM = '/home/pedge/git/DWGSIM/dwgsim'
 BWA = '/home/pedge/installed/bwa'
+BLASR = 'blasr'
+NGMLR = 'ngmlr'
+MINIMAP2 = 'minimap2'
 BCFTOOLS = '/opt/biotools/bcftools/bin/bcftools'
 PYFAIDX = '/home/pedge/installed/opt/python/bin/faidx'
 chroms = ['{}'.format(i) for i in range(1,23)] + ['X']
@@ -52,7 +54,32 @@ rule all:
         'data/plots/simulation_pr_barplot_genome_vs_segdup.1.GQ50.png',
         'data/plots/effect_of_haplotyping.giab_individuals.prec_recall_1.png',
         'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z/1/fp.variant_analysis.txt',
-        'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z/1/fn.variant_analysis.txt'
+        'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z/1/fn.variant_analysis.txt',
+        'data/plots/PR_curve_3_mappers_AJ_father_chr20.png',
+        #'data/plots/compare_mappers_reaper_in_segdups_simulation_1.png'
+        'data/plots/compare_mappers_no_blasr_reaper_in_segdups_simulation_1.png'
+        #'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-Q_1/1.done',
+        #'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-Q_10/1.done',
+        #'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-Q_20/1.done',
+        #'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-Q_30/1.done',
+        #'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-Q_40/1.done',
+        #'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-Q_50/1.done',
+        #'data/NA12878/vcfeval/reaper.pacbio.blasr.20x.-z_-Q_1/1.done',
+        #'data/NA12878/vcfeval/reaper.pacbio.blasr.20x.-z_-Q_10/1.done',
+        #'data/NA12878/vcfeval/reaper.pacbio.blasr.20x.-z_-Q_20/1.done',
+        #'data/NA12878/vcfeval/reaper.pacbio.blasr.20x.-z_-Q_30/1.done',
+        #'data/NA12878/vcfeval/reaper.pacbio.blasr.20x.-z_-Q_40/1.done',
+        #'data/NA12878/vcfeval/reaper.pacbio.blasr.20x.-z_-Q_50/1.done',
+        #'data/NA12878/vcfeval/reaper.pacbio.blasr.10x.-z_-Q_1/1.done',
+        #'data/NA12878/vcfeval/reaper.pacbio.blasr.10x.-z_-Q_10/1.done',
+        #'data/NA12878/vcfeval/reaper.pacbio.blasr.10x.-z_-Q_20/1.done',
+        #'data/NA12878/vcfeval/reaper.pacbio.blasr.10x.-z_-Q_30/1.done',
+        #'data/NA12878/vcfeval/reaper.pacbio.blasr.10x.-z_-Q_40/1.done',
+        #'data/NA12878/vcfeval/reaper.pacbio.blasr.10x.-z_-Q_50/1.done',
+        #'data/NA24149/vcfeval/reaper.pacbio.blasr.32x.-z/1.done',
+        #'data/NA24149/vcfeval/reaper.pacbio.blasr.32x.-z/20.done',
+        #'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-p/1.done',
+        #'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z_-p/1.done',
 
 rule vcfeval_rtgtools_no_haplotype_info:
     params: job_name = 'vcfeval_rtgtools_no_haplotype_info.{dataset}.{calls_name}.{chrom}',
@@ -110,7 +137,7 @@ rule rtg_decompose_variants_ground_truth:
 rule analyze_variants:
     params: job_name = 'analyze_variants.{dataset}.{fp_or_fn}.{chrom}.{calls_name}',
     input:  calls = 'data/{dataset}/vcfeval/{calls_name}/{chrom}/{fp_or_fn}.vcf.gz',
-            ground_truth = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
+            ground_truth = 'data/{dataset}/variants/ground_truth/ground_truth.vcf.gz', # MUST be the version with indels!
             str_bed = 'genome_tracks/STRs_1000g.bed.gz',
             str_bed_ix = 'genome_tracks/STRs_1000g.bed.gz.tbi',
             line_bed = 'genome_tracks/LINEs_1000g.bed.gz',
@@ -127,7 +154,8 @@ rule analyze_variants:
                          str_tabix_bed_file = input.str_bed,
                          line_tabix_bed_file = input.line_bed,
                          sine_tabix_bed_file = input.sine_bed,
-                         ref_fa = input.ref_fa)
+                         ref_fa = input.ref_fa,
+                         output_file = output.txt)
 
 rule rtg_filter_SNVs_ground_truth:
     params: job_name = 'rtg_filter_SNVs_ground_truth.{dataset}',
@@ -338,6 +366,13 @@ rule index_fasta:
     input:  fa  = '{x}.fa'
     output: fai = '{x}.fa.fai'
     shell:  '{SAMTOOLS} faidx {input.fa}'
+
+# index fasta for minimap2
+rule index_minimap2:
+    params: job_name = lambda wildcards: 'index_minimap2.{}'.format(str(wildcards.x).replace("/", "."))
+    input:  fa  = '{x}.fa'
+    output: mmi = '{x}.fa.mmi'
+    shell:  '{MINIMAP2} -d {output.mmi} {input.fa}'
 
 rule index_bam:
     params: job_name = lambda wildcards: 'index_bam.{}'.format(str(wildcards.x).replace("/", "."))

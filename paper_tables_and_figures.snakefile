@@ -42,6 +42,22 @@ rule plot_pr_curve_varyQ:
                                    '#0400fc','#514efc'], #yellow
                            xlim=(0.85,1.0),ylim=(0.985,1.0))
 
+rule plot_pr_curve_3_mappers:
+    params: job_name = 'plot_pr_curve_3_mappers',
+            title = 'Effect of Mapper on Precision/Recall for Reaper\n32x PacBio data for AJ Father, chr20'
+    input:
+        NA24149_blasr = 'data/NA24149/vcfeval/reaper.pacbio.blasr.32x.-z/20.done',
+        NA24149_ngmlr = 'data/NA24149/vcfeval/reaper.pacbio.ngmlr.32x.-z/20.done',
+        NA24149_bwa = 'data/NA24149/vcfeval/reaper.pacbio.bwa.32x.-z/20.done',
+    output:
+        png = 'data/plots/PR_curve_3_mappers_AJ_father_chr20.png'
+    run:
+        ptf.plot_vcfeval([input.NA24149_blasr[:-5],input.NA24149_ngmlr[:-5],input.NA24149_bwa[:-5]],
+                         ['BLASR', 'NGMLR', 'BWA'],
+                           output.png,params.title,
+                           colors=['k','b','r'],
+                           xlim=(0.5,1.0),ylim=(0.5,1.0))
+
 rule plot_pr_curve_impact_of_haplotyping:
     params: job_name = 'plot_pr_curve_impact_of_haplotyping',
             title = 'Impact of Haplotype Information on PacBio Variant Calling with Reaper'

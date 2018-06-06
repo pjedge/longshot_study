@@ -1,7 +1,8 @@
 
 import pysam
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 
+category_data = namedtuple('category_data',['near_indel', 'in_homopol5', 'in_STR', 'in_LINE', 'in_SINE'])
 # INPUT
 # fasta_object: a pysam indexed fasta object
 # chrom, pos: chromosome name and 1-indexed position to analyze
@@ -29,10 +30,16 @@ def has_homopolymer(fasta_object, chrom, pos, pad=5, run_length=3):
     return False
 
 def analyze_variants(chrom_name, calls_vcfgz, ground_truth_vcfgz, str_tabix_bed_file,
-                     line_tabix_bed_file, sine_tabix_bed_file, ref_fa):
+                     line_tabix_bed_file, sine_tabix_bed_file, ref_fa, output_file):
 
     counts = defaultdict(int)
+
     total = 0
+    near_indel_ct = 0
+    in_homopol5_ct = 0
+    in_STR_ct = 0
+    in_LINE_ct = 0
+    in_SINE_ct = 0
 
     with pysam.VariantFile(calls_vcfgz) as calls, \
         pysam.VariantFile(ground_truth_vcfgz) as ground_truth, \
@@ -45,8 +52,6 @@ def analyze_variants(chrom_name, calls_vcfgz, ground_truth_vcfgz, str_tabix_bed_
 
             total += 1
             assert(call.chrom == chrom_name)
-            # does the variant border on a homopolymer of length 5?
-            has_homopol5 = has_homopolymer(ref, call.chrom, call.pos, 5, 5)
 
             # does the variant occur within 30 bp of a true indel?
             near_indel = False
@@ -58,6 +63,9 @@ def analyze_variants(chrom_name, calls_vcfgz, ground_truth_vcfgz, str_tabix_bed_
                 if is_indel:
                     near_indel = True
                     break
+
+            # does the variant border on a homopolymer of length 5?
+            in_homopol5 = has_homopolymer(ref, call.chrom, call.pos, 5, 5)
 
             # does the variant occur within 5 bases of an STR?
             in_STR = False
@@ -77,36 +85,32 @@ def analyze_variants(chrom_name, calls_vcfgz, ground_truth_vcfgz, str_tabix_bed_
             for row in sine_bed.fetch(call.chrom, call.pos-1-sine_pad, call.pos+sine_pad, parser=pysam.asBed()):
                 in_SINE = True
 
-            observed_categories = 0
-            # iterate appropriate counts
-            if has_homopol5:
-                counts['Inside homopolymer length >= 5:'] += 1
-                observed_categories += 1
-            if near_indel:
-                counts['Near indel:'] += 1
-                observed_categories += 1
-            if in_STR:
-                counts['Inside STR:'] += 1
-                observed_categories += 1
-            if in_LINE:
-                counts['Inside LINE:'] += 1
-                observed_categories += 1
-            if in_SINE:
-                counts['Inside SINE:'] += 1
-                observed_categories += 1
+            near_indel_ct += near_indel
+            in_homopol5_ct += in_homopol5
+            in_STR_ct += in_STR
+            in_LINE_ct += in_LINE
+            in_SINE_ct += in_SINE
 
-            if observed_categories >= 2:
-                counts['Multiple categories:'] += 1
+            counts[category_data(near_indel=near_indel, in_homopol5=in_homopol5,
+                   in_STR=in_STR, in_LINE=in_LINE, in_SINE=in_SINE)] += 1
 
-    for category, count in counts.items():
-        if category == 'Multiple categories:':
-            continue
+    assert(total == sum(counts.values()))
 
-        # pad the category string
-        assert(len(category) <= 40)
-        category += ''.join([' ']*(40-len(category)))
+    with open(output_file, 'w') as outf:
 
-        print("{} {:.3f}".format(category, count / total))
+        print("Fraction of variants in categories (categories may overlap):", file=outf)
+        print("Near true indel (within 30 bp): {:.3f}".format(near_indel_ct/total), file=outf)
+        print("In homopolymer (len >= 5):      {:.3f}".format(in_homopol5_ct/total), file=outf)
+        print("In STR (+- 5 bp):               {:.3f}".format(in_STR_ct/total), file=outf)
+        print("In LINE (+- 5 bp):              {:.3f}".format(in_LINE_ct/total), file=outf)
+        print("In SINE (+- 5 bp):              {:.3f}".format(in_SINE_ct/total), file=outf)
+        print("", file=outf)
+        print("", file=outf)
+        print("Fractions for overlapped categories:", file=outf)
+        print("Near indel\tIn homopolymer\tIn STR\tIn LINE\tIn SINE\tFraction of Variants", file=outf)
+        sorted_counts = sorted(counts.items(),key=lambda x: x[0])
 
-    print('\nNote that these categories are not mutually exclusive and there may be overlap!')
-    print('{} {:.3f}'.format('Multiple categories:', counts['Multiple categories:'] / total))
+        for cats, count in sorted_counts:
+
+            print("{}\t{}\t{}\t{}\t{}\t{:.3f}".format(int(cats.near_indel), int(cats.in_homopol5),
+            int(cats.in_STR), int(cats.in_LINE), int(cats.in_SINE), count / total),file=outf)

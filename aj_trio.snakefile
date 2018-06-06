@@ -16,12 +16,12 @@ rule filter_trio_gq50:
 
 rule merge_SNVs_gt_20_trio:
     params: job_name = 'merge_SNVs_gt_20_trio.{chrom}'
-    input:  vcfgz1 = 'data/aj_trio/duplicated_regions/trio_shared_variant_sites/NA24385/reaper.pacbio.ngmlr.69x.-z/{chrom}.vcf.gz',
-            vcfgz2 = 'data/aj_trio/duplicated_regions/trio_shared_variant_sites/NA24143/reaper.pacbio.ngmlr.30x.-z/{chrom}.vcf.gz',
-            vcfgz3 = 'data/aj_trio/duplicated_regions/trio_shared_variant_sites/NA24149/reaper.pacbio.ngmlr.32x.-z/{chrom}.vcf.gz',
-            tbi1 = 'data/aj_trio/duplicated_regions/trio_shared_variant_sites/NA24143/reaper.pacbio.ngmlr.30x.-z/{chrom}.vcf.gz.tbi',
-            tbi2 = 'data/aj_trio/duplicated_regions/trio_shared_variant_sites/NA24149/reaper.pacbio.ngmlr.32x.-z/{chrom}.vcf.gz.tbi',
-            tbi3 = 'data/aj_trio/duplicated_regions/trio_shared_variant_sites/NA24385/reaper.pacbio.ngmlr.69x.-z/{chrom}.vcf.gz.tbi'
+    input:  vcfgz1 = 'data/aj_trio/duplicated_regions/trio_shared_variant_sites/NA24385/reaper.pacbio.blasr.69x.-z/{chrom}.vcf.gz',
+            vcfgz2 = 'data/aj_trio/duplicated_regions/trio_shared_variant_sites/NA24143/reaper.pacbio.blasr.30x.-z/{chrom}.vcf.gz',
+            vcfgz3 = 'data/aj_trio/duplicated_regions/trio_shared_variant_sites/NA24149/reaper.pacbio.blasr.32x.-z/{chrom}.vcf.gz',
+            tbi1 = 'data/aj_trio/duplicated_regions/trio_shared_variant_sites/NA24143/reaper.pacbio.blasr.30x.-z/{chrom}.vcf.gz.tbi',
+            tbi2 = 'data/aj_trio/duplicated_regions/trio_shared_variant_sites/NA24149/reaper.pacbio.blasr.32x.-z/{chrom}.vcf.gz.tbi',
+            tbi3 = 'data/aj_trio/duplicated_regions/trio_shared_variant_sites/NA24385/reaper.pacbio.blasr.69x.-z/{chrom}.vcf.gz.tbi'
     output: vcfgz = 'data/aj_trio/duplicated_regions/trio_shared_variant_sites/merged/{chrom}.unfiltered.vcf.gz', #'data/aj_trio/duplicated_regions/trio_shared_variant_sites/merged/{chrom}.unfiltered.with_empties.vcf.gz',
     shell: '{RTGTOOLS} RTG_MEM=12g vcfmerge -o {output} {input.vcfgz1} {input.vcfgz2} {input.vcfgz3}'
 
@@ -36,9 +36,9 @@ rule filter_SNVs_gt_20_trio:
 
 rule get_aj_trio_cov_gt_20:
     params: job_name = 'get_aj_trio_cov_gt_20.{chrom}'
-    input:  NA24143_bed = 'data/NA24143/aligned_reads/pacbio/pacbio.ngmlr.{chrom}.30x.cov_greater_than_20.bed',
-            NA24149_bed = 'data/NA24149/aligned_reads/pacbio/pacbio.ngmlr.{chrom}.32x.cov_greater_than_20.bed',
-            NA24385_bed = 'data/NA24385/aligned_reads/pacbio/pacbio.ngmlr.{chrom}.69x.cov_greater_than_20.bed',
+    input:  NA24143_bed = 'data/NA24143/aligned_reads/pacbio/pacbio.blasr.{chrom}.30x.cov_greater_than_20.bed',
+            NA24149_bed = 'data/NA24149/aligned_reads/pacbio/pacbio.blasr.{chrom}.32x.cov_greater_than_20.bed',
+            NA24385_bed = 'data/NA24385/aligned_reads/pacbio/pacbio.blasr.{chrom}.69x.cov_greater_than_20.bed',
             segdup_bed =  'genome_tracks/segmental_duplications_0.99_similar_1000g.bed'
     output: parents_bed = 'data/aj_trio/duplicated_regions/trio_covered_regions/{chrom}.cov_greater_than_20.parents_intersect.bed',
             trio_bed = 'data/aj_trio/duplicated_regions/trio_covered_regions/{chrom}.cov_greater_than_20.trio_intersect.bed',
@@ -52,10 +52,10 @@ rule get_aj_trio_cov_gt_20:
 
 rule generate_coverage_bed:
     params: job_name = 'generate_coverage_bed.cov_greater_than_20.{id}.{chrom}.{cov}x'
-    input:  'data/{id}/aligned_reads/pacbio/pacbio.ngmlr.{chrom}.{cov}x.bam'
-    output: 'data/{id}/aligned_reads/pacbio/pacbio.ngmlr.{chrom}.{cov}x.cov_greater_than_20.bed',
+    input:  'data/{id}/aligned_reads/pacbio/pacbio.blasr.{chrom}.{cov}x.bam'
+    output: 'data/{id}/aligned_reads/pacbio/pacbio.blasr.{chrom}.{cov}x.cov_greater_than_20.bed',
     run:
-        maxcov = int(wildcards.cov)*2
+        maxcov = int(wildcards.cov)*2 # exclude regions more than twice the mean coverage
         shell('''
         {SAMTOOLS} view -F 3844 -q 30 {input} -hb | \
         {BEDTOOLS} genomecov -bga -ibam - | \

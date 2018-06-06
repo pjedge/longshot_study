@@ -12,7 +12,6 @@ include: "aj_trio.snakefile" #
 include: "paper_tables_and_figures.snakefile"
 
 # DATA URLs
-GIAB_AJTRIO_PACBIO_HDF5_INDEX = 'sequence.index.AJtrio_PacBio_MtSinai_NIST_hdf5_08072015.txt'
 HG19_URL     = 'http://hgdownload.cse.ucsc.edu/goldenpath/hg19/bigZips/hg19.2bit'
 HS37D5_URL     = 'ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz'
 HG19_SDF_URL   = 'https://s3.amazonaws.com/rtg-datasets/references/hg19.sdf.zip'

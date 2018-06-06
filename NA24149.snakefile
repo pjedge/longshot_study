@@ -1,8 +1,8 @@
 
-NA24149_PACBIO_NGMLR_BAM_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG003_NA24149_father/PacBio_MtSinai_NIST/Baylor_NGMLR_bam_GRCh37/all_reads.fa.giab_h003_ngmlr-0.2.3_mapped.bam'
-NA24149_PACBIO_BLASR_BAM_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG003_NA24149_father/PacBio_MtSinai_NIST/MtSinai_blasr_bam_GRCh37/hg003_gr37_'
-NA24149_PACBIO_BWA_BAM_URL_PREFIX = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG003_NA24149_father/PacBio_MtSinai_NIST/CSHL_bwamem_bam_GRCh37/BWA-MEM_Chr'
-NA24149_PACBIO_BWA_BAM_URL_SUFFIX = '_HG003_merged_11_12.sort.bam'
+#NA24149_PACBIO_NGMLR_BAM_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG003_NA24149_father/PacBio_MtSinai_NIST/Baylor_NGMLR_bam_GRCh37/all_reads.fa.giab_h003_ngmlr-0.2.3_mapped.bam'
+#NA24149_PACBIO_BLASR_BAM_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG003_NA24149_father/PacBio_MtSinai_NIST/MtSinai_blasr_bam_GRCh37/hg003_gr37_'
+#NA24149_PACBIO_BWA_BAM_URL_PREFIX = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG003_NA24149_father/PacBio_MtSinai_NIST/CSHL_bwamem_bam_GRCh37/BWA-MEM_Chr'
+#NA24149_PACBIO_BWA_BAM_URL_SUFFIX = '_HG003_merged_11_12.sort.bam'
 NA24149_Illumina_60x_BAM_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG003_NA24149_father/NIST_HiSeq_HG003_Homogeneity-12389378/NHGRI_Illumina300X_AJtrio_novoalign_bams/HG003.hs37d5.60x.1.bam'
 NA24149_GIAB_VCF_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG003_NA24149_father/NISTv3.3.2/GRCh37/HG003_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X_CHROM1-22_v.3.3.2_highconf.vcf.gz'
 NA24149_GIAB_HIGH_CONF_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG003_NA24149_father/NISTv3.3.2/GRCh37/HG003_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X_CHROM1-22_v.3.3.2_highconf_noinconsistent.bed'
@@ -11,13 +11,13 @@ rule plot_pr_curve_NA24149:
     params: job_name = 'plot_pr_curve_NA24149',
             title = 'Precision Recall Curve for Reaper on NA24149: PacBio Reads vs Standard Illumina'
     input:
-        reaper32_rtg = 'data/NA24149/vcfeval/reaper.pacbio.ngmlr.32x.-z/{chrom}.done',
+        reaper32_rtg = 'data/NA24149/vcfeval/reaper.pacbio.blasr.32x.-z/{chrom}.done',
         illumina_rtg = 'data/NA24149/vcfeval/illumina_60x.filtered/{chrom}.done'
     output:
         png = 'data/plots/NA24149_prec_recall_{chrom}.png'
     run:
         ptf.plot_vcfeval(['data/NA24149/vcfeval/illumina_60x.filtered/{}'.format(wildcards.chrom),
-                                   'data/NA24149/vcfeval/reaper.pacbio.ngmlr.32x.-z/{}'.format(wildcards.chrom)],
+                                   'data/NA24149/vcfeval/reaper.pacbio.blasr.32x.-z/{}'.format(wildcards.chrom)],
                                    ['Freebayes, Illumina 60x',
                                    'Reaper, PacBio 32x'],
                                    output.png,params.title,
@@ -42,26 +42,15 @@ rule download_GIAB_VCF_NA24149:
     shell: 'wget {NA24149_GIAB_VCF_URL} -O {output}'
 
 # SPLIT PACBIO BAM
-rule split_bam_pacbio_NA24149_NGMLR:
+rule split_bam_pacbio_NA24149_blasr:
     params: job_name = 'split_bam_pacbio_NA24149.{chrom}'
-    input: bam = 'data/NA24149/aligned_reads/pacbio/pacbio.ngmlr.all.32x.bam',
-    output: bam = 'data/NA24149/aligned_reads/pacbio/pacbio.ngmlr.{chrom}.32x.bam',
+    input: bam = 'data/NA24149/aligned_reads/pacbio/pacbio.blasr.all.32x.bam',
+    output: bam = 'data/NA24149/aligned_reads/pacbio/pacbio.blasr.{chrom}.32x.bam',
     shell: '{SAMTOOLS} view -hb {input.bam} {wildcards.chrom} > {output.bam}'
 
-# DOWNLOAD PACBIO BAM
-rule download_pacbio_NA24149_NGMLR:
-    params: job_name = 'download_pacbio_NA24149_NGMLR'
-    output: bam = 'data/NA24149/aligned_reads/pacbio/pacbio.ngmlr.all.32x.bam',
-    shell: 'wget {NA24149_PACBIO_NGMLR_BAM_URL} -O {output.bam}'
-
-# DOWNLOAD PACBIO BAM
-rule download_pacbio_NA24149_BLASR:
-    params: job_name = 'download_pacbio_NA24149_BLASR.{chrom}'
-    output: bam = 'data/NA24149/aligned_reads/pacbio/pacbio.blasr.{chrom}.32x.bam',
-    shell: 'wget {NA24149_PACBIO_BLASR_BAM_URL}{wildcards.chrom}.bam -O {output.bam}'
-
-# DOWNLOAD PACBIO BAM
-rule download_pacbio_NA24149_BWA:
-    params: job_name = 'download_pacbio_NA24149_BWA.{chrom}'
-    output: bam = 'data/NA24149/aligned_reads/pacbio/pacbio.bwa.{chrom}.32x.bam',
-    shell: 'wget {NA24149_PACBIO_BWA_BAM_URL_PREFIX}{wildcards.chrom}{NA24149_PACBIO_BWA_BAM_URL_SUFFIX} -O {output.bam}'
+# RENAME PACBIO BAM
+rule rename_blasr_bam_NA24149:
+    params: job_name = 'rename_blasr_bam_NA24149'
+    input:  'study/data/NA24149/aligned_reads/pacbio/pacbio.blasr.all.giab_full_coverage.bam'
+    output: 'study/data/NA24149/aligned_reads/pacbio/pacbio.blasr.all.32x.bam'
+    shell: 'mv {input} {output}'

@@ -52,8 +52,42 @@ rule download_pacbio_NA24143_NGMLR:
     output: bam = 'data/NA24143/aligned_reads/pacbio/pacbio.ngmlr.all.30x.bam',
     shell: 'wget {NA24143_PACBIO_NGMLR_BAM_URL} -O {output.bam}'
 
+num_hdf5_archives = 132
+hd_id = 'HG004' # NA24143 - AJ mother
+hdf5_file_list = []
+with open(GIAB_AJTRIO_PACBIO_HDF5_INDEX,'r') as infile:
+    for line in infile:
+        el = line.strip().split()
+        assert(len(el) == 3)
+        if el[2] != hd_id:
+            continue
+        hdf5_file_list.append((el[0],el[1]))
+
+    assert(len(hdf5_file_list) == num_hdf5_archives)
+
 # DOWNLOAD PACBIO BAM
-#rule download_pacbio_NA24143:
-#    params: job_name = 'download_pacbio_NA24143.{chrom}'
-#    output: bam = 'data/NA24143/aligned_reads/pacbio/pacbio.blasr.{chrom}.30x.bam',
-#    shell: 'wget {NA24143_PACBIO_BLASR_BAM_URL}{wildcards.chrom}.bam -O {output.bam}'
+rule bax2bam_NA24143:
+    params: job_name = 'download_pacbio_NA24143'
+            archive_dir = 'data/NA24143/raw_pacbio/hdf5/archive{archive_number}'
+    input: 'data/NA24143/raw_pacbio/hdf5/archive{archive_number}/archive.tar.gz'
+    output: 'data/NA24143/raw_pacbio/unaligned_bam/archive{archive_number}.subreads.bam'
+    shell:
+        '''
+        cd {params.archive_dir}
+        {BAX2BAM} *.bax.h5 -o ../../unaligned_bam/archive{wildcards.archive_number}
+        '''
+
+# DOWNLOAD PACBIO HDF5
+rule download_pacbio_NA24143_hdf5:
+    params: job_name = 'download_pacbio_NA24143_hdf5.archive{archive_number}'
+            archive_dir = 'data/NA24143/raw_pacbio/hdf5/archive{archive_number}'
+    output: archive = 'data/NA24143/raw_pacbio/hdf5/archive{archive_number}/archive.tar.gz',
+    run:
+        a = int(wildcards.archive_number)
+        hdf5_url = hdf5_file_list[a][1]
+        hdf5_md5 = hdf5_file_list[a][1]
+        shell('''
+        wget {hdf5_url} -O {output.archive}
+        md5sum -c <<<"{md5_sum} *{output.archive}"
+        tar -xzf {output.archive} --directory={params.archive_dir}
+        ''')

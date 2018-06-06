@@ -6,52 +6,23 @@ import mapping_accuracy
 chroms = ['{}'.format(i) for i in range(1,23)] + ['X']
 
 # VCFeval and plotting for segmental duplications as opposed to whole genome
-rule plot_pr_curve_simulation_ngmlr:
-    params: job_name = 'plot_pr_curve_simulation',
-            title = 'Simulated Data: Simulated PacBio Reads Aligned with NGMLR'
-    input:
-        reaper20_rtg = 'data/simulation/vcfeval/reaper.pacbio.ngmlr.40x.-z_-q_30/1.done',
-    output:
-        png = 'data/plots/simulation_prec_recall_ngmlr_1.png'
-    run:
-        ptf.plot_vcfeval(['data/simulation/vcfeval/reaper.pacbio.ngmlr.40x.-z_-q_30/1'],
-                                   ['Reaper, PacBio 40x'],
-                                   output.png,params.title,
-                                   colors=['k'],
-                                   xlim=(0.9,1.0),
-                                   ylim=(0.9975,1.0),
-                                   legendloc='lower left')
+#rule plot_pr_curve_simulation_ngmlr:
+#    params: job_name = 'plot_pr_curve_simulation',
+#            title = 'Simulated Data: Simulated PacBio Reads Aligned with NGMLR'
+#    input:
+#        reaper20_rtg = 'data/simulation/vcfeval/reaper.pacbio.ngmlr.40x.-z_-q_30/1.done',
+#    output:
+#        png = 'data/plots/simulation_prec_recall_ngmlr_1.png'
+#    run:
+#        ptf.plot_vcfeval(['data/simulation/vcfeval/reaper.pacbio.ngmlr.40x.-z_-q_30/1'],
+#                                   ['Reaper, PacBio 40x'],
+#                                   output.png,params.title,
+#                                   colors=['k'],
+#                                   xlim=(0.9,1.0),
+#                                   ylim=(0.9975,1.0),
+#                                   legendloc='lower left')
 
 ##################################################################################################################
-rule plot_pr_curve_simulation_segmental_duplications_compare_mappers_no_blasr:
-    params: job_name = 'plot_pr_curve_simulation_segmental_duplications_compare_mappers_no_blasr',
-            title = 'Simulated 40x Data: Using Different PacBio\nMappers with Reaper in Segmental Duplications'
-    input:
-        bwa_q10 = 'data/simulation/vcfeval_segdup/reaper.pacbio.bwa.40x.-z_-q_10/{chrom}.done',
-        minimap2_q10 = 'data/simulation/vcfeval_segdup/reaper.pacbio.minimap2.40x.-z_-q_10/{chrom}.done',
-        ngmlr_q10 = 'data/simulation/vcfeval_segdup/reaper.pacbio.ngmlr.40x.-z_-q_10/{chrom}.done',
-        bwa_q20 = 'data/simulation/vcfeval_segdup/reaper.pacbio.bwa.40x.-z_-q_20/{chrom}.done',
-        minimap2_q20 = 'data/simulation/vcfeval_segdup/reaper.pacbio.minimap2.40x.-z_-q_20/{chrom}.done',
-        ngmlr_q20 = 'data/simulation/vcfeval_segdup/reaper.pacbio.ngmlr.40x.-z_-q_20/{chrom}.done',
-        bwa_q30 = 'data/simulation/vcfeval_segdup/reaper.pacbio.bwa.40x.-z_-q_30/{chrom}.done',
-        minimap2_q30 = 'data/simulation/vcfeval_segdup/reaper.pacbio.minimap2.40x.-z_-q_30/{chrom}.done',
-        ngmlr_q30 = 'data/simulation/vcfeval_segdup/reaper.pacbio.ngmlr.40x.-z_-q_30/{chrom}.done',
-    output:
-        png = 'data/plots/compare_mappers_no_blasr_reaper_in_segdups_simulation_{chrom,(\d+|X|Y|all)}.png'
-    run:
-        ptf.plot_vcfeval([input.bwa_q10[:-5], input.bwa_q20[:-5], input.bwa_q30[:-5],
-                          input.minimap2_q10[:-5], input.minimap2_q20[:-5], input.minimap2_q30[:-5],
-                          input.ngmlr_q10[:-5], input.ngmlr_q20[:-5], input.ngmlr_q30[:-5]],
-                           ['Reaper, BWA, mapq >= 10', 'Reaper, BWA, mapq >= 20', 'Reaper, BWA, mapq >= 30',
-                           'Reaper, MINIMAP2, mapq >= 10', 'Reaper, MINIMAP2, mapq >= 20', 'Reaper, MINIMAP2, mapq >= 30',
-                           'Reaper, NGMLR, mapq >= 10', 'Reaper, NGMLR, mapq >= 20', 'Reaper, NGMLR, mapq >= 30',],
-                           output.png,params.title,
-                           colors=['#f78383','#ff4949','#ff0000',
-                           '#a3a3a3','#5b5b5b','#000000',
-                           '#93ff9b','#60ff6b','#00ff11'],
-                           xlim=(0,1.0),
-                           ylim=(0.96,1.0),
-                           legendloc='lower left')
 
 rule plot_pr_curve_simulation_segmental_duplications_compare_mappers:
     params: job_name = 'plot_pr_curve_simulation_segmental_duplications_compare_mappers',
@@ -94,10 +65,10 @@ rule plot_pr_curve_simulation_segmental_duplications:
     params: job_name = 'plot_pr_curve_simulation_segmental_duplications',
             title = 'Simulated Data: PacBio Reads vs Short Reads in Segmental Duplications'
     input:
-        reaper20_rtg = 'data/simulation/vcfeval_segdup/reaper.pacbio.bwa.20x.-z/{chrom}.done',
-        reaper30_rtg = 'data/simulation/vcfeval_segdup/reaper.pacbio.bwa.30x.-z/{chrom}.done',
-        reaper40_rtg = 'data/simulation/vcfeval_segdup/reaper.pacbio.bwa.40x.-z/{chrom}.done',
-        reaper80_rtg = 'data/simulation/vcfeval_segdup/reaper.pacbio.bwa.80x.-z/{chrom}.done',
+        reaper20_rtg = 'data/simulation/vcfeval_segdup/reaper.pacbio.blasr.20x.-z/{chrom}.done',
+        reaper30_rtg = 'data/simulation/vcfeval_segdup/reaper.pacbio.blasr.30x.-z/{chrom}.done',
+        reaper40_rtg = 'data/simulation/vcfeval_segdup/reaper.pacbio.blasr.40x.-z/{chrom}.done',
+        reaper80_rtg = 'data/simulation/vcfeval_segdup/reaper.pacbio.blasr.80x.-z/{chrom}.done',
         illumina20_rtg = 'data/simulation/vcfeval_segdup/illumina_20x.filtered/{chrom}.done',
         illumina30_rtg = 'data/simulation/vcfeval_segdup/illumina_30x.filtered/{chrom}.done',
         illumina40_rtg = 'data/simulation/vcfeval_segdup/illumina_40x.filtered/{chrom}.done',
@@ -109,10 +80,10 @@ rule plot_pr_curve_simulation_segmental_duplications:
                                    'data/simulation/vcfeval_segdup/illumina_30x.filtered/{}'.format(wildcards.chrom),
                                    'data/simulation/vcfeval_segdup/illumina_40x.filtered/{}'.format(wildcards.chrom),
                                    'data/simulation/vcfeval_segdup/illumina_80x.filtered/{}'.format(wildcards.chrom),
-                                   'data/simulation/vcfeval_segdup/reaper.pacbio.bwa.20x.-z/{}'.format(wildcards.chrom),
-                                   'data/simulation/vcfeval_segdup/reaper.pacbio.bwa.30x.-z/{}'.format(wildcards.chrom),
-                                   'data/simulation/vcfeval_segdup/reaper.pacbio.bwa.40x.-z/{}'.format(wildcards.chrom),
-                                   'data/simulation/vcfeval_segdup/reaper.pacbio.bwa.80x.-z/{}'.format(wildcards.chrom)],
+                                   'data/simulation/vcfeval_segdup/reaper.pacbio.blasr.20x.-z/{}'.format(wildcards.chrom),
+                                   'data/simulation/vcfeval_segdup/reaper.pacbio.blasr.30x.-z/{}'.format(wildcards.chrom),
+                                   'data/simulation/vcfeval_segdup/reaper.pacbio.blasr.40x.-z/{}'.format(wildcards.chrom),
+                                   'data/simulation/vcfeval_segdup/reaper.pacbio.blasr.80x.-z/{}'.format(wildcards.chrom)],
                                    ['Freebayes, Illumina 20x',
                                    'Freebayes, Illumina 30x',
                                    'Freebayes, Illumina 40x',
@@ -155,7 +126,7 @@ rule vcfeval_rtgtools_segmental_duplications:
 
 rule calculate_mapping_accuracy:
     params: job_name = 'calculate_mapping_accuracy{segdup_or_not}{chrom}'
-    input:  bam = 'data/simulation/aligned_reads/pacbio/pacbio.bwa.{chrom}.60x{segdup_or_not}bam'
+    input:  bam = 'data/simulation/aligned_reads/pacbio/pacbio.blasr.{chrom}.60x{segdup_or_not}bam'
     output: plot = 'data/plots/chr{chrom}_simulated_60x_pacbio_mismapped_read_distribution{segdup_or_not}png',
             acc = 'data/output/chr{chrom}_simulated_60x_pacbio_mapping_accuracy{segdup_or_not}txt'
     run:
@@ -165,19 +136,19 @@ rule calculate_mapping_accuracy:
 
 rule filter_chr1_segdup:
     params: job_name = 'filter_chr1_segdup.{chrom}'
-    input:  bam = 'data/simulation/aligned_reads/pacbio/pacbio.bwa.{chrom}.60x.bam',
+    input:  bam = 'data/simulation/aligned_reads/pacbio/pacbio.blasr.{chrom}.60x.bam',
             bed = 'genome_tracks/segmental_duplications_0.99_similar_1000g.bed'
-    output: bam = 'data/simulation/aligned_reads/pacbio/pacbio.bwa.{chrom}.60x.segdup.bam'
+    output: bam = 'data/simulation/aligned_reads/pacbio/pacbio.blasr.{chrom}.60x.segdup.bam'
     shell: '{BEDTOOLS} intersect -a {input.bam} -b {input.bed} -wa > {output.bam}'
 
 rule plot_pr_curve_simulation:
     params: job_name = 'plot_pr_curve_simulation',
             title = 'Precision Recall Curve for Reaper on Simulated Data: PacBio Reads vs Standard Illumina'
     input:
-        reaper20_rtg = 'data/simulation/vcfeval/reaper.pacbio.bwa.20x.-z/{chrom}.done',
-        reaper30_rtg = 'data/simulation/vcfeval/reaper.pacbio.bwa.30x.-z/{chrom}.done',
-        reaper40_rtg = 'data/simulation/vcfeval/reaper.pacbio.bwa.40x.-z/{chrom}.done',
-        reaper80_rtg = 'data/simulation/vcfeval/reaper.pacbio.bwa.80x.-z/{chrom}.done',
+        reaper20_rtg = 'data/simulation/vcfeval/reaper.pacbio.blasr.20x.-z/{chrom}.done',
+        reaper30_rtg = 'data/simulation/vcfeval/reaper.pacbio.blasr.30x.-z/{chrom}.done',
+        reaper40_rtg = 'data/simulation/vcfeval/reaper.pacbio.blasr.40x.-z/{chrom}.done',
+        reaper80_rtg = 'data/simulation/vcfeval/reaper.pacbio.blasr.80x.-z/{chrom}.done',
         illumina20_rtg = 'data/simulation/vcfeval/illumina_20x.filtered/{chrom}.done',
         illumina30_rtg = 'data/simulation/vcfeval/illumina_30x.filtered/{chrom}.done',
         illumina40_rtg = 'data/simulation/vcfeval/illumina_40x.filtered/{chrom}.done',
@@ -189,10 +160,10 @@ rule plot_pr_curve_simulation:
                                    'data/simulation/vcfeval/illumina_30x.filtered/{}'.format(wildcards.chrom),
                                    'data/simulation/vcfeval/illumina_40x.filtered/{}'.format(wildcards.chrom),
                                    'data/simulation/vcfeval/illumina_80x.filtered/{}'.format(wildcards.chrom),
-                                   'data/simulation/vcfeval/reaper.pacbio.bwa.20x.-z/{}'.format(wildcards.chrom),
-                                   'data/simulation/vcfeval/reaper.pacbio.bwa.30x.-z/{}'.format(wildcards.chrom),
-                                   'data/simulation/vcfeval/reaper.pacbio.bwa.40x.-z/{}'.format(wildcards.chrom),
-                                   'data/simulation/vcfeval/reaper.pacbio.bwa.80x.-z/{}'.format(wildcards.chrom)],
+                                   'data/simulation/vcfeval/reaper.pacbio.blasr.20x.-z/{}'.format(wildcards.chrom),
+                                   'data/simulation/vcfeval/reaper.pacbio.blasr.30x.-z/{}'.format(wildcards.chrom),
+                                   'data/simulation/vcfeval/reaper.pacbio.blasr.40x.-z/{}'.format(wildcards.chrom),
+                                   'data/simulation/vcfeval/reaper.pacbio.blasr.80x.-z/{}'.format(wildcards.chrom)],
                                    ['Freebayes, Illumina 20x',
                                    'Freebayes, Illumina 30x',
                                    'Freebayes, Illumina 40x',

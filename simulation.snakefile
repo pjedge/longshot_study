@@ -5,10 +5,27 @@ import mapping_accuracy
 
 chroms = ['{}'.format(i) for i in range(1,23)] + ['X']
 
+# VCFeval and plotting for segmental duplications as opposed to whole genome
+rule plot_pr_curve_simulation_ngmlr:
+    params: job_name = 'plot_pr_curve_simulation',
+            title = 'Simulated Data: Simulated PacBio Reads Aligned with NGMLR'
+    input:
+        reaper20_rtg = 'data/simulation/vcfeval/reaper.pacbio.ngmlr.40x.-z_-q_30/1.done',
+    output:
+        png = 'data/plots/simulation_prec_recall_ngmlr_1.png'
+    run:
+        ptf.plot_vcfeval(['data/simulation/vcfeval/reaper.pacbio.ngmlr.40x.-z_-q_30/1'],
+                                   ['Reaper, PacBio 40x'],
+                                   output.png,params.title,
+                                   colors=['k'],
+                                   xlim=(0.9,1.0),
+                                   ylim=(0.9975,1.0),
+                                   legendloc='lower left')
+
 ##################################################################################################################
 rule plot_pr_curve_simulation_segmental_duplications_compare_mappers_no_blasr:
     params: job_name = 'plot_pr_curve_simulation_segmental_duplications_compare_mappers_no_blasr',
-            title = 'Simulated 40x Data: Using Different PacBio Mappers with Reaper in Segmental Duplications'
+            title = 'Simulated 40x Data: Using Different PacBio\nMappers with Reaper in Segmental Duplications'
     input:
         bwa_q10 = 'data/simulation/vcfeval_segdup/reaper.pacbio.bwa.40x.-z_-q_10/{chrom}.done',
         minimap2_q10 = 'data/simulation/vcfeval_segdup/reaper.pacbio.minimap2.40x.-z_-q_10/{chrom}.done',
@@ -33,8 +50,8 @@ rule plot_pr_curve_simulation_segmental_duplications_compare_mappers_no_blasr:
                            '#a3a3a3','#5b5b5b','#000000',
                            '#93ff9b','#60ff6b','#00ff11'],
                            xlim=(0,1.0),
-                           ylim=(0.98,1.0),
-                           legendloc='upper right')
+                           ylim=(0.96,1.0),
+                           legendloc='lower left')
 
 rule plot_pr_curve_simulation_segmental_duplications_compare_mappers:
     params: job_name = 'plot_pr_curve_simulation_segmental_duplications_compare_mappers',
@@ -282,22 +299,39 @@ rule align_simulated_pacbio_bwa:
         bam = 'data/simulation/aligned_reads/pacbio/bwa_separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.{cov,\d+}x.bam',
     shell: '{BWA} mem -x pacbio -t 4 -T 0 {input.hs37d5} {input.fastq} | {SAMTOOLS} sort -T {params.sort_prefix} -@ 4 > {output.bam}'
 
+rule convert_simulated_fastqs_pacbio_format:
+    params: job_name = 'convert_simulated_fastqs_pacbio_format.chr{chrom}.hap{hap}.{cov}x'
+    input:  'data/simulation/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x.fastq'
+    output: 'data/simulation/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x.pacbio_format.fa'
+    run:
+        with pysam.FastxFile(input[0]) as infile, open(output[0],'w') as outfile:
+            for i,record in enumerate(infile):
+                print(">{}/{}/0_{}".format(record.name,i,len(record.sequence)),file=outfile)
+                print(record.sequence, file=outfile)
+
 rule align_simulated_pacbio_blasr:
-    params: job_name = 'align_simulated_pacbio_blasr.{chrom}.{hap}.{cov}',
+    params: job_name = 'align_simulated_pacbio_blasr.{chrom}.{hap}.{cov}'
     input:
-        fastq   = 'data/simulation/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x.fastq',
+        fastq   = 'data/simulation/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x.pacbio_format.fa',
         hs37d5    = 'data/genomes/hs37d5.fa',
+        hs37d5_sa = 'data/genomes/hs37d5.fa.sawriter.sa',
         hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
         hs37d5_bwt = 'data/genomes/hs37d5.fa.bwt'
-    output: sam = 'data/simulation/aligned_reads/pacbio/blasr_separate_chrom_unsorted/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.{cov,\d+}x.sam',
-    shell: '{BLASR} {input.fastq} {input.hs37d5} --nproc 4 --sam --out {output.sam}'
+    output: sam = 'data/simulation/aligned_reads/pacbio/blasr_separate_chrom_unsorted/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.{cov,\d+}x.bam',
+    shell: '{BLASR} {input.fastq} {input.hs37d5} --sa {input.hs37d5_sa} --nproc 4 --bam --out {output}'
 
 rule sort_simulated_pacbio_blasr:
     params: job_name = 'sort_simulated_pacbio_blasr.{chrom}.{hap}.{cov}',
-            sort_prefix = 'data/simulation/aligned_reads/pacbio/blasr_separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x.tmp'
-    input: 'data/simulation/aligned_reads/pacbio/blasr_separate_chrom_unsorted/{chrom}.hap{hap}.pacbio.{cov}x.sam'
+            sort_prefix = 'data/simulation/aligned_reads/pacbio/blasr_separate_chrom_unsorted/{chrom}.hap{hap}.pacbio.{cov}x.tmp'
+    input: 'data/simulation/aligned_reads/pacbio/blasr_separate_chrom_unsorted/{chrom}.hap{hap}.pacbio.{cov}x.bam'
     output: 'data/simulation/aligned_reads/pacbio/blasr_separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.{cov,\d+}x.bam',
-    shell: ' {SAMTOOLS} view -hb {input} | {SAMTOOLS} sort -T {params.sort_prefix} -@ 4 {input} > {output}'
+    shell: '{SAMTOOLS} sort -T {params.sort_prefix} -@ 4 {input} > {output}'
+
+rule make_blasr_suffix_array:
+    params: job_name = 'make_blasr_suffix_array.{genome}'
+    input: 'data/genomes/{genome}.fa'
+    output: 'data/genomes/{genome}.fa.sawriter.sa'
+    shell: '{SAWRITER} {output} {input}'
 
 rule align_simulated_pacbio_minimap2:
     params: job_name = 'align_simulated_pacbio_minimap2.{chrom}.{hap}.{cov}',

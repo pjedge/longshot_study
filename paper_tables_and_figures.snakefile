@@ -17,6 +17,31 @@ rule plot_pr_curve_NA12878_impact_of_haplotyping:
                            xlim=(0.9,1.0),ylim=(0.99,1.0))
 '''
 
+rule plot_pr_curve_varyQ:
+    params: job_name = 'plot_pr_curve_varyQ',
+            title = 'Impact of Haplotype Q Parameter'
+    input:
+        NA12878_30x_Q50 = 'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-Q_50/{chrom}.done',
+        NA12878_30x_Q20 = 'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-Q_20/{chrom}.done',
+        NA12878_30x_Q1 = 'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-Q_1/{chrom}.done',
+        NA12878_20x_Q50 = 'data/NA12878/vcfeval/reaper.pacbio.blasr.20x.-z_-Q_50/{chrom}.done',
+        NA12878_20x_Q20 = 'data/NA12878/vcfeval/reaper.pacbio.blasr.20x.-z_-Q_20/{chrom}.done',
+        NA12878_20x_Q1 = 'data/NA12878/vcfeval/reaper.pacbio.blasr.20x.-z_-Q_1/{chrom}.done',
+    output:
+        png = 'data/plots/effect_of_Q_param_PRcurve_{chrom}.png'
+    run:
+        ptf.plot_vcfeval([input.NA12878_30x_Q50[:-5], input.NA12878_20x_Q50[:-5],
+                          input.NA12878_30x_Q20[:-5], input.NA12878_20x_Q20[:-5],
+                          input.NA12878_30x_Q1[:-5], input.NA12878_20x_Q1[:-5]],
+                         ['NA12878, 30x (Q50)', 'NA12878, 20x (Q50)',
+                          'NA12878, 30x (Q20)', 'NA12878, 20x (Q20)',
+                          'NA12878, 30x (Q1)', 'NA12878, 20x (Q1)'],
+                           output.png,params.title,
+                           colors=['#ff0000','#ff4f4f', # red
+                                   '#ffff02','#ffff6b', #blue
+                                   '#0400fc','#514efc'], #yellow
+                           xlim=(0.85,1.0),ylim=(0.985,1.0))
+
 rule plot_pr_curve_impact_of_haplotyping:
     params: job_name = 'plot_pr_curve_impact_of_haplotyping',
             title = 'Impact of Haplotype Information on PacBio Variant Calling with Reaper'

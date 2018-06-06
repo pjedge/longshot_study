@@ -33,6 +33,7 @@ DWGSIM = '/home/pedge/git/DWGSIM/dwgsim'
 BWA = '/home/pedge/installed/bwa'
 BLASR = 'blasr'
 BAX2BAM = 'bax2bam'
+SAWRITER = 'sawriter'
 NGMLR = 'ngmlr'
 MINIMAP2 = 'minimap2'
 BCFTOOLS = '/opt/biotools/bcftools/bin/bcftools'
@@ -55,11 +56,14 @@ rule all:
         'data/output/four_GIAB_genomes_table.1.GQ50.tex',
         'data/plots/simulation_pr_barplot_genome_vs_segdup.1.GQ50.png',
         'data/plots/effect_of_haplotyping.giab_individuals.prec_recall_1.png',
-        'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z/1/fp.variant_analysis.txt',
-        'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z/1/fn.variant_analysis.txt',
         'data/plots/PR_curve_3_mappers_AJ_father_chr20.png',
         #'data/plots/compare_mappers_reaper_in_segdups_simulation_1.png'
-        'data/plots/compare_mappers_no_blasr_reaper_in_segdups_simulation_1.png'
+        'data/plots/compare_mappers_reaper_in_segdups_simulation_1.png',
+        'data/plots/simulation_prec_recall_ngmlr_1.png',
+        'data/output/variant_analysis_fp_fn__NA12878__reaper.pacbio.blasr.44x.-z__1.tex',
+        'data/output/variant_analysis_fp_fn__NA24385__reaper.pacbio.ngmlr.69x.-z__1.tex',
+        'data/output/variant_analysis_fp_fn__NA24149__reaper.pacbio.ngmlr.32x.-z__1.tex',
+        'data/output/variant_analysis_fp_fn__NA24143__reaper.pacbio.ngmlr.30x.-z__1.tex'
         #'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-Q_1/1.done',
         #'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-Q_10/1.done',
         #'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-Q_20/1.done',
@@ -137,9 +141,12 @@ rule rtg_decompose_variants_ground_truth:
     shell: '{RTGTOOLS} RTG_MEM=12g vcfdecompose --break-mnps --break-indels -i {input.vcfgz} -o {output.vcfgz}'
 
 rule analyze_variants:
-    params: job_name = 'analyze_variants.{dataset}.{fp_or_fn}.{chrom}.{calls_name}',
-    input:  calls = 'data/{dataset}/vcfeval/{calls_name}/{chrom}/{fp_or_fn}.vcf.gz',
-            ground_truth = 'data/{dataset}/variants/ground_truth/ground_truth.vcf.gz', # MUST be the version with indels!
+    params: job_name = 'analyze_variants.{dataset}.{chrom}.{calls_name}',
+    input:  fp_calls = 'data/{dataset}/vcfeval/{calls_name}/{chrom}/fp.vcf.gz',
+            fn_calls = 'data/{dataset}/vcfeval/{calls_name}/{chrom}/fn.vcf.gz',
+            ground_truth_vcfgz = 'data/{dataset}/variants/ground_truth/ground_truth.vcf.gz',
+            ground_truth_bed = 'data/{dataset}/variants/ground_truth/region_filter.bed.gz',
+            ground_truth_bed_ix = 'data/{dataset}/variants/ground_truth/region_filter.bed.gz.tbi',
             str_bed = 'genome_tracks/STRs_1000g.bed.gz',
             str_bed_ix = 'genome_tracks/STRs_1000g.bed.gz.tbi',
             line_bed = 'genome_tracks/LINEs_1000g.bed.gz',
@@ -148,16 +155,18 @@ rule analyze_variants:
             sine_bed_ix = 'genome_tracks/SINEs_1000g.bed.gz.tbi',
             ref_fa = 'data/genomes/hs37d5.fa',
             ref_fai = 'data/genomes/hs37d5.fa.fai'
-    output: txt = 'data/{dataset}/vcfeval/{calls_name}/{chrom}/{fp_or_fn}.variant_analysis.txt'
+    output: tex = 'data/output/variant_analysis_fp_fn__{dataset}__{calls_name}__{chrom}.tex'
     run:
         analyze_variants(chrom_name = wildcards.chrom,
-                         calls_vcfgz = input.calls,
-                         ground_truth_vcfgz = input.ground_truth,
+                         fp_calls_vcfgz = input.fp_calls,
+                         fn_calls_vcfgz = input.fn_calls,
+                         ground_truth_vcfgz = input.ground_truth_vcfgz,
+                         ground_truth_bed_file = input.ground_truth_bed,
                          str_tabix_bed_file = input.str_bed,
                          line_tabix_bed_file = input.line_bed,
                          sine_tabix_bed_file = input.sine_bed,
                          ref_fa = input.ref_fa,
-                         output_file = output.txt)
+                         output_file = output.tex)
 
 rule rtg_filter_SNVs_ground_truth:
     params: job_name = 'rtg_filter_SNVs_ground_truth.{dataset}',
@@ -346,6 +355,13 @@ rule bgzip_ground_truth:
     params: job_name = 'bgzip_ground_truth.{dataset}'
     input:  'data/{dataset}/variants/ground_truth/ground_truth.vcf'
     output: 'data/{dataset}/variants/ground_truth/ground_truth.vcf.gz'
+    shell:  '{BGZIP} -c {input} > {output}'
+
+# bgzip bed
+rule bgzip_bed:
+    params: job_name = 'bgzip_bed.{dataset}.{calls_name}'
+    input: 'data/{dataset}/variants/{calls_name}/region_filter.bed'
+    output: 'data/{dataset}/variants/{calls_name}/region_filter.bed.gz'
     shell:  '{BGZIP} -c {input} > {output}'
 
 # gunzip fasta

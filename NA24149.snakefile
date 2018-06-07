@@ -45,12 +45,12 @@ rule download_GIAB_VCF_NA24149:
 rule split_bam_pacbio_NA24149_blasr:
     params: job_name = 'split_bam_pacbio_NA24149.{chrom}'
     input: bam = 'data/NA24149/aligned_reads/pacbio/pacbio.blasr.all.32x.bam',
-    output: bam = 'data/NA24149/aligned_reads/pacbio/pacbio.blasr.{chrom}.32x.bam',
+    output: bam = 'data/NA24149/aligned_reads/pacbio/pacbio.blasr.{chrom,(\d+|X|Y)}.32x.bam',
     shell: '{SAMTOOLS} view -hb {input.bam} {wildcards.chrom} > {output.bam}'
 
 # RENAME PACBIO BAM
 rule rename_blasr_bam_NA24149:
     params: job_name = 'rename_blasr_bam_NA24149'
-    input:  'study/data/NA24149/aligned_reads/pacbio/pacbio.blasr.all.giab_full_coverage.bam'
-    output: 'study/data/NA24149/aligned_reads/pacbio/pacbio.blasr.all.32x.bam'
+    input:  'data/NA24149/aligned_reads/pacbio/pacbio.blasr.all.giab_full_coverage.bam'
+    output: 'data/NA24149/aligned_reads/pacbio/pacbio.blasr.all.32x.bam'
     shell: 'mv {input} {output}'

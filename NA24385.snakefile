@@ -55,7 +55,7 @@ rule download_GIAB_VCF_NA24385:
 rule subsample_pacbio_NA24385:
     params: job_name = 'subsample_pacbio_NA24385.{chrom}'
     input: bam = 'data/NA24385/aligned_reads/pacbio/pacbio.blasr.{chrom}.69x.bam',
-    output: bam = 'data/NA24385/aligned_reads/pacbio/pacbio.blasr.{chrom}.{cov,\d+}x.bam',
+    output: bam = 'data/NA24385/aligned_reads/pacbio/pacbio.blasr.{chrom}.{cov,(20|30|40|50)}x.bam',
     run:
         subsample_frac = float(wildcards.cov) / 69.0
         shell('{SAMTOOLS} view -hb {input.bam} -s {subsample_frac} > {output.bam}')
@@ -64,12 +64,12 @@ rule subsample_pacbio_NA24385:
 rule split_bam_pacbio_NA24385_BLASR:
     params: job_name = 'split_bam_pacbio_NA24385.{chrom}'
     input: bam = 'data/NA24385/aligned_reads/pacbio/pacbio.blasr.all.69x.bam',
-    output: bam = 'data/NA24385/aligned_reads/pacbio/pacbio.blasr.{chrom}.69x.bam',
+    output: bam = 'data/NA24385/aligned_reads/pacbio/pacbio.blasr.{chrom,(\d+|X|Y)}.69x.bam',
     shell: '{SAMTOOLS} view -hb {input.bam} {wildcards.chrom} > {output.bam}'
 
 # RENAME PACBIO BAM
 rule rename_blasr_bam_NA24385:
     params: job_name = 'rename_blasr_bam_NA24385'
-    input:  'study/data/NA24385/aligned_reads/pacbio/pacbio.blasr.all.giab_full_coverage.bam'
-    output: 'study/data/NA24385/aligned_reads/pacbio/pacbio.blasr.all.69x.bam'
+    input:  'data/NA24385/aligned_reads/pacbio/pacbio.blasr.all.giab_full_coverage.bam'
+    output: 'data/NA24385/aligned_reads/pacbio/pacbio.blasr.all.69x.bam'
     shell: 'mv {input} {output}'

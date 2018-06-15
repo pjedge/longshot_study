@@ -1,4 +1,3 @@
-HDF5	HDF5_MD5			NIST_SAMPLE_NAME
 http://sra-download.ncbi.nlm.nih.gov/srapub_files/SRR2036394_SRR2036394_hdf5.tgz	e7af552f05bb5715b1a9144e98bc223b			HG002
 http://sra-download.ncbi.nlm.nih.gov/srapub_files/SRR2036395_SRR2036395_hdf5.tgz	d7776330d61da6bcea608acefaf67890			HG002
 http://sra-download.ncbi.nlm.nih.gov/srapub_files/SRR2036396_SRR2036396_hdf5.tgz	06686e16bf039762f491237c69d5eff9			HG002

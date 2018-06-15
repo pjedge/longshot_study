@@ -14,8 +14,10 @@ include: "paper_tables_and_figures.snakefile"
 # DATA URLs
 HG19_URL     = 'http://hgdownload.cse.ucsc.edu/goldenpath/hg19/bigZips/hg19.2bit'
 HS37D5_URL     = 'ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz'
+HG38_URL = 'http://hgdownload.cse.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz'
 HG19_SDF_URL   = 'https://s3.amazonaws.com/rtg-datasets/references/hg19.sdf.zip'
 TG_v37_SDF_URL = 'https://s3.amazonaws.com/rtg-datasets/references/1000g_v37_phase2.sdf.zip'
+GRCh38_SDF_URL = 'https://s3.amazonaws.com/rtg-datasets/references/GRCh38.sdf.zip'
 
 # PATHS TO TOOLS
 FASTQUTILS = '/home/pedge/installed/ngsutils/bin/fastqutils'
@@ -43,48 +45,35 @@ BEDTOOLS = 'bedtools' # v 2.27
 # DEFAULT
 rule all:
     input:
-        'data/plots/NA24385_prec_recall_1.png',
-        'data/plots/NA24143_prec_recall_1.png',
-        'data/plots/NA24149_prec_recall_1.png',
-        'data/plots/NA12878_prec_recall_1.png',
-        'data/plots/simulation_prec_recall_1.png',
-        'data/plots/simulation_prec_recall_in_segdups_1.png',
-        'data/plots/chr1_simulated_60x_pacbio_mismapped_read_distribution.segdup.png',
-        'data/plots/chr1_simulated_60x_pacbio_mismapped_read_distribution.png',
-        'data/aj_trio/duplicated_regions/trio_shared_variant_sites/mendelian/1.vcf.gz',
-        'data/output/four_GIAB_genomes_table.1.GQ50.tex',
-        'data/plots/simulation_pr_barplot_genome_vs_segdup.1.GQ50.png',
-        'data/plots/effect_of_haplotyping.giab_individuals.prec_recall_1.png',
-        'data/plots/PR_curve_3_mappers_AJ_father_chr20.png',
+        'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z/all.done',
+        'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z/all.done',
+        'data/NA24385/variants/reaper.pacbio.blasr.20x.-z/1.vcf',
+        'data/NA24385/variants/reaper.pacbio.blasr.30x.-z/1.vcf',
+        'data/NA24385/variants/reaper.pacbio.blasr.40x.-z/1.vcf',
+        'data/NA24385/variants/reaper.pacbio.blasr.50x.-z/1.vcf',
+        'data/NA24385/variants/reaper.pacbio.blasr.69x.-z/1.vcf',
+        #'data/plots/NA24385_prec_recall_1.png',
+        #'data/plots/NA24143_prec_recall_1.png',
+        #'data/plots/NA24149_prec_recall_1.png',
+        #'data/plots/NA12878_prec_recall_1.png',
+        #'data/plots/simulation_prec_recall_1.png',
+        #'data/plots/simulation_prec_recall_in_segdups_1.png',
+        #'data/plots/chr1_simulated_60x_pacbio_mismapped_read_distribution.segdup.png',
+        #'data/plots/chr1_simulated_60x_pacbio_mismapped_read_distribution.png',
+        #'data/aj_trio/duplicated_regions/trio_shared_variant_sites/mendelian/1.vcf.gz',
+        #'data/output/four_GIAB_genomes_table.1.GQ50.tex',
+        #'data/plots/simulation_pr_barplot_genome_vs_segdup.1.GQ50.png',
+        #'data/plots/effect_of_haplotyping.giab_individuals.prec_recall_1.png',
+        #'data/plots/PR_curve_3_mappers_AJ_father_chr20.png',
         #'data/plots/compare_mappers_reaper_in_segdups_simulation_1.png'
-        'data/plots/compare_mappers_reaper_in_segdups_simulation_1.png',
-        'data/plots/simulation_prec_recall_ngmlr_1.png',
-        'data/output/variant_analysis_fp_fn__NA12878__reaper.pacbio.blasr.44x.-z__1.tex',
-        'data/output/variant_analysis_fp_fn__NA24385__reaper.pacbio.ngmlr.69x.-z__1.tex',
-        'data/output/variant_analysis_fp_fn__NA24149__reaper.pacbio.ngmlr.32x.-z__1.tex',
-        'data/output/variant_analysis_fp_fn__NA24143__reaper.pacbio.ngmlr.30x.-z__1.tex'
-        #'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-Q_1/1.done',
-        #'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-Q_10/1.done',
-        #'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-Q_20/1.done',
-        #'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-Q_30/1.done',
-        #'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-Q_40/1.done',
-        #'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-Q_50/1.done',
-        #'data/NA12878/vcfeval/reaper.pacbio.blasr.20x.-z_-Q_1/1.done',
-        #'data/NA12878/vcfeval/reaper.pacbio.blasr.20x.-z_-Q_10/1.done',
-        #'data/NA12878/vcfeval/reaper.pacbio.blasr.20x.-z_-Q_20/1.done',
-        #'data/NA12878/vcfeval/reaper.pacbio.blasr.20x.-z_-Q_30/1.done',
-        #'data/NA12878/vcfeval/reaper.pacbio.blasr.20x.-z_-Q_40/1.done',
-        #'data/NA12878/vcfeval/reaper.pacbio.blasr.20x.-z_-Q_50/1.done',
-        #'data/NA12878/vcfeval/reaper.pacbio.blasr.10x.-z_-Q_1/1.done',
-        #'data/NA12878/vcfeval/reaper.pacbio.blasr.10x.-z_-Q_10/1.done',
-        #'data/NA12878/vcfeval/reaper.pacbio.blasr.10x.-z_-Q_20/1.done',
-        #'data/NA12878/vcfeval/reaper.pacbio.blasr.10x.-z_-Q_30/1.done',
-        #'data/NA12878/vcfeval/reaper.pacbio.blasr.10x.-z_-Q_40/1.done',
-        #'data/NA12878/vcfeval/reaper.pacbio.blasr.10x.-z_-Q_50/1.done',
-        #'data/NA24149/vcfeval/reaper.pacbio.blasr.32x.-z/1.done',
-        #'data/NA24149/vcfeval/reaper.pacbio.blasr.32x.-z/20.done',
-        #'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-p/1.done',
-        #'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z_-p/1.done',
+        #'data/plots/compare_mappers_reaper_in_segdups_simulation_1.png',
+        #'data/plots/simulation_prec_recall_ngmlr_1.png',
+        #'data/output/variant_analysis_fp_fn__NA12878__reaper.pacbio.blasr.44x.-z__1.tex',
+        #'data/output/variant_analysis_fp_fn__NA24385__reaper.pacbio.ngmlr.69x.-z__1.tex',
+        #'data/output/variant_analysis_fp_fn__NA24149__reaper.pacbio.ngmlr.32x.-z__1.tex',
+        #'data/output/variant_analysis_fp_fn__NA24143__reaper.pacbio.ngmlr.30x.-z__1.tex',
+        #'data/plots/NA12878_prec_recall_all.png',
+
 
 rule vcfeval_rtgtools_no_haplotype_info:
     params: job_name = 'vcfeval_rtgtools_no_haplotype_info.{dataset}.{calls_name}.{chrom}',
@@ -230,7 +219,9 @@ rule run_reaper:
             hg19    = 'data/genomes/hg19.fa',
             hg19_ix = 'data/genomes/hg19.fa.fai',
             hs37d5    = 'data/genomes/hs37d5.fa',
-            hs37d5_ix = 'data/genomes/hs37d5.fa.fai'
+            hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
+            hg38 = 'data/genomes/hg38.fa',
+            hg38_ix = 'data/genomes/hg38.fa.fai'
     output: vcf = 'data/{dataset}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.vcf',
             debug = 'data/{dataset}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug',
             no_hap_vcf = 'data/{dataset}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug/2.0.realigned_genotypes.vcf',
@@ -246,6 +237,10 @@ rule run_reaper:
             # remove 'chr' from no-haplotype version of vcf
             remove_chr_from_vcf(output.no_hap_vcf, output.no_hap_vcf+'.tmp')
             shell('mv {output.no_hap_vcf}.tmp {output.no_hap_vcf}')
+        elif wildcards.dataset == 'NA24385':
+            t1 = time.time()
+            shell('{REAPER} -r chr{wildcards.chrom} -F -d {output.debug} {options_str} --bam {input.bam} --ref {input.hg38} --out {output.vcf}')
+            t2 = time.time()
         else:
             t1 = time.time()
             shell('{REAPER} -r {wildcards.chrom} -F -d {output.debug} {options_str} -s {wildcards.dataset} --bam {input.bam} --ref {input.hs37d5} --out {output.vcf}')
@@ -291,6 +286,16 @@ rule download_hg19:
         {TWOBITTOFASTA} {output}.2bit {output}
         '''
 
+rule download_hg38:
+    params: job_name = 'download_hg38',
+    output: 'data/genomes/hg38.fa'
+    shell: 'wget {HG38_URL} -O {output}.gz; gunzip {output}.gz'
+
+rule download_HS37D5:
+    params: job_name = 'download_hs37d5',
+    output: 'data/genomes/hs37d5.fa'
+    shell: 'wget {HS37D5_URL} -O {output}.gz; gunzip {output}.gz'
+
 # download hg19 reference, for the aligned pacbio reads
 rule download_hg19_sdf:
     params: job_name = 'download_hg19_sdf',
@@ -311,10 +316,14 @@ rule download_1000g_v37_phase2_sdf:
         unzip {output}.zip -d data/genomes
         '''
 
-rule download_HS37D5:
-    params: job_name = 'download_hs37d5',
-    output: 'data/genomes/hs37d5.fa'
-    shell: 'wget {HS37D5_URL} -O {output}.gz; gunzip {output}.gz'
+rule download_GRCh38_sdf:
+    params: job_name = 'download_GRCh38_sdf',
+    output: 'data/genomes/GRCh38.sdf'
+    shell:
+        '''
+        wget {GRCh38_SDF_URL} -O {output}.zip;
+        unzip {output}.zip -d data/genomes
+        '''
 
 rule convert_genome_track_to_1000g:
     params: job_name = 'convert_genome_track_to_1000g.{track}',

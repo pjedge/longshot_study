@@ -3,6 +3,7 @@
 NA24385_Illumina_60x_BAM_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG002_NA24385_son/NIST_HiSeq_HG002_Homogeneity-10953946/NHGRI_Illumina300X_AJtrio_novoalign_bams/HG002.hs37d5.60x.1.bam'
 NA24385_GIAB_VCF_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/NISTv3.3.2/GRCh37/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz'
 NA24385_GIAB_HIGH_CONF_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/NISTv3.3.2/GRCh37/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_noinconsistent.bed'
+NA24385_PACBIO_BLASR_BAM_URL = 'http://www-rcf.usc.edu/~mchaisso/hg002.passthrough.bam'
 
 rule plot_pr_curve_NA24385:
     params: job_name = 'plot_pr_curve_NA24385',
@@ -64,12 +65,19 @@ rule subsample_pacbio_NA24385:
 rule split_bam_pacbio_NA24385_BLASR:
     params: job_name = 'split_bam_pacbio_NA24385.{chrom}'
     input: bam = 'data/NA24385/aligned_reads/pacbio/pacbio.blasr.all.69x.bam',
+           bai = 'data/NA24385/aligned_reads/pacbio/pacbio.blasr.all.69x.bam.bai'
     output: bam = 'data/NA24385/aligned_reads/pacbio/pacbio.blasr.{chrom,(\d+|X|Y)}.69x.bam',
-    shell: '{SAMTOOLS} view -hb {input.bam} {wildcards.chrom} > {output.bam}'
+    shell: '{SAMTOOLS} view -hb {input.bam} chr{wildcards.chrom} > {output.bam}'
+
+# DOWNLOAD PACBIO BAM
+rule download_pacbio_NA24385:
+    params: job_name = 'download_pacbio_NA24385'
+    output: bam = 'data/NA24385/aligned_reads/pacbio/pacbio.blasr.all.69x.bam',
+    shell: 'wget {NA24385_PACBIO_BLASR_BAM_URL} -O {output.bam}'
 
 # RENAME PACBIO BAM
-rule rename_blasr_bam_NA24385:
-    params: job_name = 'rename_blasr_bam_NA24385'
-    input:  'data/NA24385/aligned_reads/pacbio/pacbio.blasr.all.giab_full_coverage.bam'
-    output: 'data/NA24385/aligned_reads/pacbio/pacbio.blasr.all.69x.bam'
-    shell: 'mv {input} {output}'
+#rule rename_blasr_bam_NA24385:
+#    params: job_name = 'rename_blasr_bam_NA24385'
+#    input:  'data/NA24385/aligned_reads/pacbio/pacbio.blasr.all.giab_full_coverage.bam'
+#    output: 'data/NA24385/aligned_reads/pacbio/pacbio.blasr.all.69x.bam'
+#    shell: 'mv {input} {output}'

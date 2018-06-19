@@ -45,13 +45,16 @@ BEDTOOLS = 'bedtools' # v 2.27
 # DEFAULT
 rule all:
     input:
-        'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z/all.done',
-        'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z/all.done',
-        'data/NA24385/variants/reaper.pacbio.blasr.20x.-z/1.vcf',
-        'data/NA24385/variants/reaper.pacbio.blasr.30x.-z/1.vcf',
-        'data/NA24385/variants/reaper.pacbio.blasr.40x.-z/1.vcf',
-        'data/NA24385/variants/reaper.pacbio.blasr.50x.-z/1.vcf',
-        'data/NA24385/variants/reaper.pacbio.blasr.69x.-z/1.vcf',
+        'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z_-I_20/1.done',
+        'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z_-I_40/1.done',
+        'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z_-I_60/1.done',
+        'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z_-I_80/1.done',
+        'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z_-I_100/1.done',
+        'data/NA24385/variants/reaper.pacbio.blasr.69x.-z_-I_20/1.vcf',
+        'data/NA24385/variants/reaper.pacbio.blasr.69x.-z_-I_40/1.vcf',
+        'data/NA24385/variants/reaper.pacbio.blasr.69x.-z_-I_60/1.vcf',
+        'data/NA24385/variants/reaper.pacbio.blasr.69x.-z_-I_80/1.vcf',
+        'data/NA24385/variants/reaper.pacbio.blasr.69x.-z_-I_100/1.vcf',
         #'data/plots/NA24385_prec_recall_1.png',
         #'data/plots/NA24143_prec_recall_1.png',
         #'data/plots/NA24149_prec_recall_1.png',

@@ -2,14 +2,22 @@ import paper_tables_and_figures as ptf
 from analyze_variants import analyze_variants
 import time
 from replace_empty_gt_with_reference import replace_empty_gt_with_reference
+import sys
+sys.path.append('HapCUT2/utilities')
+import calculate_haplotype_statistics as chs
+import pickle
 
 include: "simulation.snakefile"
-include: "NA12878.snakefile"
-include: "NA24385.snakefile" # AJ Son
-include: "NA24143.snakefile" # AJ Mother
-include: "NA24149.snakefile" # AJ Father
+include: "NA12878.1000g.snakefile"
+include: "NA24385.hg38.snakefile"  # AJ Son,    hg38
+include: "NA24143.hg38.snakefile"  # AJ Mother, hg38
+include: "NA24149.hg38.snakefile"  # AJ Father, hg38
+include: "NA24385.1000g.snakefile" # AJ Son,    1000g
+include: "NA24143.1000g.snakefile" # AJ Mother, 1000g
+include: "NA24149.1000g.snakefile" # AJ Father, 1000g
 include: "aj_trio.snakefile" #
 include: "paper_tables_and_figures.snakefile"
+include: "haplotyping.snakefile"
 
 # DATA URLs
 HG19_URL     = 'http://hgdownload.cse.ucsc.edu/goldenpath/hg19/bigZips/hg19.2bit'
@@ -39,22 +47,20 @@ NGMLR = 'ngmlr'
 MINIMAP2 = 'minimap2'
 BCFTOOLS = '/opt/biotools/bcftools/bin/bcftools'
 PYFAIDX = '/home/pedge/installed/opt/python/bin/faidx'
-chroms = ['{}'.format(i) for i in range(1,23)] + ['X']
 BEDTOOLS = 'bedtools' # v 2.27
+EXTRACTHAIRS = 'HapCUT2/build/extractHAIRS'
+HAPCUT2 = 'HapCUT2/build/extractHAIRS'
+
+chroms = ['{}'.format(i) for i in range(1,23)]# + ['chrX']
+ref_file = {'1000g':'data/genomes/hs37d5.fa', 'hg38':'data/genomes/hg38.fa'}
 
 # DEFAULT
 rule all:
     input:
-        'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z_-I_20/1.done',
-        'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z_-I_40/1.done',
-        'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z_-I_60/1.done',
-        'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z_-I_80/1.done',
-        'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z_-I_100/1.done',
-        'data/NA24385/variants/reaper.pacbio.blasr.69x.-z_-I_20/1.vcf',
-        'data/NA24385/variants/reaper.pacbio.blasr.69x.-z_-I_40/1.vcf',
-        'data/NA24385/variants/reaper.pacbio.blasr.69x.-z_-I_60/1.vcf',
-        'data/NA24385/variants/reaper.pacbio.blasr.69x.-z_-I_80/1.vcf',
-        'data/NA24385/variants/reaper.pacbio.blasr.69x.-z_-I_100/1.vcf',
+        'data/NA12878/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.30x.-z.all.p',
+        'data/NA12878/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.44x.-z.all.p',
+        'data/NA12878/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.30x.all.p',
+        'data/NA12878/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.44x.all.p'
         #'data/plots/NA24385_prec_recall_1.png',
         #'data/plots/NA24143_prec_recall_1.png',
         #'data/plots/NA24149_prec_recall_1.png',
@@ -78,75 +84,87 @@ rule all:
         #'data/plots/NA12878_prec_recall_all.png',
 
 
-rule vcfeval_rtgtools_no_haplotype_info:
-    params: job_name = 'vcfeval_rtgtools_no_haplotype_info.{dataset}.{calls_name}.{chrom}',
-            region_arg = lambda wildcards: '--region={}'.format(wildcards.chrom) if wildcards.chrom != 'all' else ''
-    input:  calls_vcf = 'data/{dataset}/variants/{calls_name}/{chrom}.debug/2.0.realigned_genotypes.vcf.gz',
-            calls_ix = 'data/{dataset}/variants/{calls_name}/{chrom}.debug/2.0.realigned_genotypes.vcf.gz.tbi',
-            ground_truth = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
-            ground_truth_ix = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz.tbi',
-            region_filter ='data/{dataset}/variants/ground_truth/region_filter.bed',
-            tg_sdf = 'data/genomes/1000g_v37_phase2.sdf'
-    output: done = 'data/{dataset}/vcfeval_no_haps/{calls_name}/{chrom}.done'
-    shell:
-        '''
-        rm -rf data/{wildcards.dataset}/vcfeval_no_haps/{wildcards.calls_name}/{wildcards.chrom}
-        {RTGTOOLS} RTG_MEM=12g vcfeval \
-        {params.region_arg} \
-        -c {input.calls_vcf} \
-        -b {input.ground_truth} \
-        -e {input.region_filter} \
-        -t {input.tg_sdf} \
-        -o data/{wildcards.dataset}/vcfeval_no_haps/{wildcards.calls_name}/{wildcards.chrom};
-        cp data/{wildcards.dataset}/vcfeval_no_haps/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
-        '''
+#rule vcfeval_rtgtools_no_haplotype_info:
+#    params: job_name = 'vcfeval_rtgtools_no_haplotype_info.{individual}.{calls_name}.{chrom}',
+#            region_arg = lambda wildcards: '--region={}'.format(wildcards.chrom) if wildcards.chrom != 'all' else ''
+#    input:  calls_vcf = 'data/{individual}/variants/{calls_name}/{chrom}.debug/2.0.realigned_genotypes.vcf.gz',
+#            calls_ix = 'data/{individual}/variants/{calls_name}/{chrom}.debug/2.0.realigned_genotypes.vcf.gz.tbi',
+#            ground_truth = 'data/{individual}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
+#            ground_truth_ix = 'data/{individual}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz.tbi',
+#            region_filter ='data/{individual}/variants/ground_truth/region_filter.bed',
+#            tg_sdf = 'data/genomes/1000g_v37_phase2.sdf'
+#    output: done = 'data/{individual}/vcfeval_no_haps/{calls_name}/{chrom}.done'
+#    shell:
+#        '''
+#        rm -rf data/{wildcards.individual}/vcfeval_no_haps/{wildcards.calls_name}/{wildcards.chrom}
+#        {RTGTOOLS} RTG_MEM=12g vcfeval \
+#        {params.region_arg} \
+#        -c {input.calls_vcf} \
+#        -b {input.ground_truth} \
+#        -e {input.region_filter} \
+#        -t {input.tg_sdf} \
+#        -o data/{wildcards.individual}/vcfeval_no_haps/{wildcards.calls_name}/{wildcards.chrom};
+#        cp data/{wildcards.individual}/vcfeval_no_haps/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
+#        '''
+
+# this function takes in a chromosome name in 1..22,X and a "genome build" name
+# and appends a 'chr' prefix to the chrom name if the genome build is hg38
+def chr_prefix(chrom, build):
+    assert(build in ['1000g','hg38'])
+    assert(chrom in chroms)
+    if build == 'hg38':
+        return 'chr'+chrom
+    else:
+        return chrom
 
 rule vcfeval_rtgtools:
-    params: job_name = 'vcfeval_rtgtools.{dataset}.{calls_name}.{chrom}',
-            region_arg = lambda wildcards: '--region={}'.format(wildcards.chrom) if wildcards.chrom != 'all' else ''
-    input:  calls_vcf = 'data/{dataset}/variants/{calls_name}/{chrom}.vcf.gz',
-            calls_ix = 'data/{dataset}/variants/{calls_name}/{chrom}.vcf.gz.tbi',
-            ground_truth = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
-            ground_truth_ix = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz.tbi',
-            region_filter ='data/{dataset}/variants/ground_truth/region_filter.bed',
-            tg_sdf = 'data/genomes/1000g_v37_phase2.sdf'
-    output: done = 'data/{dataset}/vcfeval/{calls_name}/{chrom}.done'
+    params: job_name = 'vcfeval_rtgtools.{individual}.{build}.{calls_name}.{chrom}',
+            region_arg = lambda wildcards: '--region={}'.format(chr_prefix(wildcards.chrom,wildcards.build)) if wildcards.chrom != 'all' else ''
+    input:  calls_vcf = 'data/{individual}.{build}/variants/{calls_name}/{chrom}.vcf.gz',
+            calls_ix = 'data/{individual}.{build}/variants/{calls_name}/{chrom}.vcf.gz.tbi',
+            ground_truth = 'data/{individual}.{build}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
+            ground_truth_ix = 'data/{individual}.{build}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz.tbi',
+            region_filter ='data/{individual}.{build}/variants/ground_truth/region_filter.bed',
+            sdf = 'data/genomes/{build}.sdf'
+    output: done = 'data/{individual}.{build}/vcfeval/{calls_name}/{chrom}.done'
     shell:
         '''
-        rm -rf data/{wildcards.dataset}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}
+        rm -rf data/{wildcards.individual}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}
         {RTGTOOLS} RTG_MEM=12g vcfeval \
         {params.region_arg} \
         -c {input.calls_vcf} \
         -b {input.ground_truth} \
         -e {input.region_filter} \
-        -t {input.tg_sdf} \
-        -o data/{wildcards.dataset}/vcfeval/{wildcards.calls_name}/{wildcards.chrom};
-        cp data/{wildcards.dataset}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
+        -t {input.sdf} \
+        -o data/{wildcards.individual}/vcfeval/{wildcards.calls_name}/{wildcards.chrom};
+        cp data/{wildcards.individual}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
         '''
 
 rule rtg_decompose_variants_ground_truth:
-    params: job_name = 'rtg_decompose_variants_ground_truth.{dataset}',
-    input:  vcfgz = 'data/{dataset}/variants/ground_truth/ground_truth.vcf.gz',
-            tbi   = 'data/{dataset}/variants/ground_truth/ground_truth.vcf.gz.tbi'
-    output: vcfgz = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.vcf.gz',
+    params: job_name = 'rtg_decompose_variants_ground_truth.{individual}.{build}',
+    input:  vcfgz = 'data/{individual}.{build}/variants/ground_truth/ground_truth.vcf.gz',
+            tbi   = 'data/{individual}.{build}/variants/ground_truth/ground_truth.vcf.gz.tbi'
+    output: vcfgz = 'data/{individual}.{build}/variants/ground_truth/ground_truth.DECOMPOSED.vcf.gz',
     shell: '{RTGTOOLS} RTG_MEM=12g vcfdecompose --break-mnps --break-indels -i {input.vcfgz} -o {output.vcfgz}'
 
 rule analyze_variants:
-    params: job_name = 'analyze_variants.{dataset}.{chrom}.{calls_name}',
-    input:  fp_calls = 'data/{dataset}/vcfeval/{calls_name}/{chrom}/fp.vcf.gz',
-            fn_calls = 'data/{dataset}/vcfeval/{calls_name}/{chrom}/fn.vcf.gz',
-            ground_truth_vcfgz = 'data/{dataset}/variants/ground_truth/ground_truth.vcf.gz',
-            ground_truth_bed = 'data/{dataset}/variants/ground_truth/region_filter.bed.gz',
-            ground_truth_bed_ix = 'data/{dataset}/variants/ground_truth/region_filter.bed.gz.tbi',
-            str_bed = 'genome_tracks/STRs_1000g.bed.gz',
-            str_bed_ix = 'genome_tracks/STRs_1000g.bed.gz.tbi',
-            line_bed = 'genome_tracks/LINEs_1000g.bed.gz',
-            line_bed_ix = 'genome_tracks/LINEs_1000g.bed.gz.tbi',
-            sine_bed = 'genome_tracks/SINEs_1000g.bed.gz',
-            sine_bed_ix = 'genome_tracks/SINEs_1000g.bed.gz.tbi',
-            ref_fa = 'data/genomes/hs37d5.fa',
-            ref_fai = 'data/genomes/hs37d5.fa.fai'
-    output: tex = 'data/output/variant_analysis_fp_fn__{dataset}__{calls_name}__{chrom}.tex'
+    params: job_name = 'analyze_variants.{individual}.{build}.{chrom}.{calls_name}',
+    input:  fp_calls = 'data/{individual}.{build}/vcfeval/{calls_name}/{chrom}/fp.vcf.gz',
+            fn_calls = 'data/{individual}.{build}/vcfeval/{calls_name}/{chrom}/fn.vcf.gz',
+            ground_truth_vcfgz = 'data/{individual}.{build}/variants/ground_truth/ground_truth.vcf.gz',
+            ground_truth_bed = 'data/{individual}.{build}/variants/ground_truth/region_filter.bed.gz',
+            ground_truth_bed_ix = 'data/{individual}.{build}/variants/ground_truth/region_filter.bed.gz.tbi',
+            str_bed = 'genome_tracks/STRs_{build}.bed.gz',
+            str_bed_ix = 'genome_tracks/STRs_{build}.bed.gz.tbi',
+            line_bed = 'genome_tracks/LINEs_{build}.bed.gz',
+            line_bed_ix = 'genome_tracks/LINEs_{build}.bed.gz.tbi',
+            sine_bed = 'genome_tracks/SINEs_{build}.bed.gz',
+            sine_bed_ix = 'genome_tracks/SINEs_{build}.bed.gz.tbi',
+            ref_1000g_fa = 'data/genomes/hs37d5.fa',
+            ref_1000g_fai = 'data/genomes/hs37d5.fa.fai',
+            ref_hg38_fa = 'data/genomes/hg38.fa',
+            ref_hg38_fai = 'data/genomes/hg38.fa.fai'
+    output: tex = 'data/output/variant_analysis_fp_fn__{individual}__{calls_name}__{chrom}.tex'
     run:
         analyze_variants(chrom_name = wildcards.chrom,
                          fp_calls_vcfgz = input.fp_calls,
@@ -156,29 +174,29 @@ rule analyze_variants:
                          str_tabix_bed_file = input.str_bed,
                          line_tabix_bed_file = input.line_bed,
                          sine_tabix_bed_file = input.sine_bed,
-                         ref_fa = input.ref_fa,
+                         ref_fa = ref_file[wildcards.build],
                          output_file = output.tex)
 
 rule rtg_filter_SNVs_ground_truth:
-    params: job_name = 'rtg_filter_SNVs_ground_truth.{dataset}',
-    input:  vcfgz = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.vcf.gz',
-            tbi   = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.vcf.gz.tbi'
-    output: vcfgz = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
+    params: job_name = 'rtg_filter_SNVs_ground_truth.{individual}.{build}',
+    input:  vcfgz = 'data/{individual}.{build}/variants/ground_truth/ground_truth.DECOMPOSED.vcf.gz',
+            tbi   = 'data/{individual}.{build}/variants/ground_truth/ground_truth.DECOMPOSED.vcf.gz.tbi'
+    output: vcfgz = 'data/{individual}.{build}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
     shell: '{RTGTOOLS} RTG_MEM=12g vcffilter --snps-only -i {input.vcfgz} -o {output.vcfgz}'
 
 from filter_SNVs import filter_SNVs
 rule filter_illumina_SNVs:
-    params: job_name = 'filter_SNVs_illumina.{dataset}.chr{chrom}',
-    input:  vcf = 'data/{dataset}/variants/illumina_{cov}x/{chrom}.vcf'
-    output: vcf = 'data/{dataset}/variants/illumina_{cov}x.filtered/{chrom,(\d+|X|Y)}.vcf'
+    params: job_name = 'filter_SNVs_illumina.{individual}.{build}.chr{chrom}',
+    input:  vcf = 'data/{individual}.{build}/variants/illumina_{cov}x/{chrom}.vcf'
+    output: vcf = 'data/{individual}.{build}/variants/illumina_{cov}x.filtered/{chrom,(\d+|X|Y)}.vcf'
     run:
         cov_filter = int(float(wildcards.cov)*2)
         filter_SNVs(input.vcf, output.vcf, cov_filter, density_count=10, density_len=500, density_qual=50)
 
 rule combine_chrom:
-    params: job_name = 'combine_chroms.{dataset}.{calls_name}',
-    input: expand('data/{{dataset}}/variants/{{calls_name}}/{chrom}.vcf',chrom=chroms)
-    output: 'data/{dataset}/variants/{calls_name}/all.vcf'
+    params: job_name = 'combine_chroms.{individual}.{build}.{calls_name}',
+    input: expand('data/{{individual}}.{{build}}/variants/{{calls_name}}/{chrom}.vcf',chrom=chroms)
+    output: 'data/{individual}.{build}/variants/{calls_name}/all.vcf'
     shell:
         '''
         grep -P '^#' {input[0]} > {output}; # grep header
@@ -200,9 +218,9 @@ def remove_chr_from_vcf(in_vcf, out_vcf):
             print("\t".join(el),file=outf)
 
 rule add_runtimes:
-    params: job_name = 'add_runtimes.{dataset}.{calls_name}',
-    input: expand('data/{{dataset}}/variants/{{calls_name}}/{chrom}.vcf.runtime',chrom=chroms)
-    output: 'data/{dataset}/variants/{calls_name}/all.vcf.runtime'
+    params: job_name = 'add_runtimes.{individual}.{build}.{calls_name}',
+    input: expand('data/{{individual}}.{{build}}/variants/{{calls_name}}/{chrom}.vcf.runtime',chrom=chroms)
+    output: 'data/{individual}.{build}/variants/{calls_name}/all.vcf.runtime'
     run:
         t = datetime.timedelta(hours=0, minutes=0, seconds=0)
         for f in input:
@@ -216,58 +234,58 @@ rule add_runtimes:
 
 
 rule run_reaper:
-    params: job_name = 'reaper.pacbio.{aligner}.{dataset}.cov{cov}.{options}.chr{chrom}',
-    input:  bam = 'data/{dataset}/aligned_reads/pacbio/pacbio.{aligner}.{chrom}.{cov}x.bam',
-            bai = 'data/{dataset}/aligned_reads/pacbio/pacbio.{aligner}.{chrom}.{cov}x.bam.bai',
+    params: job_name = 'reaper.pacbio.{aligner}.{individual}.{build}.cov{cov}.{options}.chr{chrom}',
+    input:  bam = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.{chrom}.{cov}x.bam',
+            bai = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.{chrom}.{cov}x.bam.bai',
             hg19    = 'data/genomes/hg19.fa',
             hg19_ix = 'data/genomes/hg19.fa.fai',
             hs37d5    = 'data/genomes/hs37d5.fa',
             hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
             hg38 = 'data/genomes/hg38.fa',
             hg38_ix = 'data/genomes/hg38.fa.fai'
-    output: vcf = 'data/{dataset}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.vcf',
-            debug = 'data/{dataset}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug',
-            no_hap_vcf = 'data/{dataset}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug/2.0.realigned_genotypes.vcf',
-            runtime = 'data/{dataset}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.vcf.runtime'
+    output: vcf = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.vcf',
+            debug = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug',
+            no_hap_vcf = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug/2.0.realigned_genotypes.vcf',
+            runtime = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.vcf.runtime'
     run:
         options_str = wildcards.options.replace('_',' ')
-        if wildcards.dataset == 'NA12878':
+        if wildcards.individual == 'NA12878':
             t1 = time.time()
-            shell('{REAPER} -r chr{wildcards.chrom} -F -d {output.debug} {options_str} --bam {input.bam} --ref {input.hg19} --out {output.vcf}.tmp')
+            shell('{REAPER} -r chr{wildcards.chrom} -F -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {input.hg19} --out {output.vcf}.tmp')
             t2 = time.time()
             # remove 'chr' from reference name in vcf
             remove_chr_from_vcf(output.vcf+'.tmp',output.vcf)
             # remove 'chr' from no-haplotype version of vcf
             remove_chr_from_vcf(output.no_hap_vcf, output.no_hap_vcf+'.tmp')
             shell('mv {output.no_hap_vcf}.tmp {output.no_hap_vcf}')
-        elif wildcards.dataset == 'NA24385':
-            t1 = time.time()
-            shell('{REAPER} -r chr{wildcards.chrom} -F -d {output.debug} {options_str} --bam {input.bam} --ref {input.hg38} --out {output.vcf}')
-            t2 = time.time()
         else:
+            w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
             t1 = time.time()
-            shell('{REAPER} -r {wildcards.chrom} -F -d {output.debug} {options_str} -s {wildcards.dataset} --bam {input.bam} --ref {input.hs37d5} --out {output.vcf}')
+            shell('{REAPER} -r {w_chrom} -F -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {ref_file[wildcards.build]} --out {output.vcf}')
             t2 = time.time()
-
+NA24143_HG38_PACBIO_BLASR_BAM_URL
         runtime = time.strftime('%H:%M:%S', time.gmtime(t2-t1))
         with open(output.runtime,'w') as outf:
             print(runtime,file=outf)
 
 # Call 30x Illumina variants
 rule call_variants_Illumina:
-    params: job_name = 'call_illumina.{dataset}.{cov}x',
-    input: bam = 'data/{dataset}/aligned_reads/illumina/illumina.{cov}x.bam',
-            bai = 'data/{dataset}/aligned_reads/illumina/illumina.{cov}x.bam.bai',
-            hs37d5 = 'data/genomes/hs37d5.fa',
-            hs37d5_ix = 'data/genomes/hs37d5.fa.fai'
-    output: vcf = 'data/{dataset}/variants/illumina_{cov}x/{chrom,(\d+|X|Y)}.vcf',
-            runtime = 'data/{dataset}/variants/illumina_{cov}x/{chrom,(\d+|X|Y)}.vcf.runtime'
+    params: job_name = 'call_illumina.{individual}.{build}.{cov}x',
+    input: bam = 'data/{individual}.{build}/aligned_reads/illumina/illumina.{cov}x.bam',
+            bai = 'data/{individual}.{build}/aligned_reads/illumina/illumina.{cov}x.bam.bai',
+            ref_1000g_fa = 'data/genomes/hs37d5.fa',
+            ref_1000g_fai = 'data/genomes/hs37d5.fa.fai',
+            ref_hg38_fa = 'data/genomes/hg38.fa',
+            ref_hg38_fai = 'data/genomes/hg38.fa.fai'
+    output: vcf = 'data/{individual}.{build}/variants/illumina_{cov}x/{chrom,(\d+|X|Y)}.vcf',
+            runtime = 'data/{individual}.{build}/variants/illumina_{cov}x/{chrom,(\d+|X|Y)}.vcf.runtime'
     run:
+        w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
         t1 = time.time()
         shell('''
-        {FREEBAYES} -f {input.hs37d5} \
+        {FREEBAYES} -f {ref_file[wildcards.build]} \
         --standard-filters \
-        --region {wildcards.chrom} \
+        --region {w_chrom} \
          --genotype-qualities \
          {input.bam} \
           > {output.vcf}
@@ -310,22 +328,24 @@ rule download_hg19_sdf:
         '''
 
 # download 1000g_v37_phase2 sdf, for the aligned pacbio reads
-rule download_1000g_v37_phase2_sdf:
-    params: job_name = 'download_1000g_v37_phase2_sdf',
-    output: 'data/genomes/1000g_v37_phase2.sdf'
+rule download_1000g_sdf:
+    params: job_name = 'download_1000g_sdf',
+    output: 'data/genomes/1000g.sdf'
     shell:
         '''
-        wget {TG_v37_SDF_URL} -O {output}.zip;
-        unzip {output}.zip -d data/genomes
+        wget {TG_v37_SDF_URL} -O data/genomes/1000g_v37_phase2.sdf.zip;
+        unzip data/genomes/1000g_v37_phase2.sdf.zip -d data/genomes
+        mv data/genomes/1000g_v37_phase2.sdf data/genomes/1000g.sdf
         '''
 
-rule download_GRCh38_sdf:
+rule download_hg38_sdf:
     params: job_name = 'download_GRCh38_sdf',
-    output: 'data/genomes/GRCh38.sdf'
+    output: 'data/genomes/hg38.sdf'
     shell:
         '''
-        wget {GRCh38_SDF_URL} -O {output}.zip;
-        unzip {output}.zip -d data/genomes
+        wget {GRCh38_SDF_URL} -O data/genomes/GRCh38.sdf.zip;
+        unzip data/genomes/GRCh38.sdf.zip -d data/genomes
+        mv data/genomes/GRCh38.sdf data/genomes/hg38.sdf
         '''
 
 rule convert_genome_track_to_1000g:
@@ -341,6 +361,15 @@ rule convert_genome_track_to_1000g:
         bgzip -c > {output.track}
         '''
 
+# SUBSAMPLE ILLUMINA BAM
+rule subsample_illumina_60x:
+    params: job_name = 'subsample_illumina_{individual}.{build}'
+    input:  'data/{individual}.{build}/aligned_reads/illumina/illumina.60x.bam'
+    output: 'data/{individual}.{build}/aligned_reads/illumina/illumina.{cov}x.bam'
+    run:
+        subsample_frac = float(wildcards.cov) / 60.0
+        shell('{SAMTOOLS} view -hb {input.bam} -s {subsample_frac} > {output.bam}')
+
 rule tabix_index:
     params: job_name = lambda wildcards: 'tabix_index.{}'.format(str(wildcards.x).replace("/", "."))
     input:  '{x}.{filetype}.gz'
@@ -349,30 +378,30 @@ rule tabix_index:
 
 # bgzip vcf
 rule bgzip_vcf_calls:
-    params: job_name = 'bgzip_vcf_calls.{dataset}.{calls_name}.{chrom}'
-    input:  'data/{dataset}/variants/{calls_name}/{chrom}.vcf'
-    output: 'data/{dataset}/variants/{calls_name}/{chrom,(all|X|\d+)}.vcf.gz'
+    params: job_name = 'bgzip_vcf_calls.{individual}.{build}.{calls_name}.{chrom}'
+    input:  'data/{individual}.{build}/variants/{calls_name}/{chrom}.vcf'
+    output: 'data/{individual}.{build}/variants/{calls_name}/{chrom,(all|\d+|X)}.vcf.gz'
     shell:  '{BGZIP} -c {input} > {output}'
 
 # bgzip vcf
 rule bgzip_debug_vcf_calls:
-    params: job_name = 'bgzip_no_hap_vcf_calls.{x}.{dataset}.{calls_name}.{chrom}'
-    input:  'data/{dataset}/variants/{calls_name}/{chrom}.debug/{x}.vcf'
-    output: 'data/{dataset}/variants/{calls_name}/{chrom,(all|X|\d+)}.debug/{x}.vcf.gz'
+    params: job_name = 'bgzip_no_hap_vcf_calls.{x}.{individual}.{build}.{calls_name}.{chrom}'
+    input:  'data/{individual}.{build}/variants/{calls_name}/{chrom}.debug/{x}.vcf'
+    output: 'data/{individual}.{build}/variants/{calls_name}/{chrom,(all|\d+|X)}.debug/{x}.vcf.gz'
     shell:  '{BGZIP} -c {input} > {output}'
 
 # bgzip vcf
 rule bgzip_ground_truth:
-    params: job_name = 'bgzip_ground_truth.{dataset}'
-    input:  'data/{dataset}/variants/ground_truth/ground_truth.vcf'
-    output: 'data/{dataset}/variants/ground_truth/ground_truth.vcf.gz'
+    params: job_name = 'bgzip_ground_truth.{individual}.{build}'
+    input:  'data/{individual}.{build}/variants/ground_truth/ground_truth.{build}.vcf'
+    output: 'data/{individual}.{build}/variants/ground_truth/ground_truth.{build}.vcf.gz'
     shell:  '{BGZIP} -c {input} > {output}'
 
 # bgzip bed
 rule bgzip_bed:
-    params: job_name = 'bgzip_bed.{dataset}.{calls_name}'
-    input: 'data/{dataset}/variants/{calls_name}/region_filter.bed'
-    output: 'data/{dataset}/variants/{calls_name}/region_filter.bed.gz'
+    params: job_name = 'bgzip_bed.{individual}.{build}.{calls_name}.{build}'
+    input: 'data/{individual}.{build}/variants/{calls_name}/region_filter.{build}.bed'
+    output: 'data/{individual}.{build}/variants/{calls_name}/region_filter.{build}.bed.gz'
     shell:  '{BGZIP} -c {input} > {output}'
 
 # gunzip fasta
@@ -422,25 +451,25 @@ rule backup_reaper_run:
         rm -rf data/BAK
         mkdir data/BAK
 
-        mkdir -p data/BAK/NA12878/variants
-        mkdir -p data/BAK/NA12878/vcfeval
-        mv data/NA12878/variants/reaper* data/BAK/NA12878/variants
-        mv data/NA12878/vcfeval/reaper* data/BAK/NA12878/vcfeval
+        mkdir -p data/BAK/NA12878.1000g/variants
+        mkdir -p data/BAK/NA12878.1000g/vcfeval
+        mv data/NA12878.1000g/variants/reaper* data/BAK/NA12878.1000g/variants
+        mv data/NA12878.1000g/vcfeval/reaper* data/BAK/NA12878.1000g/vcfeval
 
-        mkdir -p data/BAK/NA24143/variants
-        mkdir -p data/BAK/NA24143/vcfeval
-        mv data/NA24143/variants/reaper* data/BAK/NA24143/variants
-        mv data/NA24143/vcfeval/reaper* data/BAK/NA24143/vcfeval
+        mkdir -p data/BAK/NA24143.hg38/variants
+        mkdir -p data/BAK/NA24143.hg38/vcfeval
+        mv data/NA24143.hg38/variants/reaper* data/BAK/NA24143.hg38/variants
+        mv data/NA24143.hg38/vcfeval/reaper* data/BAK/NA24143.hg38/vcfeval
 
-        mkdir -p data/BAK/NA24149/variants
-        mkdir -p data/BAK/NA24149/vcfeval
-        mv data/NA24149/variants/reaper* data/BAK/NA24149/variants
-        mv data/NA24149/vcfeval/reaper* data/BAK/NA24149/vcfeval
+        mkdir -p data/BAK/NA24149.hg38/variants
+        mkdir -p data/BAK/NA24149.hg38/vcfeval
+        mv data/NA24149.hg38/variants/reaper* data/BAK/NA24149.hg38/variants
+        mv data/NA24149.hg38/vcfeval/reaper* data/BAK/NA24149.hg38/vcfeval
 
-        mkdir -p data/BAK/NA24385/variants
-        mkdir -p data/BAK/NA24385/vcfeval
-        mv data/NA24385/variants/reaper* data/BAK/NA24385/variants
-        mv data/NA24385/vcfeval/reaper* data/BAK/NA24385/vcfeval
+        mkdir -p data/BAK/NA24385.hg38/variants
+        mkdir -p data/BAK/NA24385.hg38/vcfeval
+        mv data/NA24385.hg38/variants/reaper* data/BAK/NA24385.hg38/variants
+        mv data/NA24385.hg38/vcfeval/reaper* data/BAK/NA24385.hg38/vcfeval
 
         mkdir data/BAK/plots
         mv data/plots data/BAK/plots

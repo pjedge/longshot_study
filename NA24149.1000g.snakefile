@@ -42,5 +42,5 @@ rule download_GIAB_VCF_NA24149_1000g:
 # DOWNLOAD PACBIO BAM
 rule download_pacbio_NA24149_1000g:
     params: job_name = 'download_pacbio_NA24149.1000g'
-    output: bam = 'data/NA24149.1000g/aligned_reads/pacbio/pacbio.bwamem.{chrom}.30x.bam',
-    shell: 'wget {NA24149_1000G_PACBIO_BWAMEM_BAM_URL_PREFIX}{wildcards.chrom}{NA24149_1000G_PACBIO_bwamem_BAM_URL_SUFFIX} -O {output.bam}'
+    output: bam = 'data/NA24149.1000g/aligned_reads/pacbio/pacbio.bwamem.{chrom}.32x.bam',
+    shell: 'wget {NA24149_1000G_PACBIO_BWAMEM_BAM_URL_PREFIX}{wildcards.chrom}{NA24149_1000G_PACBIO_BWAMEM_BAM_URL_SUFFIX} -O {output.bam}'

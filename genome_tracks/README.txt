@@ -175,3 +175,10 @@ file type returned: gzip compressed,
 Create one BED record per: whole gene
 => get BED
 
+1000g.chrom.sizes.txt:
+accessed from https://github.com/igvteam/igv/blob/master/genomes/sizes/1kg_v37.chrom.sizes
+on 6/23/2018
+
+hg38.chrom.sizes.txt:
+accessed from http://hgdownload-test.cse.ucsc.edu/goldenPath/hg38/bigZips/hg38.chrom.sizes
+on 6/23/2018

@@ -1,6 +1,5 @@
 from paper_tables_and_figures import genomes_table_files
 
-'''
 rule plot_pr_curve_NA12878_impact_of_haplotyping:
     params: job_name = 'plot_pr_curve_NA12878_impact_of_haplotyping',
             title = 'NA12878: Impact of Haplotype Information on PacBio Variant Calling with Reaper'
@@ -15,7 +14,6 @@ rule plot_pr_curve_NA12878_impact_of_haplotyping:
                            output.png,params.title,
                            colors=['b','y'],
                            xlim=(0.9,1.0),ylim=(0.99,1.0))
-'''
 
 rule plot_pr_curve_varyQ:
     params: job_name = 'plot_pr_curve_varyQ',
@@ -155,7 +153,7 @@ rule filter_vcf_GQ:
     output: vcfgz = 'data/{dataset}/variants/{calls_name}/{chrom}.GQ{GQ}.vcf.gz',
     shell: '{RTGTOOLS} RTG_MEM=12g vcffilter -g {wildcards.GQ} -i {input.vcfgz} -o {output.vcfgz}'
 
-sim_covs = [20,30,40,80]
+sim_covs = [20,30,40,60]
 rule plot_simulation_pr_bars:
     params: job_name = 'plot_simulation_pr_bars.{chrom}.GQ{GQ}'
     input:

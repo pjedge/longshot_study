@@ -64,4 +64,4 @@ rule subsample_pacbio_NA24385_1000g:
 rule download_pacbio_NA24385_1000g:
     params: job_name = 'download_pacbio_NA24385.1000g'
     output: bam = 'data/NA24385.1000g/aligned_reads/pacbio/pacbio.bwamem.{chrom}.69x.bam',
-    shell: 'wget {NA24385_1000G_PACBIO_BWAMEM_BAM_URL_PREFIX}{wildcards.chrom}{NA24385_1000G_PACBIO_bwamem_BAM_URL_SUFFIX} -O {output.bam}'
+    shell: 'wget {NA24385_1000G_PACBIO_BWAMEM_BAM_URL_PREFIX}{wildcards.chrom}{NA24385_1000G_PACBIO_BWAMEM_BAM_URL_SUFFIX} -O {output.bam}'

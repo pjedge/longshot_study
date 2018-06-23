@@ -7,7 +7,7 @@ sys.path.append('HapCUT2/utilities')
 import calculate_haplotype_statistics as chs
 import pickle
 
-include: "simulation.snakefile"
+include: "simulation.1000g.snakefile"
 include: "NA12878.1000g.snakefile"
 include: "NA24385.hg38.snakefile"  # AJ Son,    hg38
 include: "NA24143.hg38.snakefile"  # AJ Mother, hg38
@@ -57,15 +57,32 @@ ref_file = {'1000g':'data/genomes/hs37d5.fa', 'hg38':'data/genomes/hg38.fa'}
 # DEFAULT
 rule all:
     input:
-        'data/NA12878/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.30x.-z.all.p',
-        'data/NA12878/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.44x.-z.all.p',
-        'data/NA12878/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.30x.all.p',
-        'data/NA12878/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.44x.all.p'
-        #'data/plots/NA24385_prec_recall_1.png',
-        #'data/plots/NA24143_prec_recall_1.png',
-        #'data/plots/NA24149_prec_recall_1.png',
-        #'data/plots/NA12878_prec_recall_1.png',
-        #'data/plots/simulation_prec_recall_1.png',
+        'data/NA12878.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.30x.-z.all.p',
+        'data/NA12878.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.44x.-z.all.p',
+        #'data/NA24385.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.69x.-z.all.p',
+        #'data/NA24143.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.30x.-z.all.p',
+        #'data/NA24149.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.32x.-z.all.p',
+
+        'data/NA12878.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.30x.all.p',
+        'data/NA12878.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.44x.all.p',
+        'data/NA24385.hg38/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.69x.all.p',
+
+        'data/NA24385.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.bwamem.69x.all.p',
+        'data/NA24143.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.bwamem.30x.all.p',
+        'data/NA24149.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.bwamem.32x.all.p',
+
+        'data/NA12878.1000g/vcfeval/illumina_30x.filtered/all.done',
+        'data/NA24385.1000g/vcfeval/illumina_30x.filtered/all.done',
+        'data/NA24143.1000g/vcfeval/illumina_30x.filtered/all.done',
+        'data/NA24149.1000g/vcfeval/illumina_30x.filtered/all.done',
+        'data/NA24385.hg38/vcfeval/illumina_30x.filtered/all.done',
+        'data/NA24143.hg38/vcfeval/illumina_30x.filtered/all.done',
+        'data/NA24149.hg38/vcfeval/illumina_30x.filtered/all.done',
+        #'data/plots/NA24385.1000g_prec_recall_all.png',
+        #'data/plots/NA24143.1000g_prec_recall_all.png',
+        #'data/plots/NA24149.1000g_prec_recall_all.png',
+        #'data/plots/NA12878.1000g_prec_recall_all.png',
+        #'data/plots/simulation.1_prec_recall_1.png',
         #'data/plots/simulation_prec_recall_in_segdups_1.png',
         #'data/plots/chr1_simulated_60x_pacbio_mismapped_read_distribution.segdup.png',
         #'data/plots/chr1_simulated_60x_pacbio_mismapped_read_distribution.png',
@@ -263,7 +280,7 @@ rule run_reaper:
             t1 = time.time()
             shell('{REAPER} -r {w_chrom} -F -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {ref_file[wildcards.build]} --out {output.vcf}')
             t2 = time.time()
-NA24143_HG38_PACBIO_BLASR_BAM_URL
+
         runtime = time.strftime('%H:%M:%S', time.gmtime(t2-t1))
         with open(output.runtime,'w') as outf:
             print(runtime,file=outf)
@@ -368,7 +385,7 @@ rule subsample_illumina_60x:
     output: 'data/{individual}.{build}/aligned_reads/illumina/illumina.{cov}x.bam'
     run:
         subsample_frac = float(wildcards.cov) / 60.0
-        shell('{SAMTOOLS} view -hb {input.bam} -s {subsample_frac} > {output.bam}')
+        shell('{SAMTOOLS} view -hb {input} -s {subsample_frac} > {output}')
 
 rule tabix_index:
     params: job_name = lambda wildcards: 'tabix_index.{}'.format(str(wildcards.x).replace("/", "."))

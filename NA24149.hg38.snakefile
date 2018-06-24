@@ -46,7 +46,7 @@ rule download_GIAB_VCF_NA24149_hg38:
 rule split_bam_pacbio_NA24149_blasr_hg38:
     params: job_name = 'split_bam_pacbio_NA24149.{chrom}'
     input: bam = 'data/NA24149.hg38/aligned_reads/pacbio/pacbio.blasr.all.32x.bam',
-    output: bam = 'data/NA24149.hg38/aligned_reads/pacbio/pacbio.blasr.{chrom,(\d+|X|Y)}.32x.bam',
+    output: bam = 'data/NA24149.hg38/aligned_reads/pacbio/pacbio.blasr.{chrom,(\d+)}.32x.bam',
     shell: '{SAMTOOLS} view -hb {input.bam} {wildcards.chrom} > {output.bam}'
 
 # DOWNLOAD PACBIO BAM

@@ -3,8 +3,6 @@ import simulate_SNVs
 import pysam
 import mapping_accuracy
 
-chroms = ['{}'.format(i) for i in range(1,23)] + ['X']
-
 # VCFeval and plotting for segmental duplications as opposed to whole genome
 #rule plot_pr_curve_simulation_ngmlr:
 #    params: job_name = 'plot_pr_curve_simulation',

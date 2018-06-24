@@ -7,18 +7,6 @@ sys.path.append('HapCUT2/utilities')
 import calculate_haplotype_statistics as chs
 import pickle
 
-include: "simulation.1000g.snakefile"
-include: "NA12878.1000g.snakefile"
-include: "NA24385.hg38.snakefile"  # AJ Son,    hg38
-include: "NA24143.hg38.snakefile"  # AJ Mother, hg38
-include: "NA24149.hg38.snakefile"  # AJ Father, hg38
-include: "NA24385.1000g.snakefile" # AJ Son,    1000g
-include: "NA24143.1000g.snakefile" # AJ Mother, 1000g
-include: "NA24149.1000g.snakefile" # AJ Father, 1000g
-include: "aj_trio.snakefile" #
-include: "paper_tables_and_figures.snakefile"
-include: "haplotyping.snakefile"
-
 # DATA URLs
 HG19_URL     = 'http://hgdownload.cse.ucsc.edu/goldenpath/hg19/bigZips/hg19.2bit'
 HS37D5_URL     = 'ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz'
@@ -51,21 +39,36 @@ BEDTOOLS = 'bedtools' # v 2.27
 EXTRACTHAIRS = 'HapCUT2/build/extractHAIRS'
 HAPCUT2 = 'HapCUT2/build/extractHAIRS'
 
-chroms = ['{}'.format(i) for i in range(1,23)]# + ['chrX']
+chroms = ['{}'.format(i) for i in range(1,23)]
 ref_file = {'1000g':'data/genomes/hs37d5.fa', 'hg38':'data/genomes/hg38.fa'}
+
+include: "simulation.1000g.snakefile"
+include: "NA12878.1000g.snakefile"
+include: "NA24385.hg38.snakefile"  # AJ Son,    hg38
+include: "NA24143.hg38.snakefile"  # AJ Mother, hg38
+include: "NA24149.hg38.snakefile"  # AJ Father, hg38
+include: "NA24385.1000g.snakefile" # AJ Son,    1000g
+include: "NA24143.1000g.snakefile" # AJ Mother, 1000g
+include: "NA24149.1000g.snakefile" # AJ Father, 1000g
+include: "aj_trio.snakefile" #
+include: "paper_tables_and_figures.snakefile"
+include: "haplotyping.snakefile"
 
 # DEFAULT
 rule all:
     input:
         'data/NA12878.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.30x.-z.all.p',
         'data/NA12878.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.44x.-z.all.p',
-        #'data/NA24385.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.69x.-z.all.p',
-        #'data/NA24143.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.30x.-z.all.p',
-        #'data/NA24149.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.32x.-z.all.p',
+        'data/NA24385.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.69x.-z.all.p',
+        'data/NA24143.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.30x.-z.all.p',
+        'data/NA24149.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.32x.-z.all.p',
 
         'data/NA12878.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.30x.all.p',
         'data/NA12878.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.44x.all.p',
         'data/NA24385.hg38/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.69x.all.p',
+        'data/NA24385.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.bwamem.69x.all.p',
+        'data/NA24143.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.bwamem.30x.all.p',
+        'data/NA24149.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.bwamem.32x.all.p',
 
         'data/NA24385.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.bwamem.69x.all.p',
         'data/NA24143.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.bwamem.30x.all.p',
@@ -78,10 +81,11 @@ rule all:
         'data/NA24385.hg38/vcfeval/illumina_30x.filtered/all.done',
         'data/NA24143.hg38/vcfeval/illumina_30x.filtered/all.done',
         'data/NA24149.hg38/vcfeval/illumina_30x.filtered/all.done',
-        #'data/plots/NA24385.1000g_prec_recall_all.png',
-        #'data/plots/NA24143.1000g_prec_recall_all.png',
-        #'data/plots/NA24149.1000g_prec_recall_all.png',
-        #'data/plots/NA12878.1000g_prec_recall_all.png',
+        'data/plots/NA24385.hg38_prec_recall_all.png',
+        'data/plots/NA24385.1000g_prec_recall_all.png',
+        'data/plots/NA24143.1000g_prec_recall_all.png',
+        'data/plots/NA24149.1000g_prec_recall_all.png',
+        'data/plots/NA12878.1000g_prec_recall_all.png',
         #'data/plots/simulation.1_prec_recall_1.png',
         #'data/plots/simulation_prec_recall_in_segdups_1.png',
         #'data/plots/chr1_simulated_60x_pacbio_mismapped_read_distribution.segdup.png',
@@ -205,7 +209,7 @@ from filter_SNVs import filter_SNVs
 rule filter_illumina_SNVs:
     params: job_name = 'filter_SNVs_illumina.{individual}.{build}.chr{chrom}',
     input:  vcf = 'data/{individual}.{build}/variants/illumina_{cov}x/{chrom}.vcf'
-    output: vcf = 'data/{individual}.{build}/variants/illumina_{cov}x.filtered/{chrom,(\d+|X|Y)}.vcf'
+    output: vcf = 'data/{individual}.{build}/variants/illumina_{cov}x.filtered/{chrom,(\d+)}.vcf'
     run:
         cov_filter = int(float(wildcards.cov)*2)
         filter_SNVs(input.vcf, output.vcf, cov_filter, density_count=10, density_len=500, density_qual=50)
@@ -220,8 +224,8 @@ rule combine_chrom:
         cat {input} | grep -Pv '^#' >> {output}; # cat files, removing the headers.
         '''
 
-hg19_chroms = set(['chr{}'.format(i) for i in range(1,23)] + ['chrX'])
-hs37d5_chroms = set([str(i) for i in range(1,23)] + ['X'])
+hg19_chroms = set(['chr{}'.format(i) for i in range(1,23)])
+hs37d5_chroms = set([str(i) for i in range(1,23)])
 def remove_chr_from_vcf(in_vcf, out_vcf):
     with open(in_vcf, 'r') as inf, open(out_vcf, 'w') as outf:
         for line in inf:
@@ -260,10 +264,10 @@ rule run_reaper:
             hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
             hg38 = 'data/genomes/hg38.fa',
             hg38_ix = 'data/genomes/hg38.fa.fai'
-    output: vcf = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.vcf',
+    output: vcf = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+)}.vcf',
             debug = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug',
             no_hap_vcf = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug/2.0.realigned_genotypes.vcf',
-            runtime = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.vcf.runtime'
+            runtime = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+)}.vcf.runtime'
     run:
         options_str = wildcards.options.replace('_',' ')
         if wildcards.individual == 'NA12878':
@@ -277,8 +281,9 @@ rule run_reaper:
             shell('mv {output.no_hap_vcf}.tmp {output.no_hap_vcf}')
         else:
             w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
+            w_ref = ref_file[wildcards.build]
             t1 = time.time()
-            shell('{REAPER} -r {w_chrom} -F -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {ref_file[wildcards.build]} --out {output.vcf}')
+            shell('{REAPER} -r {w_chrom} -F -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {w_ref} --out {output.vcf}')
             t2 = time.time()
 
         runtime = time.strftime('%H:%M:%S', time.gmtime(t2-t1))
@@ -287,20 +292,21 @@ rule run_reaper:
 
 # Call 30x Illumina variants
 rule call_variants_Illumina:
-    params: job_name = 'call_illumina.{individual}.{build}.{cov}x',
+    params: job_name = 'call_illumina.{individual}.{build}.{cov}x.chr{chrom}',
     input: bam = 'data/{individual}.{build}/aligned_reads/illumina/illumina.{cov}x.bam',
             bai = 'data/{individual}.{build}/aligned_reads/illumina/illumina.{cov}x.bam.bai',
             ref_1000g_fa = 'data/genomes/hs37d5.fa',
             ref_1000g_fai = 'data/genomes/hs37d5.fa.fai',
             ref_hg38_fa = 'data/genomes/hg38.fa',
             ref_hg38_fai = 'data/genomes/hg38.fa.fai'
-    output: vcf = 'data/{individual}.{build}/variants/illumina_{cov}x/{chrom,(\d+|X|Y)}.vcf',
-            runtime = 'data/{individual}.{build}/variants/illumina_{cov}x/{chrom,(\d+|X|Y)}.vcf.runtime'
+    output: vcf = 'data/{individual}.{build}/variants/illumina_{cov}x/{chrom,(\d+)}.vcf',
+            runtime = 'data/{individual}.{build}/variants/illumina_{cov}x/{chrom,(\d+)}.vcf.runtime'
     run:
         w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
+        w_ref = ref_file[wildcards.build]
         t1 = time.time()
         shell('''
-        {FREEBAYES} -f {ref_file[wildcards.build]} \
+        {FREEBAYES} -f {w_ref} \
         --standard-filters \
         --region {w_chrom} \
          --genotype-qualities \
@@ -397,14 +403,14 @@ rule tabix_index:
 rule bgzip_vcf_calls:
     params: job_name = 'bgzip_vcf_calls.{individual}.{build}.{calls_name}.{chrom}'
     input:  'data/{individual}.{build}/variants/{calls_name}/{chrom}.vcf'
-    output: 'data/{individual}.{build}/variants/{calls_name}/{chrom,(all|\d+|X)}.vcf.gz'
+    output: 'data/{individual}.{build}/variants/{calls_name}/{chrom,(all|\d+)}.vcf.gz'
     shell:  '{BGZIP} -c {input} > {output}'
 
 # bgzip vcf
 rule bgzip_debug_vcf_calls:
     params: job_name = 'bgzip_no_hap_vcf_calls.{x}.{individual}.{build}.{calls_name}.{chrom}'
     input:  'data/{individual}.{build}/variants/{calls_name}/{chrom}.debug/{x}.vcf'
-    output: 'data/{individual}.{build}/variants/{calls_name}/{chrom,(all|\d+|X)}.debug/{x}.vcf.gz'
+    output: 'data/{individual}.{build}/variants/{calls_name}/{chrom,(all|\d+)}.debug/{x}.vcf.gz'
     shell:  '{BGZIP} -c {input} > {output}'
 
 # bgzip vcf
@@ -470,24 +476,39 @@ rule backup_reaper_run:
 
         mkdir -p data/BAK/NA12878.1000g/variants
         mkdir -p data/BAK/NA12878.1000g/vcfeval
-        mv data/NA12878.1000g/variants/reaper* data/BAK/NA12878.1000g/variants
-        mv data/NA12878.1000g/vcfeval/reaper* data/BAK/NA12878.1000g/vcfeval
+        mv data/NA12878.1000g/variants/reaper* data/BAK/NA12878.1000g/variants 2> /dev/null
+        mv data/NA12878.1000g/vcfeval/reaper* data/BAK/NA12878.1000g/vcfeval 2> /dev/null
 
         mkdir -p data/BAK/NA24143.hg38/variants
         mkdir -p data/BAK/NA24143.hg38/vcfeval
-        mv data/NA24143.hg38/variants/reaper* data/BAK/NA24143.hg38/variants
-        mv data/NA24143.hg38/vcfeval/reaper* data/BAK/NA24143.hg38/vcfeval
+        mv data/NA24143.hg38/variants/reaper* data/BAK/NA24143.hg38/variants 2> /dev/null
+        mv data/NA24143.hg38/vcfeval/reaper* data/BAK/NA24143.hg38/vcfeval 2> /dev/null
 
         mkdir -p data/BAK/NA24149.hg38/variants
         mkdir -p data/BAK/NA24149.hg38/vcfeval
-        mv data/NA24149.hg38/variants/reaper* data/BAK/NA24149.hg38/variants
-        mv data/NA24149.hg38/vcfeval/reaper* data/BAK/NA24149.hg38/vcfeval
+        mv data/NA24149.hg38/variants/reaper* data/BAK/NA24149.hg38/variants 2> /dev/null
+        mv data/NA24149.hg38/vcfeval/reaper* data/BAK/NA24149.hg38/vcfeval 2> /dev/null
 
         mkdir -p data/BAK/NA24385.hg38/variants
         mkdir -p data/BAK/NA24385.hg38/vcfeval
-        mv data/NA24385.hg38/variants/reaper* data/BAK/NA24385.hg38/variants
-        mv data/NA24385.hg38/vcfeval/reaper* data/BAK/NA24385.hg38/vcfeval
+        mv data/NA24385.hg38/variants/reaper* data/BAK/NA24385.hg38/variants 2> /dev/null
+        mv data/NA24385.hg38/vcfeval/reaper* data/BAK/NA24385.hg38/vcfeval 2> /dev/null
+
+        mkdir -p data/BAK/NA24143.1000g/variants
+        mkdir -p data/BAK/NA24143.1000g/vcfeval
+        mv data/NA24143.1000g/variants/reaper* data/BAK/NA24143.1000g/variants 2> /dev/null
+        mv data/NA24143.1000g/vcfeval/reaper* data/BAK/NA24143.1000g/vcfeval 2> /dev/null
+
+        mkdir -p data/BAK/NA24149.1000g/variants
+        mkdir -p data/BAK/NA24149.1000g/vcfeval
+        mv data/NA24149.1000g/variants/reaper* data/BAK/NA24149.1000g/variants 2> /dev/null
+        mv data/NA24149.1000g/vcfeval/reaper* data/BAK/NA24149.1000g/vcfeval 2> /dev/null
+
+        mkdir -p data/BAK/NA24385.1000g/variants
+        mkdir -p data/BAK/NA24385.1000g/vcfeval
+        mv data/NA24385.1000g/variants/reaper* data/BAK/NA24385.1000g/variants 2> /dev/null
+        mv data/NA24385.1000g/vcfeval/reaper* data/BAK/NA24385.1000g/vcfeval 2> /dev/null
 
         mkdir data/BAK/plots
-        mv data/plots data/BAK/plots
+        mv data/plots data/BAK/plots 2> /dev/null
         '''

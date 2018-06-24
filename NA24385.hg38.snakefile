@@ -66,7 +66,7 @@ rule split_bam_pacbio_NA24385_hg38_BLASR:
     params: job_name = 'split_bam_pacbio_NA24385.hg38.{chrom}'
     input: bam = 'data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.all.69x.bam',
            bai = 'data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.all.69x.bam.bai'
-    output: bam = 'data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.{chrom,(\d+|X|Y)}.69x.bam',
+    output: bam = 'data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.{chrom,(\d+)}.69x.bam',
     shell: '{SAMTOOLS} view -hb {input.bam} chr{wildcards.chrom} > {output.bam}'
 
 # DOWNLOAD PACBIO BAM

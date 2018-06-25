@@ -52,7 +52,7 @@ rule extractHAIRS:
     output: frag = 'data/{individual}.{build}/HapCUT2_haplotypes/illumina.{icov,\d+}x.pacbio.{aligner}.{pcov,\d+}x/fragments/{chrom,(\d+)}',
     run:
         w_ref = ref_file[wildcards.build]
-        if wildcards.individual == NA12878:
+        if wildcards.individual == 'NA12878':
             chr_prefix_vcf = input.vcf[:-4] + '.chr_prefix.vcf'
             shell('''cat {input.vcf} | awk '{{if($0 !~ /^#/) print "chr"$0; else print $0}}'> {chr_prefix_vcf}''')
             shell('{EXTRACTHAIRS} --ref {w_ref} --bam {input.bam} --vcf {chr_prefix_vcf} --out {output.frag} --pacbio 1')

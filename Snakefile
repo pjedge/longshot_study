@@ -57,6 +57,11 @@ include: "haplotyping.snakefile"
 # DEFAULT
 rule all:
     input:
+        'data/output/four_GIAB_genomes_table.aj_trio_1000g_bwamem.all.GQ50.tex', # current version with bwamem
+        'data/output/four_GIAB_genomes_table_extended.aj_trio_1000g_bwamem.all.GQ50.tex', # current version with bwamem
+        #'data/output/four_GIAB_genomes_table.aj_trio_hg38_blasr.all.GQ50.tex', # once hg38 blasr bams available for aj mother + father
+        #'data/output/four_GIAB_genomes_table_extended.aj_trio_hg38_blasr.all.GQ50.tex', # once hg38 blasr bams available for aj mother + father
+        
         'data/NA12878.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.30x.-z.all.p',
         'data/NA12878.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.44x.-z.all.p',
         'data/NA24385.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.69x.-z.all.p',

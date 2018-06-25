@@ -1,3 +1,4 @@
+from filter_SNVs import filter_reaper_VCF_for_haplotype_assessment
 
 rule combine_haplotype_stats:
     params: job_name = 'combine_haplotype_stats.{individual}.{build}.{method}.{info}',
@@ -10,8 +11,8 @@ rule combine_haplotype_stats:
         pickle.dump(err, open(output, "wb" ))
 
 rule haplotype_accuracy_reaper:
-    params: job_name = 'haplotype_accuracy_reaper.{individual}.{build}.pacbio{pcov}x.{aligner}.{chrom}',
-    input: vcf = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/{chrom}.vcf',
+    params: job_name = 'haplotype_accuracy_reaper.{individual}.{build}.pacbio{pcov}x.PQ{GQ}.{aligner}.{chrom}',
+    input: vcf = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/{chrom}.PQ{GQ}.vcf',
            ground_truth = 'data/{individual}.{build}/variants/ground_truth/separate_chrom/ground_truth.DECOMPOSED.SNVs_ONLY.{chrom}.vcf',
            contig_size_file = 'genome_tracks/{build}.chrom.sizes.txt'
     output: pickle = 'data/{individual}.{build}/reaper_haplotypes/hap_statistics/reaper.pacbio.{aligner}.{pcov}x.-z.{chrom,(\d+)}.p'
@@ -21,13 +22,27 @@ rule haplotype_accuracy_reaper:
 
 rule haplotype_accuracy_HapCUT2:
     params: job_name = 'haplotype_accuracy_HapCUT2.{individual}.{build}.illumina30.pacbio{pcov}x.{aligner}.{chrom}',
-    input: hap = 'data/{individual}.{build}/HapCUT2_haplotypes/illumina.{icov}x.pacbio.{aligner}.{pcov}x/haps/{chrom}',
+    input: hap = 'data/{individual}.{build}/HapCUT2_haplotypes/illumina.{icov}x.pacbio.{aligner}.{pcov}x/haps/{chrom}.pruned',
            vcf = 'data/{individual}.{build}/variants/illumina_{icov}x.filtered/{chrom}.vcf',
            ground_truth = 'data/{individual}.{build}/variants/ground_truth/separate_chrom/ground_truth.DECOMPOSED.SNVs_ONLY.{chrom}.vcf'
     output: pickle = 'data/{individual}.{build}/HapCUT2_haplotypes/hap_statistics/illumina.{icov,\d+}x.pacbio.{aligner}.{pcov,\d+}x.{chrom,(\d+)}.p'
     run:
         err = chs.hapblock_vcf_error_rate(input.hap, input.vcf, input.ground_truth, input.contig_size_file, False)
         pickle.dump(err, open(output.pickle, "wb"))
+
+rule prune_reaper_vcf:
+    params: job_name = "prune_reaper_haplotype.{individual}.{build}.reaper.pacbio.{aligner}.{pcov}x.-z.{chrom}",
+    input: 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/{chrom}.vcf'
+    output: 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/{chrom}.PQ{GQ}.vcf'
+    run:
+        filter_reaper_VCF_for_haplotype_assessment(input, output, min_phase_qual=30)
+
+rule prune_HapCUT2_haplotype:
+    params: job_name = "prune_HapCUT2_haplotype.{individual}.{build}.illumina{icov}x.pacbio.{aligner}.{pcov}x.{chrom}",
+    input: 'data/{individual}.{build}/HapCUT2_haplotypes/illumina.{icov}x.pacbio.{aligner}.{pcov}x/haps/{chrom}'
+    output: 'data/{individual}.{build}/HapCUT2_haplotypes/illumina.{icov}x.pacbio.{aligner}.{pcov}x/haps/{chrom}.pruned'
+    run:
+        prune_hapblock_file(input, output, snp_conf_cutoff=50.0, split_conf_cutoff=-1.0, use_refhap_heuristic=False)
 
 rule separate_ground_truth_chrom:
     params: job_name = 'separate_ground_truth_chrom.{individual}.{build}.{chrom}',

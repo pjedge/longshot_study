@@ -1,5 +1,6 @@
 
 import re
+from math import log10
 
 def filter_SNVs(infile, outfile, max_dp, density_count=10, density_len=500, density_qual=50):
     dp_pat = re.compile("DP=(\d+)")
@@ -56,3 +57,56 @@ def filter_SNVs(infile, outfile, max_dp, density_count=10, density_len=500, dens
 
         for line in filtered_lines:
             print(line,file=outf)
+
+
+def addlogs(a,b):
+    if a > b:
+        return a + log10(1.0 + pow(10.0, b - a))
+    else:
+        return b + log10(1.0 + pow(10.0, a - b))
+
+def filter_reaper_VCF_for_haplotype_assessment(infile, outfile, min_phase_qual=30):
+    ph_pat = re.compile("PH=(\d+\.\d+),(\d+\.\d+),(\d+\.\d+),(\d+\.\d+);")
+
+    with open(outfile,'w') as outf:
+
+        with open(infile,'r') as inf:
+            for line in inf:
+                if line[0] == '#':
+                    print(line.strip(),file=outf)
+                    continue
+
+                if len(line) < 3:
+                    continue
+                el = line.strip().split('\t')
+
+                # remove variants not meeting filters
+                if el[6] != 'PASS':
+                    print(line.strip())
+                    continue
+
+                ph_search = re.search(ph_pat,line)
+                assert(ph_search)
+                # log values of the ph values
+                ph1 = float(ph_search.group(1))/-10.0
+                ph2 = float(ph_search.group(2))/-10.0
+                ph3 = float(ph_search.group(3))/-10.0
+                ph4 = float(ph_search.group(4))/-10.0
+
+                # take the 3 smallest log qual values
+                # these correspond to the least likely phased genotypes
+                vals = sorted([ph1,ph2,ph3,ph4])[:-1]
+
+                # the log sum of the non-max phased genotype probabilities
+                qual = addlogs(addlogs(vals[0],vals[1]), vals[2])
+
+                # convert the total to phred score
+                phred_qual = qual * -10.0
+
+                # this line has too low phase quality, print filtered line to stdout and move on
+                if phred_qual < min_phase_qual:
+                    print(line.strip())
+                    continue
+
+                # this line has high enough phase quality
+                print(line.strip(),file=outf)

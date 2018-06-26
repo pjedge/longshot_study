@@ -61,7 +61,7 @@ rule all:
         'data/output/four_GIAB_genomes_table_extended.aj_trio_1000g_bwamem.all.GQ50.tex', # current version with bwamem
         #'data/output/four_GIAB_genomes_table.aj_trio_hg38_blasr.all.GQ50.tex', # once hg38 blasr bams available for aj mother + father
         #'data/output/four_GIAB_genomes_table_extended.aj_trio_hg38_blasr.all.GQ50.tex', # once hg38 blasr bams available for aj mother + father
-        
+
         'data/NA12878.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.30x.-z.all.p',
         'data/NA12878.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.44x.-z.all.p',
         'data/NA24385.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.69x.-z.all.p',
@@ -155,15 +155,15 @@ rule vcfeval_rtgtools:
     output: done = 'data/{individual}.{build}/vcfeval/{calls_name}/{chrom}.done'
     shell:
         '''
-        rm -rf data/{wildcards.individual}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}
+        rm -rf data/{wildcards.individual}.{build}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}
         {RTGTOOLS} RTG_MEM=12g vcfeval \
         {params.region_arg} \
         -c {input.calls_vcf} \
         -b {input.ground_truth} \
         -e {input.region_filter} \
         -t {input.sdf} \
-        -o data/{wildcards.individual}/vcfeval/{wildcards.calls_name}/{wildcards.chrom};
-        cp data/{wildcards.individual}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
+        -o data/{wildcards.individual}.{build}/vcfeval/{wildcards.calls_name}/{wildcards.chrom};
+        cp data/{wildcards.individual}.{build}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
         '''
 
 rule rtg_decompose_variants_ground_truth:

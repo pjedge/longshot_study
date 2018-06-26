@@ -396,7 +396,7 @@ def plot_precision_recall_bars_simulation_extended(pacbio_ngmlr_dirlist_genome,
     plt.savefig(output_file)
 
 
-def plot_precision_recall_bars_NA12878_NA24385(pacbio_dirlist_genome, illumina_dirlist_genome, pacbio_dirlist_segdup, illumina_dirlist_segdup, gq_cutoff, labels, output_file):
+def plot_precision_recall_bars_NA12878_NA24385(reaper_with_haps_dirlist, reaper_nohaps_dirlist, illumina_dirlist, gq_cutoff, labels, output_file):
 
     plt.figure(figsize=(7,5))
     #mpl.rcParams['axes.titlepad'] = 50

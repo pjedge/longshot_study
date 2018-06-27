@@ -6,6 +6,7 @@ import sys
 sys.path.append('HapCUT2/utilities')
 import calculate_haplotype_statistics as chs
 import pickle
+import datetime
 
 # DATA URLs
 HG19_URL     = 'http://hgdownload.cse.ucsc.edu/goldenpath/hg19/bigZips/hg19.2bit'
@@ -58,6 +59,7 @@ include: "haplotyping.snakefile"
 # DEFAULT
 rule all:
     input:
+        expand('data/NA12878.1000g/aligned_reads/illumina/genomecov_histograms_mapq{mapq}/{info}__all.txt', mapq=[0,10,20,30])
         'data/output/four_GIAB_genomes_table.aj_trio_1000g_bwamem.all.GQ50.tex', # current version with bwamem
         'data/output/four_GIAB_genomes_table_extended.aj_trio_1000g_bwamem.all.GQ50.tex', # current version with bwamem
         #'data/output/four_GIAB_genomes_table.aj_trio_hg38_blasr.all.GQ50.tex', # once hg38 blasr bams available for aj mother + father
@@ -324,7 +326,6 @@ rule call_variants_Illumina:
         with open(output.runtime,'w') as outf:
             print(runtime,file=outf)
 
-#chroms_XY = chroms + ['X','Y']
 rule combine_coverages:
     params: job_name = 'generate_genomecov_bed.{individual}.{build}.{chrom}.{cov}x'
     input:  expand('data/{individual}.{build}/aligned_reads/{tech}/genomecov_histograms_mapq{mapq}/{info}__{chrom}.txt', chrom=chroms)
@@ -340,7 +341,7 @@ rule generate_coverage_histogram:
         shell('''
         {SAMTOOLS} view -F 3844 -q {wildcards.mapq} {input} -hb {chrom} | \
         {BEDTOOLS} genomecov -ibam - | \
-        grep "^{w_chrom}\t" > {output}
+        grep -P '^{w_chrom}\\t' > {output}
         ''')
 
 # download hg19 reference, for the aligned pacbio reads

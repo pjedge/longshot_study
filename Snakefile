@@ -64,6 +64,7 @@ rule all:
 
         'data/NA12878.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.30x.-z.all.p',
         'data/NA12878.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.44x.-z.all.p',
+        'data/NA24385.hg38/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.69x.-z.all.p',
         'data/NA24385.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.69x.-z.all.p',
         'data/NA24143.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.30x.-z.all.p',
         'data/NA24149.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.32x.-z.all.p',
@@ -155,15 +156,15 @@ rule vcfeval_rtgtools:
     output: done = 'data/{individual}.{build}/vcfeval/{calls_name}/{chrom}.done'
     shell:
         '''
-        rm -rf data/{wildcards.individual}.{build}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}
+        rm -rf data/{wildcards.individual}.{wildcards.build}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}
         {RTGTOOLS} RTG_MEM=12g vcfeval \
         {params.region_arg} \
         -c {input.calls_vcf} \
         -b {input.ground_truth} \
         -e {input.region_filter} \
         -t {input.sdf} \
-        -o data/{wildcards.individual}.{build}/vcfeval/{wildcards.calls_name}/{wildcards.chrom};
-        cp data/{wildcards.individual}.{build}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
+        -o data/{wildcards.individual}.{wildcards.build}/vcfeval/{wildcards.calls_name}/{wildcards.chrom};
+        cp data/{wildcards.individual}.{wildcards.build}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
         '''
 
 rule rtg_decompose_variants_ground_truth:

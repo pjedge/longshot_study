@@ -99,26 +99,26 @@ rule plot_pr_curve_simulation_segmental_duplications:
 # NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
 # therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
 rule vcfeval_rtgtools_segmental_duplications:
-    params: job_name = 'vcfeval_rtgtools.{dataset}.{calls_name}.{chrom}',
+    params: job_name = 'vcfeval_rtgtools_segdup.{dataset}.1000g.{calls_name}.{chrom}',
             region_arg = lambda wildcards: '--region={}'.format(wildcards.chrom) if wildcards.chrom != 'all' else ''
-    input:  calls_vcf = 'data/{dataset}/variants/{calls_name}/{chrom}.vcf.gz',
-            calls_ix = 'data/{dataset}/variants/{calls_name}/{chrom}.vcf.gz.tbi',
-            ground_truth = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
-            ground_truth_ix = 'data/{dataset}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz.tbi',
+    input:  calls_vcf = 'data/{dataset}.1000g/variants/{calls_name}/{chrom}.vcf.gz',
+            calls_ix = 'data/{dataset}.1000g/variants/{calls_name}/{chrom}.vcf.gz.tbi',
+            ground_truth = 'data/{dataset}.1000g/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
+            ground_truth_ix = 'data/{dataset}.1000g/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz.tbi',
             region_filter ='genome_tracks/segmental_duplications_0.99_similar_1000g.bed',
             tg_sdf = 'data/genomes/1000g_v37_phase2.sdf'
-    output: done = 'data/{dataset}/vcfeval_segdup/{calls_name}/{chrom,(\d+|X|Y|all)}.done'
+    output: done = 'data/{dataset}.1000g/vcfeval_segdup/{calls_name}/{chrom,(\d+|X|Y|all)}.done'
     shell:
         '''
-        rm -rf data/{wildcards.dataset}/vcfeval_segdup/{wildcards.calls_name}/{wildcards.chrom}
+        rm -rf data/{wildcards.dataset}.1000g/vcfeval_segdup/{wildcards.calls_name}/{wildcards.chrom}
         {RTGTOOLS} RTG_MEM=12g vcfeval \
         {params.region_arg} \
         -c {input.calls_vcf} \
         -b {input.ground_truth} \
         -e {input.region_filter} \
         -t {input.tg_sdf} \
-        -o data/{wildcards.dataset}/vcfeval_segdup/{wildcards.calls_name}/{wildcards.chrom};
-        cp data/{wildcards.dataset}/vcfeval_segdup/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
+        -o data/{wildcards.dataset}.1000g/vcfeval_segdup/{wildcards.calls_name}/{wildcards.chrom};
+        cp data/{wildcards.dataset}.1000g/vcfeval_segdup/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
         '''
 ##################################################################################################################
 

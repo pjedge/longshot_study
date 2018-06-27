@@ -11,8 +11,8 @@ rule combine_haplotype_stats:
         pickle.dump(err, open(output, "wb" ))
 
 rule haplotype_accuracy_reaper:
-    params: job_name = 'haplotype_accuracy_reaper.{individual}.{build}.pacbio{pcov}x.PQ{GQ}.{aligner}.{chrom}',
-    input: vcf = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/{chrom}.PQ{GQ}.vcf',
+    params: job_name = 'haplotype_accuracy_reaper.{individual}.{build}.pacbio{pcov}x.{aligner}.{chrom}',
+    input: vcf = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/{chrom}.filtered.vcf',
            ground_truth = 'data/{individual}.{build}/variants/ground_truth/separate_chrom/ground_truth.DECOMPOSED.SNVs_ONLY.{chrom}.vcf',
            contig_size_file = 'genome_tracks/{build}.chrom.sizes.txt'
     output: pickle = 'data/{individual}.{build}/reaper_haplotypes/hap_statistics/reaper.pacbio.{aligner}.{pcov}x.-z.{chrom,(\d+)}.p'
@@ -33,7 +33,7 @@ rule haplotype_accuracy_HapCUT2:
 rule prune_reaper_vcf:
     params: job_name = "prune_reaper_haplotype.{individual}.{build}.reaper.pacbio.{aligner}.{pcov}x.-z.{chrom}",
     input: 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/{chrom}.vcf'
-    output: 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/{chrom}.PQ{GQ}.vcf'
+    output: 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/{chrom}.filtered.vcf'
     run:
         filter_reaper_VCF_for_haplotype_assessment(input, output, min_phase_qual=30)
 
@@ -42,7 +42,7 @@ rule prune_HapCUT2_haplotype:
     input: 'data/{individual}.{build}/HapCUT2_haplotypes/illumina.{icov}x.pacbio.{aligner}.{pcov}x/haps/{chrom}'
     output: 'data/{individual}.{build}/HapCUT2_haplotypes/illumina.{icov}x.pacbio.{aligner}.{pcov}x/haps/{chrom}.pruned'
     run:
-        prune_hapblock_file(input, output, snp_conf_cutoff=50.0, split_conf_cutoff=-1.0, use_refhap_heuristic=False)
+        prune_hapblock_file(input, output, snp_conf_cutoff=30.0, split_conf_cutoff=-1.0, use_refhap_heuristic=False)
 
 rule separate_ground_truth_chrom:
     params: job_name = 'separate_ground_truth_chrom.{individual}.{build}.{chrom}',
@@ -63,7 +63,7 @@ rule extractHAIRS:
     params: job_name = 'extractHAIRS.{individual}.{build}.illumina{icov}.pacbio{pcov}.{aligner}.{chrom}',
     input: bam = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.{chrom}.{pcov}x.bam',
            bai = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.{chrom}.{pcov}x.bam.bai',
-           vcf = 'data/{individual}.{build}/variants/illumina_{icov}x.filtered/{chrom}.vcf'
+           vcf = 'data/{individual}.{build}/variants/illumina_{icov}x.filtered/{chrom}.haplotyping_filters.vcf'
     output: frag = 'data/{individual}.{build}/HapCUT2_haplotypes/illumina.{icov,\d+}x.pacbio.{aligner}.{pcov,\d+}x/fragments/{chrom,(\d+)}',
     run:
         w_ref = ref_file[wildcards.build]
@@ -73,3 +73,15 @@ rule extractHAIRS:
             shell('{EXTRACTHAIRS} --ref {w_ref} --bam {input.bam} --vcf {chr_prefix_vcf} --out {output.frag} --pacbio 1')
         else:
             shell('{EXTRACTHAIRS} --ref {w_ref} --bam {input.bam} --vcf {input.vcf} --out {output.frag} --pacbio 1')
+
+rule haplotyping_filters:
+    params: job_name = 'haplotyping_filters.{individual}.{build}',
+    input:  vcfgz = 'data/{individual}.{build}/variants/illumina_{icov}x.filtered/{chrom}.vcf.gz',
+            tbi   = 'data/{individual}.{build}/variants/illumina_{icov}x.filtered/{chrom}.vcf.gz.tbi'
+    output: vcfgz = 'data/{individual}.{build}/variants/illumina_{icov}x.filtered/{chrom}.haplotyping_filters.vcf.gz',
+            vcf   = 'data/{individual}.{build}/variants/illumina_{icov}x.filtered/{chrom}.haplotyping_filters.vcf',
+    shell:
+        '''
+        {RTGTOOLS} RTG_MEM=12g vcffilter -g 50 -i {input.vcfgz} -o {output.vcfgz};
+        gunzip -c {output.vcfgz} > {output.vcf}
+        '''

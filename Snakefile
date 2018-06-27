@@ -6,6 +6,7 @@ import sys
 sys.path.append('HapCUT2/utilities')
 import calculate_haplotype_statistics as chs
 import pickle
+import datetime
 
 # DATA URLs
 HG19_URL     = 'http://hgdownload.cse.ucsc.edu/goldenpath/hg19/bigZips/hg19.2bit'
@@ -38,6 +39,7 @@ PYFAIDX = '/home/pedge/installed/opt/python/bin/faidx'
 BEDTOOLS = 'bedtools' # v 2.27
 EXTRACTHAIRS = 'HapCUT2/build/extractHAIRS'
 HAPCUT2 = 'HapCUT2/build/extractHAIRS'
+PYTHON = 'python3'
 
 chroms = ['{}'.format(i) for i in range(1,23)]
 ref_file = {'1000g':'data/genomes/hs37d5.fa', 'hg38':'data/genomes/hg38.fa'}
@@ -57,6 +59,7 @@ include: "haplotyping.snakefile"
 # DEFAULT
 rule all:
     input:
+        expand('data/NA12878.1000g/aligned_reads/illumina/genomecov_histograms_mapq{mapq}/{info}__all.txt', mapq=[0,10,20,30])
         'data/output/four_GIAB_genomes_table.aj_trio_1000g_bwamem.all.GQ50.tex', # current version with bwamem
         'data/output/four_GIAB_genomes_table_extended.aj_trio_1000g_bwamem.all.GQ50.tex', # current version with bwamem
         #'data/output/four_GIAB_genomes_table.aj_trio_hg38_blasr.all.GQ50.tex', # once hg38 blasr bams available for aj mother + father
@@ -324,6 +327,23 @@ rule call_variants_Illumina:
         with open(output.runtime,'w') as outf:
             print(runtime,file=outf)
 
+rule combine_coverages:
+    params: job_name = 'generate_genomecov_bed.{individual}.{build}.{chrom}.{cov}x'
+    input:  expand('data/{individual}.{build}/aligned_reads/{tech}/genomecov_histograms_mapq{mapq}/{info}__{chrom}.txt', chrom=chroms)
+    output: 'data/{individual}.{build}/aligned_reads/{tech}/genomecov_histograms_mapq{mapq}/{info}__all.txt'
+    shell: 'cat {input} > {output}'
+
+rule generate_coverage_histogram:
+    params: job_name = 'generate_coverage_histogram.{individual}.{build}.{tech}.{info}{chrom}x'
+    input:  'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam'
+    output: 'data/{individual}.{build}/aligned_reads/{tech}/genomecov_histograms_mapq{mapq}/{info}__{chrom}.txt'
+    run:
+        w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
+        shell('''
+        {SAMTOOLS} view -F 3844 -q {wildcards.mapq} {input} -hb {chrom} | \
+        {BEDTOOLS} genomecov -ibam - | \
+        grep -P '^{w_chrom}\\t' > {output}
+        ''')
 
 # download hg19 reference, for the aligned pacbio reads
 rule download_hg19:

@@ -8,6 +8,7 @@ import argparse
 import numpy as np
 import re
 from collections import namedtuple
+from collections import defaultdict
 
 
 mpl.rc('legend', fontsize=9)
@@ -396,7 +397,7 @@ def plot_precision_recall_bars_simulation_extended(pacbio_ngmlr_dirlist_genome,
     plt.savefig(output_file)
 
 
-def plot_precision_recall_bars_NA12878_NA24385(reaper_with_haps_dirlist, reaper_nohaps_dirlist, illumina_dirlist, gq_cutoff, labels, output_file):
+def plot_precision_recall_bars_NA12878_NA24385(reaper_with_haps_dirlist, reaper_nohaps_dirlist, gq_cutoff, labels, output_file):
 
     plt.figure(figsize=(7,5))
     #mpl.rcParams['axes.titlepad'] = 50
@@ -404,8 +405,22 @@ def plot_precision_recall_bars_NA12878_NA24385(reaper_with_haps_dirlist, reaper_
     width = 0.15
     alpha1 = 0.6
 
+    def make_subplot_pacbio(ax, ind, pacbio_vals, illumina_vals, lab_pacbio=None, lab_illumina=None, fc='#ffffff'):
 
-    def make_subplot(ax, ind, pacbio_vals, illumina_vals, lab_pacbio=None, lab_illumina=None, fc='#ffffff'):
+        plt.bar(ind+width, pacbio_vals, color='#2200ff',
+                ecolor='black', # black error bar color
+                alpha=alpha1,      # transparency
+                width=width,      # smaller bar width
+                align='center',
+                label=lab_pacbio)
+        plt.bar(ind+2*width, illumina_vals, color='#ff1900',
+                ecolor='black', # black error bar color
+                alpha=alpha1,      # transparency
+                width=width,      # smaller bar width
+                align='center',
+                label=lab_illumina)
+
+    def make_subplot_illumina(ax, ind, pacbio_vals, illumina_vals, lab_pacbio=None, lab_illumina=None, fc='#ffffff'):
 
         plt.bar(ind+width, pacbio_vals, color='#2200ff',
                 ecolor='black', # black error bar color
@@ -617,6 +632,76 @@ NA24143 (AJ mother) & $30x\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
 
     with open(outfile,'w') as outf:
         print(s, file=outf)
+
+def plot_depth_of_mapped_vs_breadth(illumina_mapq0,illumina_mapq10,
+                                    illumina_mapq20,illumina_mapq30,
+                                    pacbio_mapq0,pacbio_mapq10,
+                                    pacbio_mapq20,pacbio_mapq30):
+
+    plt.figure(figsize=(6,6))
+
+    def get_depth_breadth(histogram_file):
+        breadth = defaultdict(int)
+        chr_sizes = dict()
+        with open(histogram_file,'r') as infile:
+            for line in infile:
+                el = line.strip().split('\t')
+
+                chrom = el[0]
+                depth = int(el[1])
+                num_bases = int(el[2])
+                chr_size = int(el[3])
+                if chrom in chr_sizes:
+                    assert(chr_sizes[chrom] == chrom)
+                else:
+                    chr_sizes[chrom] = chr_size
+
+                breadth[depth] += num_bases
+
+        # cumulative breadth
+        cml_breadth = defaultdict(int)
+
+        # sorted (depth, breadth) pairs
+        s_breadth = sorted(list(breadth.items()))
+
+        for d, b in s_breadth:
+            for d2,b2 in s_breadth:
+                if d2 >= d:
+                    cml_breadth[d] += b2
+
+        d_val = []
+        b_frac = []
+        genome_len = sum(chr_sizes.values())*1.0
+        # sorted cumulative breadth
+        for d, b in sorted(list(cml_breadth.items())):
+            d_val.append(d)
+            b_frac.append(b/genome_len)
+
+        return d_val, b_frac
+
+    inputs = [illumina_mapq0,illumina_mapq10,
+              illumina_mapq20,illumina_mapq30,
+              pacbio_mapq0,pacbio_mapq10,
+              pacbio_mapq20,pacbio_mapq30]
+
+    labels = ['Illumina, Mapq >= 0','Illumina, Mapq >= 10',
+              'Illumina, Mapq >= 20','Illumina, Mapq >= 30',
+              'PacBio, Mapq >= 0','PacBio, Mapq >= 10',
+              'PacBio, Mapq >= 20','PacBio, Mapq >= 30']
+
+    colors = ['#ff9999','#ff7070','#ff4242','#ff0000',
+              '#9a99ff','#7775ff','#4744ff','0400ff']
+
+    for input,label,color in zip(inputs, labels, colors):
+        d_val, b_frac = get_depth_breadth(input)
+        plt.plot(d_val,b_frac,color=color,label=label)
+
+    plt.legend()
+    plt.savefig(output_file)
+
+
+
+
 
 if __name__ == '__main__':
     args = parseargs()

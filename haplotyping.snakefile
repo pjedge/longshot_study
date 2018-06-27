@@ -35,7 +35,7 @@ rule prune_reaper_vcf:
     input: 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/{chrom}.vcf'
     output: 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/{chrom}.PQ{GQ}.vcf'
     run:
-        filter_reaper_VCF_for_haplotype_assessment(input, output, min_phase_qual=30)
+        filter_reaper_VCF_for_haplotype_assessment(input[0], output[0], min_phase_qual=30)
 
 rule prune_HapCUT2_haplotype:
     params: job_name = "prune_HapCUT2_haplotype.{individual}.{build}.illumina{icov}x.pacbio.{aligner}.{pcov}x.{chrom}",
@@ -55,7 +55,7 @@ rule separate_ground_truth_chrom:
 rule HapCUT2:
     params: job_name = 'HapCUT2.{individual}.{build}.illumina{icov}x.pacbio{pcov}x.{aligner}.{chrom}',
     input: frag = 'data/{individual}.{build}/HapCUT2_haplotypes/illumina.{icov}x.pacbio.{aligner}.{pcov}x/fragments/{chrom}',
-           vcf = 'data/{individual}.{build}/variants/illumina_{icov}x.filtered/{chrom}.vcf'
+           vcf = 'data/{individual}.{build}/variants/illumina_{icov}x.filtered/{chrom}.haplotyping_filters.vcf'
     output: hap = 'data/{individual}.{build}/HapCUT2_haplotypes/illumina.{icov,\d+}x.pacbio.{aligner}.{pcov,\d+}x/haps/{chrom,(\d+)}',
     shell: '{HAPCUT2} --frag {input.frag} --vcf {input.vcf} --out {output.hap}'
 

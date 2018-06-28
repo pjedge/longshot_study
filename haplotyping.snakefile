@@ -57,7 +57,7 @@ rule HapCUT2:
     input: frag = 'data/{individual}.{build}/HapCUT2_haplotypes/illumina.{icov}x.pacbio.{aligner}.{pcov}x/fragments/{chrom}',
            vcf = 'data/{individual}.{build}/variants/illumina_{icov}x.filtered/{chrom}.haplotyping_filters.vcf'
     output: hap = 'data/{individual}.{build}/HapCUT2_haplotypes/illumina.{icov,\d+}x.pacbio.{aligner}.{pcov,\d+}x/haps/{chrom,(\d+)}',
-    shell: '{HAPCUT2} --frag {input.frag} --vcf {input.vcf} --out {output.hap}'
+    shell: '{HAPCUT2} --fragments {input.frag} --vcf {input.vcf} --output {output.hap}'
 
 rule extractHAIRS:
     params: job_name = 'extractHAIRS.{individual}.{build}.illumina{icov}.pacbio{pcov}.{aligner}.{chrom}',

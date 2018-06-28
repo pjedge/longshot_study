@@ -60,8 +60,7 @@ include: "haplotyping.snakefile"
 # DEFAULT
 rule all:
     input:
-        expand('data/NA12878.1000g/aligned_reads/illumina/genomecov_histograms_mapq{mapq}/illumina.30x__all.txt', mapq=[0,10,20,30]),
-        expand('data/NA12878.1000g/aligned_reads/pacbio/genomecov_histograms_mapq{mapq}/pacbio.blasr.all.44x__all.txt', mapq=[0,10,20,30]),
+        #'data/plots/depth_vs_breadth_mappability.NA12878.30x.png'
         'data/output/four_GIAB_genomes_table.aj_trio_1000g_bwamem.all.GQ50.tex', # current version with bwamem
         'data/output/four_GIAB_genomes_table_extended.aj_trio_1000g_bwamem.all.GQ50.tex', # current version with bwamem
 
@@ -128,6 +127,20 @@ def chr_prefix(chrom, build):
         return 'chr'+chrom
     else:
         return chrom
+
+def seconds_to_formatted_time(ss_time):
+    hh = int(ss_time / 3600)
+    ss_time -= float(hh*3600)
+    mm = int(ss_time / 60)
+    ss_time -= float(mm*60)
+    ss = int(ss_time)
+    return "{}:{:02d}:{:02d}".format(hh,mm,ss)
+
+def formatted_time_to_seconds(fmt_time):
+    vals = [float(val) for val in fmt_time.strip().split(':')]
+    assert(len(vals) == 3)
+    hh, mm, ss = vals
+    return hh*3600 + mm*60 + ss
 
 rule vcfeval_rtgtools:
     params: job_name = 'vcfeval_rtgtools.{individual}.{build}.{calls_name}.{chrom}',
@@ -234,16 +247,13 @@ rule add_runtimes:
     input: expand('data/{{individual}}.{{build}}/variants/{{calls_name}}/{chrom}.vcf.runtime',chrom=chroms)
     output: 'data/{individual}.{build}/variants/{calls_name}/all.vcf.runtime'
     run:
-        t = datetime.timedelta(hours=0, minutes=0, seconds=0)
+        t = 0 # time in seconds
         for f in input:
             with open(f,'r') as inf:
-                hh, mm, ss = [float(val) for val in inf.readline().strip().split(':')] # credit to https://stackoverflow.com/questions/19234771/adding-a-timedelta-of-the-type-hh-mm-ss-ms-to-a-datetime-object
-                t += datetime.timedelta(hours=hh, minutes=mm, seconds=ss)
+                t += formatted_time_to_seconds(inf.readline().strip())
 
-        runtime = time.strftime('%H:%M:%S', time.gmtime(t.total_seconds()))
-        with open(output[0],'w') as outf:
-            print(runtime,file=outf)
-
+        with open(output,'w') as outf:
+            print(seconds_to_formatted_time(t),file=outf)
 
 rule run_reaper:
     params: job_name = 'reaper.pacbio.{aligner}.{individual}.{build}.cov{cov}.{options}.chr{chrom}',
@@ -277,9 +287,8 @@ rule run_reaper:
             shell('{REAPER} -r {w_chrom} -F -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {w_ref} --out {output.vcf}')
             t2 = time.time()
 
-        runtime = time.strftime('%H:%M:%S', time.gmtime(t2-t1))
         with open(output.runtime,'w') as outf:
-            print(runtime,file=outf)
+            print(seconds_to_formatted_time(t2-t1),file=outf)
 
 # Call 30x Illumina variants
 rule call_variants_Illumina:
@@ -305,9 +314,9 @@ rule call_variants_Illumina:
           > {output.vcf}
         ''')
         t2 = time.time()
-        runtime = time.strftime('%H:%M:%S', time.gmtime(t2-t1))
+
         with open(output.runtime,'w') as outf:
-            print(runtime,file=outf)
+            print(seconds_to_formatted_time(t2-t1),file=outf)
 
 rule combine_coverages:
     params: job_name = 'generate_genomecov_bed.{individual}.{build}.{tech}.{info}.MAPQ{mapq}'

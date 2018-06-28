@@ -5,6 +5,7 @@ from replace_empty_gt_with_reference import replace_empty_gt_with_reference
 import sys
 sys.path.append('HapCUT2/utilities')
 import calculate_haplotype_statistics as chs
+import prune_haplotype as ph
 import pickle
 import datetime
 
@@ -239,7 +240,7 @@ rule add_runtimes:
                 hh, mm, ss = [float(val) for val in inf.readline().strip().split(':')] # credit to https://stackoverflow.com/questions/19234771/adding-a-timedelta-of-the-type-hh-mm-ss-ms-to-a-datetime-object
                 t += datetime.timedelta(hours=hh, minutes=mm, seconds=ss)
 
-        runtime = time.strftime('%H:%M:%S', time.gmtime(t))
+        runtime = time.strftime('%H:%M:%S', time.gmtime(t.total_seconds()))
         with open(output,'w') as outf:
             print(runtime,file=outf)
 

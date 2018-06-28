@@ -696,11 +696,24 @@ def plot_depth_of_mapped_vs_breadth(illumina_mapq0,illumina_mapq10,
         d_val, b_frac = get_depth_breadth(input)
         plt.plot(d_val,b_frac,color=color,label=label)
 
-    plt.legend()
+    plt.grid(True,color='grey',linestyle='--',alpha=0.5)
+
+    ax1.spines["top"].set_visible(False)
+    ax1.spines["right"].set_visible(False)
+    ax1.spines["bottom"].set_visible(False)
+    ax1.spines["left"].set_visible(False)
+    plt.tick_params(axis="both", which="both", bottom="off", top="off",
+                labelbottom="on", left="off", right="off", labelleft="on")
+
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+
+    plt.legend(loc='upper right')
+    plt.xlabel('Minimum Depth of Mapped Reads')
+    plt.ylabel('Fraction of Genome Covered')
+    plt.tight_layout()
+
     plt.savefig(output_file)
-
-
-
 
 
 if __name__ == '__main__':

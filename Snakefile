@@ -5,6 +5,7 @@ from replace_empty_gt_with_reference import replace_empty_gt_with_reference
 import sys
 sys.path.append('HapCUT2/utilities')
 import calculate_haplotype_statistics as chs
+import prune_haplotype as ph
 import pickle
 import datetime
 
@@ -327,7 +328,7 @@ rule call_variants_Illumina:
             print(runtime,file=outf)
 
 rule combine_coverages:
-    params: job_name = 'generate_genomecov_bed.{individual}.{build}.{chrom}.{cov}x'
+    params: job_name = 'combine_coverage_histograms.{individual}.{build}.{chrom}.{cov}x'
     input:  expand('data/{individual}.{build}/aligned_reads/{tech}/genomecov_histograms_mapq{mapq}/{info}__{chrom}.txt', chrom=chroms)
     output: 'data/{individual}.{build}/aligned_reads/{tech}/genomecov_histograms_mapq{mapq}/{info}__all.txt'
     shell: 'cat {input} > {output}'

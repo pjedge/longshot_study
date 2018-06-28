@@ -42,7 +42,7 @@ rule prune_HapCUT2_haplotype:
     input: 'data/{individual}.{build}/HapCUT2_haplotypes/illumina.{icov}x.pacbio.{aligner}.{pcov}x/haps/{chrom}'
     output: 'data/{individual}.{build}/HapCUT2_haplotypes/illumina.{icov}x.pacbio.{aligner}.{pcov}x/haps/{chrom}.pruned'
     run:
-        prune_hapblock_file(input, output, snp_conf_cutoff=50.0, split_conf_cutoff=-1.0, use_refhap_heuristic=False)
+        ph.prune_hapblock_file(input, output, snp_conf_cutoff=50.0, split_conf_cutoff=-1.0, use_refhap_heuristic=False)
 
 rule separate_ground_truth_chrom:
     params: job_name = 'separate_ground_truth_chrom.{individual}.{build}.{chrom}',

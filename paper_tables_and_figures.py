@@ -543,15 +543,15 @@ def make_table_4_genomes(NA12878_table_files, NA24385_table_files,
     s = '''
 \\begin{{table}}[htbp]
 \\centering
-\\begin{{tabular}}{{lrrrrr}}
+\\begin{{tabular}}{{lllllll}}
 \\hline
 Genome      & Read & SNVs    & Precision     & Recall    & Outside GIAB  & Run time  \\\\
             & Coverage & called    &    &  & high-confidence       & (hours)          \\\\
 \\hline
-NA12878   & $44\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-NA24385 (AJ son) & $69\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-NA24149 (AJ father) & $32\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-NA24143 (AJ mother) & $30\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA12878   & $44\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA24385 (AJ son) & $69\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA24149 (AJ father) & $32\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA24143 (AJ mother) & $30\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
 \\hline
 \\end{{tabular}}
 \\caption{{{{\\bf Summary of variants called on GIAB genomes.}}}}
@@ -601,20 +601,20 @@ def make_table_4_genomes_extended(NA12878_30x_table_files, NA12878_44x_table_fil
     s = '''
 \\begin{{table}}[htbp]
 \\centering
-\\begin{{tabular}}{{lrrrrr}}
+\\begin{{tabular}}{{lllllll}}
 \\hline
 Genome      & Read & SNVs    & Precision     & Recall    & Outside GIAB  & Run time  \\\\
             & Coverage & called    &    &  & high-confidence       & (hours)          \\\\
 \\hline
-NA12878   & $30\times$ & {} & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-NA12878   & $44\times$ & {} & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-NA24385 (AJ son) & $20x\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-NA24385 (AJ son) & $30x\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-NA24385 (AJ son) & $40x\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-NA24385 (AJ son) & $50x\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-NA24385 (AJ son) & $69x\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-NA24149 (AJ father) & $32x\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-NA24143 (AJ mother) & $30x\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA12878   & $30\\times$ & {} & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA12878   & $44\\times$ & {} & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA24385 (AJ son) & $20\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA24385 (AJ son) & $30\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA24385 (AJ son) & $40\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA24385 (AJ son) & $50\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA24385 (AJ son) & $69\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA24149 (AJ father) & $32\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA24143 (AJ mother) & $30\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
 \\hline
 \\end{{tabular}}
 \\caption{{{{\\bf Summary of variants called on GIAB genomes.}}}}
@@ -633,12 +633,15 @@ NA24143 (AJ mother) & $30x\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
     with open(outfile,'w') as outf:
         print(s, file=outf)
 
+MAX_DEPTH = 50
 def plot_depth_of_mapped_vs_breadth(illumina_mapq0,illumina_mapq10,
                                     illumina_mapq20,illumina_mapq30,
                                     pacbio_mapq0,pacbio_mapq10,
-                                    pacbio_mapq20,pacbio_mapq30):
+                                    pacbio_mapq20,pacbio_mapq30,
+                                    output_file):
 
     plt.figure(figsize=(6,6))
+    ax = plt.subplot(111)
 
     def get_depth_breadth(histogram_file):
         breadth = defaultdict(int)
@@ -652,10 +655,12 @@ def plot_depth_of_mapped_vs_breadth(illumina_mapq0,illumina_mapq10,
                 num_bases = int(el[2])
                 chr_size = int(el[3])
                 if chrom in chr_sizes:
-                    assert(chr_sizes[chrom] == chrom)
+                    assert(chr_sizes[chrom] == chr_size)
                 else:
                     chr_sizes[chrom] = chr_size
 
+                if depth > MAX_DEPTH:
+                    depth = MAX_DEPTH
                 breadth[depth] += num_bases
 
         # cumulative breadth
@@ -679,36 +684,25 @@ def plot_depth_of_mapped_vs_breadth(illumina_mapq0,illumina_mapq10,
 
         return d_val, b_frac
 
-    inputs = [illumina_mapq0,illumina_mapq10,
-              illumina_mapq20,illumina_mapq30,
-              pacbio_mapq0,pacbio_mapq10,
-              pacbio_mapq20,pacbio_mapq30]
-
-    labels = ['Illumina, Mapq >= 0','Illumina, Mapq >= 10',
-              'Illumina, Mapq >= 20','Illumina, Mapq >= 30',
-              'PacBio, Mapq >= 0','PacBio, Mapq >= 10',
-              'PacBio, Mapq >= 20','PacBio, Mapq >= 30']
-
-    colors = ['#ff9999','#ff7070','#ff4242','#ff0000',
-              '#9a99ff','#7775ff','#4744ff','0400ff']
-
     for input,label,color in zip(inputs, labels, colors):
+        if 'mapq0' not in input and 'mapq30' not in input:
+            continue
         d_val, b_frac = get_depth_breadth(input)
         plt.plot(d_val,b_frac,color=color,label=label)
 
     plt.grid(True,color='grey',linestyle='--',alpha=0.5)
 
-    ax1.spines["top"].set_visible(False)
-    ax1.spines["right"].set_visible(False)
-    ax1.spines["bottom"].set_visible(False)
-    ax1.spines["left"].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
+    ax.spines["left"].set_visible(False)
     plt.tick_params(axis="both", which="both", bottom="off", top="off",
                 labelbottom="on", left="off", right="off", labelleft="on")
 
     plt.xlabel('Recall')
     plt.ylabel('Precision')
 
-    plt.legend(loc='upper right')
+    plt.legend(loc='lower left')
     plt.xlabel('Minimum Depth of Mapped Reads')
     plt.ylabel('Fraction of Genome Covered')
     plt.tight_layout()

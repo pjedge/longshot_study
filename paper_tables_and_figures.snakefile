@@ -298,3 +298,25 @@ rule plot_simulation_pr_bars_extended:
             labels=sim_covs,
             output_file=output.png
         )
+
+rule plot_depth_of_mapped_vs_breadth:
+    params: job_name = 'plot_depth_of_mapped_vs_breadth.NA12878.30x',
+    input: illumina_mapq0 = 'data/N12878.1000g/aligned_reads/illumina/genomecov_histograms_mapq0/illumina.30x__all.txt',
+           illumina_mapq10 = 'data/N12878.1000g/aligned_reads/illumina/genomecov_histograms_mapq10/illumina.30x__all.txt',
+           illumina_mapq20 = 'data/N12878.1000g/aligned_reads/illumina/genomecov_histograms_mapq20/illumina.30x__all.txt',
+           illumina_mapq30 = 'data/N12878.1000g/aligned_reads/illumina/genomecov_histograms_mapq30/illumina.30x__all.txt',
+           pacbio_mapq0 = 'data/N12878.1000g/aligned_reads/pacbio/genomecov_histograms_mapq0/pacbio.blasr.all.30x__all.txt',
+           pacbio_mapq10 = 'data/N12878.1000g/aligned_reads/pacbio/genomecov_histograms_mapq10/pacbio.blasr.all.30x__all.txt',
+           pacbio_mapq20 = 'data/N12878.1000g/aligned_reads/pacbio/genomecov_histograms_mapq20/pacbio.blasr.all.30x__all.txt',
+           pacbio_mapq30 = 'data/N12878.1000g/aligned_reads/pacbio/genomecov_histograms_mapq30/pacbio.blasr.all.30x__all.txt',
+    output: png = 'data/plots/depth_vs_breadth_mappability.NA12878.44x.png'
+    run:
+        labels = ['Illumina, Mapq >= 0','Illumina, Mapq >= 10',
+                  'Illumina, Mapq >= 20','Illumina, Mapq >= 30',
+                  'PacBio, Mapq >= 0','PacBio, Mapq >= 10',
+                  'PacBio, Mapq >= 20','PacBio, Mapq >= 30']
+
+        colors = ['#ff9999','#ff7070','#ff4242','#ff0000',
+                  '#9a99ff','#7775ff','#4744ff','#0400ff']
+        labels =
+        ptf.plot_depth_of_mapped_vs_breadth(list(input), labels, colors, output.png)

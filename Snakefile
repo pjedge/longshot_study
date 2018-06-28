@@ -98,7 +98,7 @@ rule all:
 
 
 
-        #'data/plots/effect_of_haplotyping.giab_individuals.prec_recall_all.png',
+        'data/plots/effect_of_haplotyping.giab_individuals.prec_recall_all.png',
         #'data/output/four_GIAB_genomes_table.aj_trio_hg38_blasr.all.GQ50.tex', # once hg38 blasr bams available for aj mother + father
         #'data/output/four_GIAB_genomes_table_extended.aj_trio_hg38_blasr.all.GQ50.tex', # once hg38 blasr bams available for aj mother + father
         #'data/plots/simulation.1_prec_recall_1.png',
@@ -241,7 +241,7 @@ rule add_runtimes:
                 t += datetime.timedelta(hours=hh, minutes=mm, seconds=ss)
 
         runtime = time.strftime('%H:%M:%S', time.gmtime(t.total_seconds()))
-        with open(output,'w') as outf:
+        with open(output[0],'w') as outf:
             print(runtime,file=outf)
 
 

@@ -23,8 +23,9 @@ rule haplotype_accuracy_reaper:
 rule haplotype_accuracy_HapCUT2:
     params: job_name = 'haplotype_accuracy_HapCUT2.{individual}.{build}.illumina30.pacbio{pcov}x.{aligner}.{chrom}',
     input: hap = 'data/{individual}.{build}/HapCUT2_haplotypes/illumina.{icov}x.pacbio.{aligner}.{pcov}x/haps/{chrom}.pruned',
-           vcf = 'data/{individual}.{build}/variants/illumina_{icov}x.filtered/{chrom}.vcf',
-           ground_truth = 'data/{individual}.{build}/variants/ground_truth/separate_chrom/ground_truth.DECOMPOSED.SNVs_ONLY.{chrom}.vcf'
+           vcf = 'data/{individual}.{build}/variants/illumina_{icov}x.filtered/{chrom}.haplotyping_filters.vcf',
+           ground_truth = 'data/{individual}.{build}/variants/ground_truth/separate_chrom/ground_truth.DECOMPOSED.SNVs_ONLY.{chrom}.vcf',
+           contig_size_file = 'genome_tracks/{build}.chrom.sizes.txt'
     output: pickle = 'data/{individual}.{build}/HapCUT2_haplotypes/hap_statistics/illumina.{icov,\d+}x.pacbio.{aligner}.{pcov,\d+}x.{chrom,(\d+)}.p'
     run:
         err = chs.hapblock_vcf_error_rate(input.hap, input.vcf, input.ground_truth, input.contig_size_file, False)
@@ -42,7 +43,7 @@ rule prune_HapCUT2_haplotype:
     input: 'data/{individual}.{build}/HapCUT2_haplotypes/illumina.{icov}x.pacbio.{aligner}.{pcov}x/haps/{chrom}'
     output: 'data/{individual}.{build}/HapCUT2_haplotypes/illumina.{icov}x.pacbio.{aligner}.{pcov}x/haps/{chrom}.pruned'
     run:
-        ph.prune_hapblock_file(input, output, snp_conf_cutoff=50.0, split_conf_cutoff=-1.0, use_refhap_heuristic=False)
+        ph.prune_hapblock_file(input[0], output[0], snp_conf_cutoff=50.0, split_conf_cutoff=-1.0, use_refhap_heuristic=False)
 
 rule separate_ground_truth_chrom:
     params: job_name = 'separate_ground_truth_chrom.{individual}.{build}.{chrom}',

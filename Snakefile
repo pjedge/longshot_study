@@ -39,7 +39,7 @@ BCFTOOLS = '/opt/biotools/bcftools/bin/bcftools'
 PYFAIDX = '/home/pedge/installed/opt/python/bin/faidx'
 BEDTOOLS = 'bedtools' # v 2.27
 EXTRACTHAIRS = 'HapCUT2/build/extractHAIRS'
-HAPCUT2 = 'HapCUT2/build/extractHAIRS'
+HAPCUT2 = 'HapCUT2/build/HAPCUT2'
 PYTHON = 'python3'
 
 chroms = ['{}'.format(i) for i in range(1,23)]
@@ -63,11 +63,10 @@ rule all:
         #'data/plots/depth_vs_breadth_mappability.NA12878.30x.png'
         'data/output/four_GIAB_genomes_table.aj_trio_1000g_bwamem.all.GQ50.tex', # current version with bwamem
         'data/output/four_GIAB_genomes_table_extended.aj_trio_1000g_bwamem.all.GQ50.tex', # current version with bwamem
-        #'data/output/four_GIAB_genomes_table.aj_trio_hg38_blasr.all.GQ50.tex', # once hg38 blasr bams available for aj mother + father
-        #'data/output/four_GIAB_genomes_table_extended.aj_trio_hg38_blasr.all.GQ50.tex', # once hg38 blasr bams available for aj mother + father
 
         'data/NA12878.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.30x.-z.all.p',
         'data/NA12878.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.44x.-z.all.p',
+        'data/NA24385.hg38/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.69x.-z.all.p',
         'data/NA24385.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.69x.-z.all.p',
         'data/NA24143.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.30x.-z.all.p',
         'data/NA24149.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.32x.-z.all.p',
@@ -95,6 +94,12 @@ rule all:
         'data/plots/NA24143.1000g_prec_recall_all.png',
         'data/plots/NA24149.1000g_prec_recall_all.png',
         'data/plots/NA12878.1000g_prec_recall_all.png',
+
+
+
+        'data/plots/effect_of_haplotyping.giab_individuals.prec_recall_all.png',
+        #'data/output/four_GIAB_genomes_table.aj_trio_hg38_blasr.all.GQ50.tex', # once hg38 blasr bams available for aj mother + father
+        #'data/output/four_GIAB_genomes_table_extended.aj_trio_hg38_blasr.all.GQ50.tex', # once hg38 blasr bams available for aj mother + father
         #'data/plots/simulation.1_prec_recall_1.png',
         #'data/plots/simulation_prec_recall_in_segdups_1.png',
         #'data/plots/chr1_simulated_60x_pacbio_mismapped_read_distribution.segdup.png',
@@ -112,30 +117,6 @@ rule all:
         #'data/output/variant_analysis_fp_fn__NA24149__reaper.pacbio.ngmlr.32x.-z__1.tex',
         #'data/output/variant_analysis_fp_fn__NA24143__reaper.pacbio.ngmlr.30x.-z__1.tex',
         #'data/plots/NA12878_prec_recall_all.png',
-
-
-#rule vcfeval_rtgtools_no_haplotype_info:
-#    params: job_name = 'vcfeval_rtgtools_no_haplotype_info.{individual}.{calls_name}.{chrom}',
-#            region_arg = lambda wildcards: '--region={}'.format(wildcards.chrom) if wildcards.chrom != 'all' else ''
-#    input:  calls_vcf = 'data/{individual}/variants/{calls_name}/{chrom}.debug/2.0.realigned_genotypes.vcf.gz',
-#            calls_ix = 'data/{individual}/variants/{calls_name}/{chrom}.debug/2.0.realigned_genotypes.vcf.gz.tbi',
-#            ground_truth = 'data/{individual}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
-#            ground_truth_ix = 'data/{individual}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz.tbi',
-#            region_filter ='data/{individual}/variants/ground_truth/region_filter.bed',
-#            tg_sdf = 'data/genomes/1000g_v37_phase2.sdf'
-#    output: done = 'data/{individual}/vcfeval_no_haps/{calls_name}/{chrom}.done'
-#    shell:
-#        '''
-#        rm -rf data/{wildcards.individual}/vcfeval_no_haps/{wildcards.calls_name}/{wildcards.chrom}
-#        {RTGTOOLS} RTG_MEM=12g vcfeval \
-#        {params.region_arg} \
-#        -c {input.calls_vcf} \
-#        -b {input.ground_truth} \
-#        -e {input.region_filter} \
-#        -t {input.tg_sdf} \
-#        -o data/{wildcards.individual}/vcfeval_no_haps/{wildcards.calls_name}/{wildcards.chrom};
-#        cp data/{wildcards.individual}/vcfeval_no_haps/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
-#        '''
 
 # this function takes in a chromosome name in 1..22,X and a "genome build" name
 # and appends a 'chr' prefix to the chrom name if the genome build is hg38
@@ -173,15 +154,15 @@ rule vcfeval_rtgtools:
     output: done = 'data/{individual}.{build}/vcfeval/{calls_name}/{chrom}.done'
     shell:
         '''
-        rm -rf data/{wildcards.individual}.{build}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}
+        rm -rf data/{wildcards.individual}.{wildcards.build}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}
         {RTGTOOLS} RTG_MEM=12g vcfeval \
         {params.region_arg} \
         -c {input.calls_vcf} \
         -b {input.ground_truth} \
         -e {input.region_filter} \
         -t {input.sdf} \
-        -o data/{wildcards.individual}.{build}/vcfeval/{wildcards.calls_name}/{wildcards.chrom};
-        cp data/{wildcards.individual}.{build}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
+        -o data/{wildcards.individual}.{wildcards.build}/vcfeval/{wildcards.calls_name}/{wildcards.chrom};
+        cp data/{wildcards.individual}.{wildcards.build}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
         '''
 
 rule rtg_decompose_variants_ground_truth:
@@ -338,19 +319,22 @@ rule call_variants_Illumina:
             print(seconds_to_formatted_time(t2-t1),file=outf)
 
 rule combine_coverages:
-    params: job_name = 'combine_coverage_histograms.{individual}.{build}.{chrom}.{cov}x'
-    input:  expand('data/{individual}.{build}/aligned_reads/{tech}/genomecov_histograms_mapq{mapq}/{info}__{chrom}.txt', chrom=chroms)
+    params: job_name = 'generate_genomecov_bed.{individual}.{build}.{tech}.{info}.MAPQ{mapq}'
+    input:  expand('data/{{individual}}.{{build}}/aligned_reads/{{tech}}/genomecov_histograms_mapq{{mapq}}/{{info}}__{chrom}.txt', chrom=chroms)
     output: 'data/{individual}.{build}/aligned_reads/{tech}/genomecov_histograms_mapq{mapq}/{info}__all.txt'
     shell: 'cat {input} > {output}'
 
 rule generate_coverage_histogram:
-    params: job_name = 'generate_coverage_histogram.{individual}.{build}.{tech}.{info}{chrom}x'
+    params: job_name = 'generate_coverage_histogram.{individual}.{build}.{tech}.{info}.MAPQ{mapq}.{chrom}'
     input:  'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam'
-    output: 'data/{individual}.{build}/aligned_reads/{tech}/genomecov_histograms_mapq{mapq}/{info}__{chrom}.txt'
+    output: 'data/{individual}.{build}/aligned_reads/{tech}/genomecov_histograms_mapq{mapq}/{info}__{chrom,(\d+)}.txt'
     run:
         w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
+        # NA12878 is an exception, actually has hg19 chrom names instead of 1000g chrom names
+        if wildcards.individual == 'NA12878' and wildcards.build == '1000g' and wildcards.tech=='pacbio':
+            w_chrom = 'chr' + w_chrom
         shell('''
-        {SAMTOOLS} view -F 3844 -q {wildcards.mapq} {input} -hb {chrom} | \
+        {SAMTOOLS} view -F 3844 -q {wildcards.mapq} {input} -hb {w_chrom} | \
         {BEDTOOLS} genomecov -ibam - | \
         grep -P '^{w_chrom}\\t' > {output}
         ''')
@@ -422,7 +406,7 @@ rule convert_genome_track_to_1000g:
 
 # SUBSAMPLE ILLUMINA BAM
 rule subsample_illumina_60x:
-    params: job_name = 'subsample_illumina_{individual}.{build}'
+    params: job_name = 'subsample_illumina_{individual}.{build}.{cov}x'
     input:  'data/{individual}.{build}/aligned_reads/illumina/illumina.60x.bam'
     output: 'data/{individual}.{build}/aligned_reads/illumina/illumina.{cov}x.bam'
     run:

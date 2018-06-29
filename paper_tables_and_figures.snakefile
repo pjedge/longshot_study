@@ -1,20 +1,6 @@
 from paper_tables_and_figures import genomes_table_files
 
-rule plot_pr_curve_NA12878_impact_of_haplotyping:
-    params: job_name = 'plot_pr_curve_NA12878_impact_of_haplotyping',
-            title = 'NA12878: Impact of Haplotype Information on PacBio Variant Calling with Reaper'
-    input:
-        NA12878_3_0 = 'data/NA12878/vcfeval_3.0/reaper.pacbio.blasr.44x.-z/{chrom}.done',
-        NA12878_no_hap = 'data/NA12878/vcfeval_no_haps/reaper.pacbio.blasr.44x.-z/{chrom}.done'
-    output:
-        png = 'data/plots/effect_of_haplotyping.NA12878.prec_recall_{chrom}.png'
-    run:
-        ptf.plot_vcfeval([input.NA12878_3_0[:-5], input.NA12878_no_hap[:-5]],
-                         ['NA12878, 44x (one round hap)',  'NA12878, 44x (no hap)'],
-                           output.png,params.title,
-                           colors=['b','y'],
-                           xlim=(0.9,1.0),ylim=(0.99,1.0))
-
+'''
 rule plot_pr_curve_varyQ:
     params: job_name = 'plot_pr_curve_varyQ',
             title = 'Impact of Haplotype Q Parameter'
@@ -55,19 +41,20 @@ rule plot_pr_curve_3_mappers:
                            output.png,params.title,
                            colors=['k','b','r'],
                            xlim=(0.5,1.0),ylim=(0.5,1.0))
+'''
 
 rule plot_pr_curve_impact_of_haplotyping:
     params: job_name = 'plot_pr_curve_impact_of_haplotyping',
             title = 'Impact of Haplotype Information on PacBio Variant Calling with Reaper'
     input:
-        NA12878_hap = 'data/NA12878/vcfeval/reaper.pacbio.blasr.44x.-z/{chrom}.done',
-        NA24385_hap = 'data/NA24385/vcfeval/reaper.pacbio.ngmlr.69x.-z/{chrom}.done',
-        NA24149_hap = 'data/NA24149/vcfeval/reaper.pacbio.ngmlr.32x.-z/{chrom}.done',
-        NA24143_hap = 'data/NA24143/vcfeval/reaper.pacbio.ngmlr.30x.-z/{chrom}.done',
-        NA12878_no_hap = 'data/NA12878/vcfeval_no_haps/reaper.pacbio.blasr.44x.-z/{chrom}.done',
-        NA24385_no_hap = 'data/NA24385/vcfeval_no_haps/reaper.pacbio.ngmlr.69x.-z/{chrom}.done',
-        NA24149_no_hap = 'data/NA24149/vcfeval_no_haps/reaper.pacbio.ngmlr.32x.-z/{chrom}.done',
-        NA24143_no_hap = 'data/NA24143/vcfeval_no_haps/reaper.pacbio.ngmlr.30x.-z/{chrom}.done'
+        NA12878_hap = 'data/NA12878.1000g/vcfeval/reaper.pacbio.blasr.44x.-z/{chrom}.done',
+        NA24385_hap = 'data/NA24385.1000g/vcfeval/reaper.pacbio.bwamem.69x.-z/{chrom}.done',
+        NA24149_hap = 'data/NA24149.1000g/vcfeval/reaper.pacbio.bwamem.32x.-z/{chrom}.done',
+        NA24143_hap = 'data/NA24143.1000g/vcfeval/reaper.pacbio.bwamem.30x.-z/{chrom}.done',
+        NA12878_no_hap = 'data/NA12878.1000g/vcfeval/reaper.pacbio.blasr.44x.-n_-z/{chrom}.done',
+        NA24385_no_hap = 'data/NA24385.1000g/vcfeval/reaper.pacbio.bwamem.69x.-n_-z/{chrom}.done',
+        NA24149_no_hap = 'data/NA24149.1000g/vcfeval/reaper.pacbio.bwamem.32x.-n_-z/{chrom}.done',
+        NA24143_no_hap = 'data/NA24143.1000g/vcfeval/reaper.pacbio.bwamem.30x.-n_-z/{chrom}.done'
     output:
         png = 'data/plots/effect_of_haplotyping.giab_individuals.prec_recall_{chrom}.png'
     run:

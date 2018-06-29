@@ -405,38 +405,14 @@ def plot_precision_recall_bars_NA12878_NA24385(reaper_with_haps_dirlist, reaper_
     width = 0.15
     alpha1 = 0.6
 
-    def make_subplot_pacbio(ax, ind, pacbio_vals, illumina_vals, lab_pacbio=None, lab_illumina=None, fc='#ffffff'):
+    def plot_bars(ax, ind, vals, color=None, lab=None):
 
-        plt.bar(ind+width, pacbio_vals, color='#2200ff',
+        plt.bar(ind+width, vals, color=color,
                 ecolor='black', # black error bar color
                 alpha=alpha1,      # transparency
                 width=width,      # smaller bar width
                 align='center',
-                label=lab_pacbio)
-        plt.bar(ind+2*width, illumina_vals, color='#ff1900',
-                ecolor='black', # black error bar color
-                alpha=alpha1,      # transparency
-                width=width,      # smaller bar width
-                align='center',
-                label=lab_illumina)
-
-    def make_subplot_illumina(ax, ind, pacbio_vals, illumina_vals, lab_pacbio=None, lab_illumina=None, fc='#ffffff'):
-
-        plt.bar(ind+width, pacbio_vals, color='#2200ff',
-                ecolor='black', # black error bar color
-                alpha=alpha1,      # transparency
-                width=width,      # smaller bar width
-                align='center',
-                label=lab_pacbio)
-        plt.bar(ind+2*width, illumina_vals, color='#ff1900',
-                ecolor='black', # black error bar color
-                alpha=alpha1,      # transparency
-                width=width,      # smaller bar width
-                align='center',
-                label=lab_illumina)
-        # add some text for labels, title and axes ticks
-        #plt.xlim(-0.5,6)
-
+                label=lab)
 
     def prettify_plot():
 
@@ -449,18 +425,23 @@ def plot_precision_recall_bars_NA12878_NA24385(reaper_with_haps_dirlist, reaper_
                     labelbottom=True, left=False, right=False, labelleft=True)
 
 
-    ind1 = [0,0.5,1,1.5]
-    ind2 = [2.25,2.75,3.25,3.75]
+    ind1 = [0,0.25,0.5,0.75,1.0]
+    ind2 = [1.25]
+    ind3 = [2.0,2.25]
+    ind3 = [2.5]
+
     ind = ind1 + ind2
 
-    pacbio_precisions_genome, pacbio_recalls_genome = zip(*[get_precision_recall(d, gq_cutoff) for d in pacbio_dirlist_genome])
-    illumina_precisions_genome, illumina_recalls_genome = zip(*[get_precision_recall(d, gq_cutoff) for d in illumina_dirlist_genome])
-    pacbio_precisions_segdup, pacbio_recalls_segdup = zip(*[get_precision_recall(d, gq_cutoff) for d in pacbio_dirlist_segdup])
-    illumina_precisions_segdup, illumina_recalls_segdup = zip(*[get_precision_recall(d, gq_cutoff) for d in illumina_dirlist_segdup])
+    pacbio_precisions_NA24385, pacbio_recalls_NA24385 = zip(*[get_precision_recall(d, gq_cutoff) for d in pacbio_dirlist_NA24385])
+    illumina_precisions_NA24385, illumina_recalls_NA24385 = zip(*[get_precision_recall(d, gq_cutoff) for d in illumina_dirlist_NA24385])
+    pacbio_precisions_NA12878, pacbio_recalls_NA12878 = zip(*[get_precision_recall(d, gq_cutoff) for d in pacbio_dirlist_NA12878])
+    illumina_precisions_NA12878, illumina_recalls_NA12878 = zip(*[get_precision_recall(d, gq_cutoff) for d in illumina_dirlist_NA12878])
 
     ax = plt.subplot(211)
-    make_subplot(ax,np.array(ind1), pacbio_precisions_genome, illumina_precisions_genome, lab_pacbio='PacBio + Reaper', lab_illumina='Illumina + Freebayes',fc='#e0e1e2')
-    make_subplot(ax, np.array(ind2), pacbio_precisions_segdup, illumina_precisions_segdup,fc='#dddddd')
+    plot_bars(ax, np.array(ind1), pacbio_precision_NA24385,color='#2200ff',labels=['PacBio SMRT'])
+    plot_bars(ax, np.array(ind2), illumina_precision_NA24385,color='#ff1900',labels=['Illumina'])
+    plot_bars(ax, np.array(ind3), pacbio_precision_NA12878,color='#2200ff')
+    plot_bars(ax, np.array(ind4), illumina_precision_NA12878,color='#ff1900')
     ax.legend(loc='center left', bbox_to_anchor=(0.25,1.13),ncol=2)
 
     plt.ylabel("Precision")
@@ -471,11 +452,13 @@ def plot_precision_recall_bars_NA12878_NA24385(reaper_with_haps_dirlist, reaper_
 
     ax = plt.subplot(212)
     plt.ylabel("Recall\n")
-    make_subplot(ax, np.array(ind1), pacbio_recalls_genome, illumina_recalls_genome,fc='#e0e1e2')
-    make_subplot(ax, np.array(ind2), pacbio_recalls_segdup, illumina_recalls_segdup,fc='#dddddd')
+    plot_bars(ax, np.array(ind1), pacbio_precision_NA24385,color='#2200ff')
+    plot_bars(ax, np.array(ind2), illumina_precision_NA24385,color='#ff1900')
+    plot_bars(ax, np.array(ind3), pacbio_precision_NA12878,color='#2200ff')
+    plot_bars(ax, np.array(ind4), illumina_precision_NA12878,color='#ff1900')
     prettify_plot()
-    ax.set_xticks(np.array(ind)+1.5*width)
-    ax.set_xticklabels(labels+labels)
+    ax.set_xticks(np.array(ind1+ind2+ind3+ind4)+1.5*width)
+    ax.set_xticklabels(['20','30','40','50','69','30','30','44','30'])
 
     #ax.set_yscale('log')NA12878_prec_recall_{chrom}
     #plt.xlim(())
@@ -493,9 +476,9 @@ def plot_precision_recall_bars_NA12878_NA24385(reaper_with_haps_dirlist, reaper_
 
     ax.annotate('coverage', xy=(-0.1,-0.03), xytext=(5, -ticklabelpad), ha='left', va='top',
                 xycoords='axes fraction', textcoords='offset points')
-    ax.annotate('Whole Genome', xy=(0.16,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
+    ax.annotate('NA24385', xy=(0.16,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
                 xycoords='axes fraction', textcoords='offset points')
-    ax.annotate('Segmental Duplications Only', xy=(0.58,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
+    ax.annotate('NA12878', xy=(0.58,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
                 xycoords='axes fraction', textcoords='offset points')
 
     # credit to https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot

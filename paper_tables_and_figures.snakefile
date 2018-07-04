@@ -73,6 +73,26 @@ rule plot_pr_curve_impact_of_haplotyping:
                                    '#ffff02','#ffff6b'], # yellow
                            xlim=(0.5,1.0),ylim=(0.95,1.0))
 
+rule plot_pr_curve_NA24385_impact_of_haplotyping:
+    params: job_name = 'plot_pr_curve_impact_of_haplotyping',
+            title = 'Impact of Haplotype Information on PacBio Variant Calling with Reaper'
+    input:
+        NA24385_hap_20x = 'data/NA24385.1000g/vcfeval/reaper.pacbio.bwamem.20x.-z/{chrom}.done',
+        NA24385_hap_69x = 'data/NA24385.1000g/vcfeval/reaper.pacbio.bwamem.69x.-z/{chrom}.done',
+        NA24385_no_hap_20x = 'data/NA24385.1000g/vcfeval/reaper.pacbio.bwamem.20x.-n_-z/{chrom}.done',
+        NA24385_no_hap_69x = 'data/NA24385.1000g/vcfeval/reaper.pacbio.bwamem.69x.-n_-z/{chrom}.done',
+    output:
+        png = 'data/plots/effect_of_haplotyping.NA24385.prec_recall_{chrom}.png'
+    run:
+        ptf.plot_vcfeval([input.NA24385_hap_20x[:-5], input.NA24385_no_hap_20x[:-5],
+                          input.NA24385_hap_69x[:-5], input.NA24385_no_hap_69x[:-5]],
+                         ['20x SMS\n(haplotype assembly)', '20x SMS\n(no haplotype assembly)',
+                          '69x SMS\n(haplotype assembly)', '69x SMS\n(no haplotype assembly)'],
+                           output.png,None,
+                           colors=['#ff0000','#ff4f4f', # red
+                                   '#0400fc','#514efc'], # blue
+                           xlim=(0.70,1.0),ylim=(0.975,1.0))
+
 rule make_four_genomes_table:
     params: job_name = 'make_four_genomes_table.aj_trio_{aj_trio_build}_{aj_trio_aligner}.{chrom}.{GQ}'
     input:
@@ -234,14 +254,14 @@ rule filter_vcf_GQ:
     output: vcfgz = 'data/{dataset}/variants/{calls_name}/{chrom}.GQ{GQ}.vcf.gz',
     shell: '{RTGTOOLS} RTG_MEM=12g vcffilter -g {wildcards.GQ} -i {input.vcfgz} -o {output.vcfgz}'
 
-sim_covs = [20,30,40,80]
+sim_covs = [20,30,40,60]
 rule plot_simulation_pr_bars:
     params: job_name = 'plot_simulation_pr_bars.{chrom}.GQ{GQ}'
     input:
-        reaper_genome = expand('data/simulation/vcfeval/reaper.pacbio.bwa.{c}x.-z/{{chrom}}.done',c=sim_covs),
-        illumina_genome = expand('data/simulation/vcfeval/illumina_{c}x.filtered/{{chrom}}.done',c=sim_covs),
-        reaper_segdup = expand('data/simulation/vcfeval_segdup/reaper.pacbio.bwa.{c}x.-z/{{chrom}}.done',c=sim_covs),
-        illumina_segdup = expand('data/simulation/vcfeval_segdup/illumina_{c}x.filtered/{{chrom}}.done',c=sim_covs),
+        reaper_genome = expand('data/simulation.1000g/vcfeval/reaper.pacbio.blasr.{c}x.-z/{{chrom}}.done',c=sim_covs),
+        illumina_genome = expand('data/simulation.1000g/vcfeval/illumina_{c}x.filtered/{{chrom}}.done',c=sim_covs),
+        reaper_segdup = expand('data/simulation.1000g/vcfeval_segdup/reaper.pacbio.blasr.{c}x.-z/{{chrom}}.done',c=sim_covs),
+        illumina_segdup = expand('data/simulation.1000g/vcfeval_segdup/illumina_{c}x.filtered/{{chrom}}.done',c=sim_covs),
     output:
         png = 'data/plots/simulation_pr_barplot_genome_vs_segdup.{chrom}.GQ{GQ}.png'
     run:
@@ -257,16 +277,16 @@ rule plot_simulation_pr_bars:
 rule plot_simulation_pr_bars_extended:
     params: job_name = 'plot_simulation_pr_bars_extended.{chrom}.GQ{GQ}'
     input:
-        reaper_ngmlr_genome = expand('data/simulation/vcfeval/reaper.pacbio.ngmlr.{c}x.-z/{{chrom}}.done',c=sim_covs),
-        reaper_minimap2_genome = expand('data/simulation/vcfeval/reaper.pacbio.minimap2.{c}x.-z/{{chrom}}.done',c=sim_covs),
-        reaper_bwamem_genome = expand('data/simulation/vcfeval/reaper.pacbio.bwamem.{c}x.-z/{{chrom}}.done',c=sim_covs),
-        reaper_blasr_genome = expand('data/simulation/vcfeval/reaper.pacbio.blasr.{c}x.-z/{{chrom}}.done',c=sim_covs),
-        illumina_genome = expand('data/simulation/vcfeval/illumina_{c}x.filtered/{{chrom}}.done',c=sim_covs),
-        reaper_ngmlr_segdup = expand('data/simulation/vcfeval_segdup/reaper.pacbio.ngmlr.{c}x.-z/{{chrom}}.done',c=sim_covs),
-        reaper_minimap2_segdup = expand('data/simulation/vcfeval_segdup/reaper.pacbio.minimap2.{c}x.-z/{{chrom}}.done',c=sim_covs),
-        reaper_bwamem_segdup = expand('data/simulation/vcfeval_segdup/reaper.pacbio.bwamem.{c}x.-z/{{chrom}}.done',c=sim_covs),
-        reaper_blasr_segdup = expand('data/simulation/vcfeval_segdup/reaper.pacbio.blasr.{c}x.-z/{{chrom}}.done',c=sim_covs),
-        illumina_segdup = expand('data/simulation/vcfeval_segdup/illumina_{c}x.filtered/{{chrom}}.done',c=sim_covs),
+        reaper_ngmlr_genome = expand('data/simulation.1000g/vcfeval/reaper.pacbio.ngmlr.{c}x.-z/{{chrom}}.done',c=sim_covs),
+        reaper_minimap2_genome = expand('data/simulation.1000g/vcfeval/reaper.pacbio.minimap2.{c}x.-z/{{chrom}}.done',c=sim_covs),
+        reaper_bwamem_genome = expand('data/simulation.1000g/vcfeval/reaper.pacbio.bwa.{c}x.-z/{{chrom}}.done',c=sim_covs),
+        reaper_blasr_genome = expand('data/simulation.1000g/vcfeval/reaper.pacbio.blasr.{c}x.-z/{{chrom}}.done',c=sim_covs),
+        illumina_genome = expand('data/simulation.1000g/vcfeval/illumina_{c}x.filtered/{{chrom}}.done',c=sim_covs),
+        reaper_ngmlr_segdup = expand('data/simulation.1000g/vcfeval_segdup/reaper.pacbio.ngmlr.{c}x.-z/{{chrom}}.done',c=sim_covs),
+        reaper_minimap2_segdup = expand('data/simulation.1000g/vcfeval_segdup/reaper.pacbio.minimap2.{c}x.-z/{{chrom}}.done',c=sim_covs),
+        reaper_bwamem_segdup = expand('data/simulation.1000g/vcfeval_segdup/reaper.pacbio.bwa.{c}x.-z/{{chrom}}.done',c=sim_covs),
+        reaper_blasr_segdup = expand('data/simulation.1000g/vcfeval_segdup/reaper.pacbio.blasr.{c}x.-z/{{chrom}}.done',c=sim_covs),
+        illumina_segdup = expand('data/simulation.1000g/vcfeval_segdup/illumina_{c}x.filtered/{{chrom}}.done',c=sim_covs),
     output:
         png = 'data/plots/simulation_pr_barplot_genome_vs_segdup_extended.{chrom}.GQ{GQ}.png'
     run:
@@ -288,22 +308,84 @@ rule plot_simulation_pr_bars_extended:
 
 rule plot_depth_of_mapped_vs_breadth:
     params: job_name = 'plot_depth_of_mapped_vs_breadth.NA12878.30x',
-    input: illumina_mapq0 = 'data/N12878.1000g/aligned_reads/illumina/genomecov_histograms_mapq0/illumina.30x__all.txt',
-           illumina_mapq10 = 'data/N12878.1000g/aligned_reads/illumina/genomecov_histograms_mapq10/illumina.30x__all.txt',
-           illumina_mapq20 = 'data/N12878.1000g/aligned_reads/illumina/genomecov_histograms_mapq20/illumina.30x__all.txt',
-           illumina_mapq30 = 'data/N12878.1000g/aligned_reads/illumina/genomecov_histograms_mapq30/illumina.30x__all.txt',
-           pacbio_mapq0 = 'data/N12878.1000g/aligned_reads/pacbio/genomecov_histograms_mapq0/pacbio.blasr.all.30x__all.txt',
-           pacbio_mapq10 = 'data/N12878.1000g/aligned_reads/pacbio/genomecov_histograms_mapq10/pacbio.blasr.all.30x__all.txt',
-           pacbio_mapq20 = 'data/N12878.1000g/aligned_reads/pacbio/genomecov_histograms_mapq20/pacbio.blasr.all.30x__all.txt',
-           pacbio_mapq30 = 'data/N12878.1000g/aligned_reads/pacbio/genomecov_histograms_mapq30/pacbio.blasr.all.30x__all.txt',
-    output: png = 'data/plots/depth_vs_breadth_mappability.NA12878.44x.png'
+    input: illumina_mapq0 = 'data/NA12878.1000g/aligned_reads/illumina/genomecov_histograms_mapq0/illumina.30x__all.txt',
+           illumina_mapq10 = 'data/NA12878.1000g/aligned_reads/illumina/genomecov_histograms_mapq10/illumina.30x__all.txt',
+           illumina_mapq20 = 'data/NA12878.1000g/aligned_reads/illumina/genomecov_histograms_mapq20/illumina.30x__all.txt',
+           illumina_mapq30 = 'data/NA12878.1000g/aligned_reads/illumina/genomecov_histograms_mapq30/illumina.30x__all.txt',
+           pacbio_mapq0 = 'data/NA12878.1000g/aligned_reads/pacbio/genomecov_histograms_mapq0/pacbio.blasr.all.30x__all.txt',
+           pacbio_mapq10 = 'data/NA12878.1000g/aligned_reads/pacbio/genomecov_histograms_mapq10/pacbio.blasr.all.30x__all.txt',
+           pacbio_mapq20 = 'data/NA12878.1000g/aligned_reads/pacbio/genomecov_histograms_mapq20/pacbio.blasr.all.30x__all.txt',
+           pacbio_mapq30 = 'data/NA12878.1000g/aligned_reads/pacbio/genomecov_histograms_mapq30/pacbio.blasr.all.30x__all.txt',
+    output: png = 'data/plots/depth_vs_breadth_mappability.NA12878.30x.png'
     run:
-        labels = ['Illumina, Mapq >= 0','Illumina, Mapq >= 10',
-                  'Illumina, Mapq >= 20','Illumina, Mapq >= 30',
-                  'PacBio, Mapq >= 0','PacBio, Mapq >= 10',
-                  'PacBio, Mapq >= 20','PacBio, Mapq >= 30']
 
-        colors = ['#ff9999','#ff7070','#ff4242','#ff0000',
-                  '#9a99ff','#7775ff','#4744ff','#0400ff']
-        labels =
-        ptf.plot_depth_of_mapped_vs_breadth(list(input), labels, colors, output.png)
+        inputs = [input.illumina_mapq0, input.illumina_mapq30, input.pacbio_mapq0, input.pacbio_mapq30]
+        labels = ['Illumina, Mapq >= 0','Illumina, Mapq >= 30',
+                  'PacBio, Mapq >= 0','PacBio, Mapq >= 30']
+
+        #colors = ['#ff9999','#ff7070','#ff4242','#ff0000',
+        #          '#9a99ff','#7775ff','#4744ff','#0400ff']
+
+        colors = ['#ff9999', '#ff0000',
+                  '#9a99ff', '#0400ff']
+
+        #ptf.plot_depth_of_mapped_vs_breadth(list(input), labels, colors, output.png)
+        ptf.plot_depth_of_mapped_vs_breadth(inputs, labels, colors, output.png)
+
+rule plot_precision_recall_bars_NA12878_NA24385:
+    params: job_name = 'plot_precision_recall_bars_NA12878_NA24385.{NA24385_aligner}.{NA24385_build}',
+    input: pacbio_dirlist_NA24385 = expand('data/NA24385.{{NA24385_build}}/vcfeval/reaper.pacbio.{{NA24385_aligner}}.{cov}x.-z/all.done',cov=[20,30,40,50,69]),
+           illumina_NA24385 = 'data/NA24385.1000g/vcfeval/illumina_30x.filtered/all.done',
+           pacbio_dirlist_NA12878 = expand('data/NA12878.1000g/vcfeval/reaper.pacbio.blasr.{cov}x.-z/all.done',cov=[30,44]),
+           illumina_NA12878 = 'data/NA24385.1000g/vcfeval/illumina_30x.filtered/all.done',
+    output: png = 'data/plots/fig3_precision_recall_bars_NA24385_NA12878.{NA24385_aligner}.{NA24385_build}.png'
+    run:
+        ptf.plot_precision_recall_bars_NA12878_NA24385(pacbio_dirlist_NA24385=[x[:-5] for x in input.pacbio_dirlist_NA24385],
+                                                       illumina_dirlist_NA24385=[input.illumina_NA24385[:-5]],
+                                                       pacbio_dirlist_NA12878=[x[:-5] for x in input.pacbio_dirlist_NA12878],
+                                                       illumina_dirlist_NA12878=[input.illumina_NA12878[:-5]],
+                                                       gq_cutoffs_NA24385=[20,30,40,50,69],gq_cutoffs_NA12878=[30,44],
+                                                       gq_cutoff_illumina=50, output_file=output.png)
+
+
+rule plot_haplotyping_results:
+    params: job_name = 'plot_haplotyping_results',
+    input: reaper_NA12878_30x = 'data/NA12878.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.30x.-z.all.p',
+           reaper_NA12878_44x = 'data/NA12878.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.44x.-z.all.p',
+           reaper_NA24385_69x = 'data/NA24385.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.69x.-z.all.p',
+           reaper_NA24149_32x = 'data/NA24149.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.32x.-z.all.p',
+           reaper_NA24143_30x = 'data/NA24143.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.30x.-z.all.p',
+           hapcut2_NA12878_30x = 'data/NA12878.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.30x.all.p',
+           hapcut2_NA12878_44x = 'data/NA12878.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.44x.all.p',
+           hapcut2_NA24385_69x = 'data/NA24385.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.bwamem.69x.all.p',
+           hapcut2_NA24149_32x = 'data/NA24149.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.bwamem.32x.all.p',
+           hapcut2_NA24143_30x = 'data/NA24143.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.bwamem.30x.all.p',
+    output: png = 'data/plots/haplotyping_results_barplot.png'
+    run:
+        ptf.plot_haplotyping_results(reaper_errs=[input.reaper_NA12878_30x,
+                                                  input.reaper_NA12878_44x,
+                                                  input.reaper_NA24385_69x,
+                                                  input.reaper_NA24149_32x,
+                                                  input.reaper_NA24143_30x],
+                                     hapcut2_errs=[input.hapcut2_NA12878_30x,
+                                                  input.hapcut2_NA12878_44x,
+                                                  input.hapcut2_NA24385_69x,
+                                                  input.hapcut2_NA24149_32x,
+                                                  input.hapcut2_NA24143_30x],
+                                     output_file=output.png)
+
+
+rule plot_precision_recall_bars_NA12878_NA24385_with_haplotypefree:
+    params: job_name = 'plot_precision_recall_bars_NA12878_NA24385_with_haplotypefree.{NA24385_aligner}.{NA24385_build}',
+    input: hap_dirlist_NA24385 = expand('data/NA24385.{{NA24385_build}}/vcfeval/reaper.pacbio.{{NA24385_aligner}}.{cov}x.-z/all.done',cov=[20,30,40,50,69]),
+           nohap_dirlist_NA24385 = expand('data/NA24385.{{NA24385_build}}/vcfeval/reaper.pacbio.{{NA24385_aligner}}.{cov}x.-n_-z/all.done',cov=[20,30,40,50,69]),
+           hap_dirlist_NA12878 = expand('data/NA12878.1000g/vcfeval/reaper.pacbio.blasr.{cov}x.-z/all.done',cov=[30,44]),
+           nohap_dirlist_NA12878 = expand('data/NA12878.1000g/vcfeval/reaper.pacbio.blasr.{cov}x.-n_-z/all.done',cov=[30,44]),
+    output: png = 'data/plots/supp_fig3_with_haplotypefree_precision_recall_bars_NA24385_NA12878.{NA24385_aligner}.{NA24385_build}.png'
+    run:
+        ptf.plot_precision_recall_bars_NA12878_NA24385_with_haplotypefree(hap_dirlist_NA24385=[x[:-5] for x in input.hap_dirlist_NA24385],
+                                                       nohap_dirlist_NA24385=[x[:-5] for x in input.nohap_dirlist_NA24385],
+                                                       hap_dirlist_NA12878=[x[:-5] for x in input.hap_dirlist_NA12878],
+                                                       nohap_dirlist_NA12878=[x[:-5] for x in input.nohap_dirlist_NA12878],
+                                                       gq_cutoffs_NA24385=[20,30,40,50,69],gq_cutoffs_NA12878=[30,44],
+                                                       output_file=output.png)

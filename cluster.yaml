@@ -29,9 +29,16 @@ align_simulated_pacbio_bwa:
     walltime: '50:00:00'
     ppn: 4
 
+# temporarily souping these up with more cores...
+#####################################################################
+sort_simulated_pacbio_blasr:
+    walltime: '50:00:00'
+    ppn: 8
+
 align_simulated_pacbio_blasr:
     walltime: '50:00:00'
-    ppn: 4
+    ppn: 8
+#####################################################################
 
 align_simulated_pacbio_ngmlr:
     walltime: '50:00:00'
@@ -41,9 +48,8 @@ align_simulated_pacbio_minimap2:
     walltime: '50:00:00'
     ppn: 4
 
-sort_simulated_pacbio_blasr:
-    walltime: '50:00:00'
-    ppn: 4
+merge_simulated_bams:
+    walltime: '100:00:00'
 
 merge_giab_pacbio_blasr:
     walltime: '150:00:00'
@@ -55,7 +61,7 @@ sort_giab_pacbio_blasr:
 
 align_giab_pacbio_blasr:
     walltime: '20:00:00'
-    ppn: 6
+    ppn: 8
 
 bax2bam:
     walltime: '50:00:00'

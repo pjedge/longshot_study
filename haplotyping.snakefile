@@ -64,11 +64,18 @@ rule extractHAIRS:
     params: job_name = 'extractHAIRS.{individual}.{build}.illumina{icov}.pacbio{pcov}.{aligner}.{chrom}',
     input: bam = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.{chrom}.{pcov}x.bam',
            bai = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.{chrom}.{pcov}x.bam.bai',
-           vcf = 'data/{individual}.{build}/variants/illumina_{icov}x.filtered/{chrom}.haplotyping_filters.vcf'
+           vcf = 'data/{individual}.{build}/variants/illumina_{icov}x.filtered/{chrom}.haplotyping_filters.vcf',
+           hg19 = 'data/genomes/hg19.fa',
+           hg19_ix = 'data/genomes/hg19.fa.fai',
+           hs37d5 = 'data/genomes/hs37d5.fa',
+           hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
+           hg38 = 'data/genomes/hg38.fa',
+           hg38_ix = 'data/genomes/hg38.fa.fai'
     output: frag = 'data/{individual}.{build}/HapCUT2_haplotypes/illumina.{icov,\d+}x.pacbio.{aligner}.{pcov,\d+}x/fragments/{chrom,(\d+)}',
     run:
         w_ref = ref_file[wildcards.build]
         if wildcards.individual == 'NA12878':
+            w_ref = input.hg19 # need to use hg19 rather than 1000g for NA12878...
             chr_prefix_vcf = input.vcf[:-4] + '.chr_prefix.vcf'
             shell('''
                 cat {input.vcf} | awk '{{if($0 !~ /^#/) print "chr"$0; else print $0}}'> {chr_prefix_vcf};

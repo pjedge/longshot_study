@@ -53,19 +53,21 @@ def generate_random_calls(ground_truth_bed_file, chrom, N):
 
     return var_pos_lst
 
-def get_var_pos_lst(calls_vcfgz):
+def get_var_pos_lst(calls_vcfgz, gq_cutoff):
 
     var_pos_lst = []
 
     with pysam.VariantFile(calls_vcfgz) as calls:
 
         for record in calls:
+            if record.samples[0]['GQ'] < gq_cutoff:
+                continue
             var_pos_lst.append((record.chrom, record.pos))
 
     return var_pos_lst
 
 def analyze_variants(chrom_name, fp_calls_vcfgz, fn_calls_vcfgz, ground_truth_vcfgz, ground_truth_bed_file, str_tabix_bed_file,
-                     line_tabix_bed_file, sine_tabix_bed_file, ref_fa, output_file):
+                     line_tabix_bed_file, sine_tabix_bed_file, ref_fa, gq_cutoff, output_file):
 
     def count_variant_categories(var_pos_lst):
 
@@ -84,7 +86,7 @@ def analyze_variants(chrom_name, fp_calls_vcfgz, fn_calls_vcfgz, ground_truth_vc
             pysam.TabixFile(sine_tabix_bed_file) as sine_bed, \
             pysam.FastaFile(ref_fa) as ref:
 
-            for (chrom, pos) in var_pos_lst:
+            for ix, (chrom, pos) in enumerate(var_pos_lst):
 
                 total += 1
                 assert(chrom == chrom_name)
@@ -140,6 +142,18 @@ def analyze_variants(chrom_name, fp_calls_vcfgz, fn_calls_vcfgz, ground_truth_vc
                              in_LINE_ct/total,
                              in_SINE_ct/total]
 
+
+        print("Counts of variants in categories (categories may overlap):")
+        print("Near true indel (within 30 bp): {:.3f}".format(near_indel_ct))
+        print("In homopolymer (len >= 5):      {:.3f}".format(in_homopol5_ct))
+        print("In STR (+- 5 bp):               {:.3f}".format(in_STR_ct))
+        print("In LINE (+- 5 bp):              {:.3f}".format(in_LINE_ct))
+        print("In SINE (+- 5 bp):              {:.3f}".format(in_SINE_ct))
+        print("")
+        print("")
+        print("Fractions for overlapped categories:")
+        print("Near indel\tIn homopolymer\tIn STR\tIn LINE\tIn SINE\tFraction of Variants")
+
         print("Fraction of variants in categories (categories may overlap):")
         print("Near true indel (within 30 bp): {:.3f}".format(near_indel_ct/total))
         print("In homopolymer (len >= 5):      {:.3f}".format(in_homopol5_ct/total))
@@ -163,12 +177,13 @@ def analyze_variants(chrom_name, fp_calls_vcfgz, fn_calls_vcfgz, ground_truth_vc
         #return bit_table, row_labels, col_labels_bottom
         return result_fracs
 
-    random_var_pos = generate_random_calls(ground_truth_bed_file, chrom_name, 100000)
+    #random_var_pos = generate_random_calls(ground_truth_bed_file, chrom_name, 100000)
 
     print("Analyzing False Positives...\n")
-    fp_fracs = count_variant_categories(get_var_pos_lst(fp_calls_vcfgz))
+    fp_fracs = count_variant_categories(get_var_pos_lst(fp_calls_vcfgz, gq_cutoff))
     print("Analyzing False Negatives...\n")
-    fn_fracs = count_variant_categories(get_var_pos_lst(fn_calls_vcfgz))
+    fn_fracs = count_variant_categories(get_var_pos_lst(fn_calls_vcfgz, gq_cutoff))
+    exit(0)
     print("Analyzing Random Positions...\n")
     random_fracs = count_variant_categories(random_var_pos)
     print(fp_fracs)

@@ -27,7 +27,7 @@ RTGTOOLS       = 'rtg' #'/home/pedge/installed/rtg-tools-3.8.4/rtg' # v3.8.4, ht
 BGZIP = 'bgzip'
 TABIX = 'tabix'
 FREEBAYES      = '/home/pedge/git/freebayes/bin/freebayes'
-SIMLORD = '/home/pedge/installed/opt/python/bin/simlord'
+SIMLORD = 'simlord'
 DWGSIM = '/home/pedge/git/DWGSIM/dwgsim'
 BWA = '/home/pedge/installed/bwa'
 BLASR = 'blasr'
@@ -60,44 +60,22 @@ include: "haplotyping.snakefile"
 # DEFAULT
 rule all:
     input:
-        #'data/plots/depth_vs_breadth_mappability.NA12878.30x.png'
-        'data/output/four_GIAB_genomes_table.aj_trio_1000g_bwamem.all.GQ50.tex', # current version with bwamem
-        'data/output/four_GIAB_genomes_table_extended.aj_trio_1000g_bwamem.all.GQ50.tex', # current version with bwamem
+        #'data/aj_trio/duplicated_regions/trio_shared_variant_sites/mendelian/all.vcf.gz',
+        'data/plots/simulation_pr_barplot_genome_vs_segdup.all.GQ50.png',
+        #'data/plots/simulation_pr_barplot_genome_vs_segdup_extended.1.GQ50.png',
+        #'data/plots/depth_vs_breadth_mappability.NA12878.30x.png',
+        #'data/plots/NA24385.hg38_prec_recall_all.png',
+        #'data/plots/NA24385.1000g_prec_recall_all.png',
+        #'data/plots/NA24143.1000g_prec_recall_all.png',
+        #'data/plots/NA24149.1000g_prec_recall_all.png',
+        #'data/plots/NA12878.1000g_prec_recall_all.png',
+        #'data/plots/supp_fig3_with_haplotypefree_precision_recall_bars_NA24385_NA12878.bwamem.1000g.png',
+        #'data/plots/supp_fig3_with_haplotypefree_precision_recall_bars_NA24385_NA12878.blasr.hg38.png',
 
-        'data/NA12878.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.30x.-z.all.p',
-        'data/NA12878.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.44x.-z.all.p',
-        'data/NA24385.hg38/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.69x.-z.all.p',
-        'data/NA24385.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.69x.-z.all.p',
-        'data/NA24143.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.30x.-z.all.p',
-        'data/NA24149.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.32x.-z.all.p',
+        #'data/output/four_GIAB_genomes_table.aj_trio_1000g_bwamem.all.GQ50.tex', # current version with bwamem
+        #'data/output/four_GIAB_genomes_table_extended.aj_trio_1000g_bwamem.all.GQ50.tex', # current version with bwamem
 
-        'data/NA12878.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.30x.all.p',
-        'data/NA12878.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.44x.all.p',
-        'data/NA24385.hg38/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.69x.all.p',
-        'data/NA24385.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.bwamem.69x.all.p',
-        'data/NA24143.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.bwamem.30x.all.p',
-        'data/NA24149.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.bwamem.32x.all.p',
-
-        'data/NA24385.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.bwamem.69x.all.p',
-        'data/NA24143.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.bwamem.30x.all.p',
-        'data/NA24149.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.bwamem.32x.all.p',
-
-        'data/NA12878.1000g/vcfeval/illumina_30x.filtered/all.done',
-        'data/NA24385.1000g/vcfeval/illumina_30x.filtered/all.done',
-        'data/NA24143.1000g/vcfeval/illumina_30x.filtered/all.done',
-        'data/NA24149.1000g/vcfeval/illumina_30x.filtered/all.done',
-        'data/NA24385.hg38/vcfeval/illumina_30x.filtered/all.done',
-        'data/NA24143.hg38/vcfeval/illumina_30x.filtered/all.done',
-        'data/NA24149.hg38/vcfeval/illumina_30x.filtered/all.done',
-        'data/plots/NA24385.hg38_prec_recall_all.png',
-        'data/plots/NA24385.1000g_prec_recall_all.png',
-        'data/plots/NA24143.1000g_prec_recall_all.png',
-        'data/plots/NA24149.1000g_prec_recall_all.png',
-        'data/plots/NA12878.1000g_prec_recall_all.png',
-
-
-
-        'data/plots/effect_of_haplotyping.giab_individuals.prec_recall_all.png',
+        #'data/plots/effect_of_haplotyping.giab_individuals.prec_recall_all.png',
         #'data/output/four_GIAB_genomes_table.aj_trio_hg38_blasr.all.GQ50.tex', # once hg38 blasr bams available for aj mother + father
         #'data/output/four_GIAB_genomes_table_extended.aj_trio_hg38_blasr.all.GQ50.tex', # once hg38 blasr bams available for aj mother + father
         #'data/plots/simulation.1_prec_recall_1.png',
@@ -117,6 +95,13 @@ rule all:
         #'data/output/variant_analysis_fp_fn__NA24149__reaper.pacbio.ngmlr.32x.-z__1.tex',
         #'data/output/variant_analysis_fp_fn__NA24143__reaper.pacbio.ngmlr.30x.-z__1.tex',
         #'data/plots/NA12878_prec_recall_all.png',
+        #'data/NA12878.1000g/vcfeval/illumina_30x.filtered/all.done',
+        #'data/NA24385.1000g/vcfeval/illumina_30x.filtered/all.done',
+        #'data/NA24143.1000g/vcfeval/illumina_30x.filtered/all.done',
+        #'data/NA24149.1000g/vcfeval/illumina_30x.filtered/all.done',
+        #'data/NA24385.hg38/vcfeval/illumina_30x.filtered/all.done',
+        #'data/NA24143.hg38/vcfeval/illumina_30x.filtered/all.done',
+        #'data/NA24149.hg38/vcfeval/illumina_30x.filtered/all.done',
 
 # this function takes in a chromosome name in 1..22,X and a "genome build" name
 # and appends a 'chr' prefix to the chrom name if the genome build is hg38
@@ -252,7 +237,7 @@ rule add_runtimes:
             with open(f,'r') as inf:
                 t += formatted_time_to_seconds(inf.readline().strip())
 
-        with open(output,'w') as outf:
+        with open(output[0],'w') as outf:
             print(seconds_to_formatted_time(t),file=outf)
 
 rule run_reaper:
@@ -408,7 +393,7 @@ rule convert_genome_track_to_1000g:
 rule subsample_illumina_60x:
     params: job_name = 'subsample_illumina_{individual}.{build}.{cov}x'
     input:  'data/{individual}.{build}/aligned_reads/illumina/illumina.60x.bam'
-    output: 'data/{individual}.{build}/aligned_reads/illumina/illumina.{cov}x.bam'
+    output: 'data/{individual,NA\d+}.{build}/aligned_reads/illumina/illumina.{cov,(1|2|3|4|5)0}x.bam'
     run:
         subsample_frac = float(wildcards.cov) / 60.0
         shell('{SAMTOOLS} view -hb {input} -s {subsample_frac} > {output}')
@@ -436,8 +421,8 @@ rule bgzip_debug_vcf_calls:
 # bgzip vcf
 rule bgzip_ground_truth:
     params: job_name = 'bgzip_ground_truth.{individual}.{build}'
-    input:  'data/{individual}.{build}/variants/ground_truth/ground_truth.{build}.vcf'
-    output: 'data/{individual}.{build}/variants/ground_truth/ground_truth.{build}.vcf.gz'
+    input:  'data/{individual}.{build}/variants/ground_truth/ground_truth.vcf'
+    output: 'data/{individual}.{build}/variants/ground_truth/ground_truth.vcf.gz'
     shell:  '{BGZIP} -c {input} > {output}'
 
 # bgzip bed
@@ -449,16 +434,16 @@ rule bgzip_bed:
 
 # gunzip fasta
 rule gunzip_fasta:
-    params: job_name = lambda wildcards: 'gunzip_fasta.{}'.format(str(wildcards.x).replace("/", "."))
-    input:  '{x}.fa.gz'
-    output: '{x}.fa'
+    params: job_name = lambda wildcards: 'gunzip_fasta.data.genomes.{}'.format(str(wildcards.x).replace("/", "."))
+    input:  'data/genomes/{x}.fa.gz'
+    output: 'data/genomes/{x}.fa'
     shell:  'gunzip {input}'
 
 # gunzip_bed
 rule gunzip_bed:
-    params: job_name = lambda wildcards: 'gunzip_bed.{}'.format(str(wildcards.x).replace("/", "."))
-    input:  '{x}.bed.gz'
-    output: '{x}.bed'
+    params: job_name = lambda wildcards: 'gunzip_bed.{id}.{build}.{}'.format(str(wildcards.x).replace("/", "."))
+    input:  'data/{id}.{build}/{x}.bed.gz'
+    output: 'data/{id}.{build,(1000g|hg38)}/{x}.bed'
     shell:  'gunzip -c {input} > {output}'
 
 # index fasta reference

@@ -9,6 +9,9 @@ import numpy as np
 import re
 from collections import namedtuple
 from collections import defaultdict
+import sys
+sys.path.append('HapCUT2/utilities')
+import calculate_haplotype_statistics
 
 
 mpl.rc('legend', fontsize=9)
@@ -42,7 +45,8 @@ def plot_vcfeval(dirlist, labels, output_file, title, colors=['r','#3333ff','#cc
 
     plt.figure();
     ax1 = plt.subplot(111);
-    plt.title(title)
+    if title != None:
+        plt.title(title)
 
     if len(dirlist) > len(colors):
         print("need to define larger color pallet to plot this many datasets.")
@@ -139,20 +143,22 @@ def plot_precision_recall_bars_simulation(pacbio_dirlist_genome, illumina_dirlis
                 alpha=alpha1,      # transparency
                 width=width,      # smaller bar width
                 align='center',
-                label=lab_pacbio)
+                label=lab_pacbio,
+                zorder=0)
         plt.bar(ind+2*width, illumina_vals, color='#ff1900',
                 ecolor='black', # black error bar color
                 alpha=alpha1,      # transparency
                 width=width,      # smaller bar width
                 align='center',
-                label=lab_illumina)
+                label=lab_illumina,
+                zorder=0)
         # add some text for labels, title and axes ticks
         #plt.xlim(-0.5,6)
 
 
     def prettify_plot():
 
-        ax.yaxis.grid(True,color='grey', alpha=0.5, linestyle='--')
+        ax.yaxis.grid(True,color='grey', alpha=0.5, linestyle='--',zorder=1.0)
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
         ax.spines["bottom"].set_visible(False)
@@ -235,7 +241,7 @@ def plot_precision_recall_bars_simulation_extended(pacbio_ngmlr_dirlist_genome,
     plt.figure(figsize=(7,5))
     #mpl.rcParams['axes.titlepad'] = 50
 
-    width = 0.05
+    width = 0.075
     alpha1 = 0.6
 
     def make_subplot(ax,
@@ -256,38 +262,43 @@ def plot_precision_recall_bars_simulation_extended(pacbio_ngmlr_dirlist_genome,
                 alpha=alpha1,      # transparency
                 width=width,      # smaller bar width
                 align='center',
-                label=lab_pacbio_ngmlr)
+                label=lab_pacbio_ngmlr,
+                zorder=0)
         plt.bar(ind+2*width, pacbio_minimap2_vals, color='#00ff33',
                 ecolor='black',
                 alpha=alpha1,      # transparency
                 width=width,      # smaller bar width
                 align='center',
-                label=lab_pacbio_minimap2)
-        plt.bar(ind+3*width, pacbio_bwamem_vals, color='ff0094',
+                label=lab_pacbio_minimap2,
+                zorder=0)
+        plt.bar(ind+3*width, pacbio_bwamem_vals, color='#ff0094',
                 ecolor='black',
                 alpha=alpha1,      # transparency
                 width=width,      # smaller bar width
                 align='center',
-                label=lab_pacbio_bwamem)
+                label=lab_pacbio_bwamem,
+                zorder=0)
         plt.bar(ind+4*width, pacbio_blasr_vals, color='#2200ff',
                 ecolor='black',
                 alpha=alpha1,      # transparency
                 width=width,      # smaller bar width
                 align='center',
-                label=lab_pacbio_blasr)
+                label=lab_pacbio_blasr,
+                zorder=0)
         plt.bar(ind+5*width, illumina_vals, color='#ff1900',
                 ecolor='black',
                 alpha=alpha1,      # transparency
                 width=width,      # smaller bar width
                 align='center',
-                label=lab_illumina)
+                label=lab_illumina,
+                zorder=0)
         # add some text for labels, title and axes ticks
         #plt.xlim(-0.5,6)
 
 
-    def prettify_plot():
+    def prettify_plot(ax):
 
-        ax.yaxis.grid(True,color='grey', alpha=0.5, linestyle='--')
+        ax.yaxis.grid(True,color='grey', linestyle='--', alpha=0.5, zorder=1.0)
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
         ax.spines["bottom"].set_visible(False)
@@ -312,8 +323,8 @@ def plot_precision_recall_bars_simulation_extended(pacbio_ngmlr_dirlist_genome,
     pacbio_blasr_precisions_segdup, pacbio_blasr_recalls_segdup = zip(*[get_precision_recall(d, gq_cutoff) for d in pacbio_blasr_dirlist_segdup])
     illumina_precisions_segdup, illumina_recalls_segdup = zip(*[get_precision_recall(d, gq_cutoff) for d in illumina_dirlist_segdup])
 
-    ax = plt.subplot(211)
-    make_subplot(ax=ax,
+    ax1 = plt.subplot(211)
+    make_subplot(ax=ax1,
                 ind=np.array(ind1),
                 pacbio_ngmlr_vals=pacbio_ngmlr_precisions_genome,
                 pacbio_minimap2_vals=pacbio_minimap2_precisions_genome,
@@ -326,7 +337,7 @@ def plot_precision_recall_bars_simulation_extended(pacbio_ngmlr_dirlist_genome,
                 lab_pacbio_blasr='PacBio + BLASR + Reaper',
                 lab_illumina='Illumina + Freebayes')
 
-    make_subplot(ax=ax,
+    make_subplot(ax=ax1,
                 ind=np.array(ind2),
                 pacbio_ngmlr_vals=pacbio_ngmlr_precisions_segdup,
                 pacbio_minimap2_vals=pacbio_minimap2_precisions_segdup,
@@ -334,18 +345,18 @@ def plot_precision_recall_bars_simulation_extended(pacbio_ngmlr_dirlist_genome,
                 pacbio_blasr_vals=pacbio_blasr_precisions_segdup,
                 illumina_vals=illumina_precisions_segdup)
 
-    ax.legend(loc='center left', bbox_to_anchor=(0.25,1.13),ncol=2)
+    ax1.legend(loc='center left', bbox_to_anchor=(0.1,1.25),ncol=2)
 
     plt.ylabel("Precision")
-    plt.ylim(0.99,1.0)
-    prettify_plot()
-    ax.set_xticks([])
-    ax.set_xticklabels([])
+    plt.ylim(0.996,1.0)
+    ax1.set_xticks([])
+    ax1.set_xticklabels([])
 
-    ax = plt.subplot(212)
+    prettify_plot(ax1)
+    ax2 = plt.subplot(212)
     plt.ylabel("Recall\n")
 
-    make_subplot(ax=ax,
+    make_subplot(ax=ax2,
                 ind=np.array(ind1),
                 pacbio_ngmlr_vals=pacbio_ngmlr_recalls_genome,
                 pacbio_minimap2_vals=pacbio_minimap2_recalls_genome,
@@ -353,7 +364,7 @@ def plot_precision_recall_bars_simulation_extended(pacbio_ngmlr_dirlist_genome,
                 pacbio_blasr_vals=pacbio_blasr_recalls_genome,
                 illumina_vals=illumina_recalls_genome)
 
-    make_subplot(ax=ax,
+    make_subplot(ax=ax2,
                 ind=np.array(ind2),
                 pacbio_ngmlr_vals=pacbio_ngmlr_recalls_segdup,
                 pacbio_minimap2_vals=pacbio_minimap2_recalls_segdup,
@@ -361,9 +372,111 @@ def plot_precision_recall_bars_simulation_extended(pacbio_ngmlr_dirlist_genome,
                 pacbio_blasr_vals=pacbio_blasr_recalls_segdup,
                 illumina_vals=illumina_recalls_segdup)
 
+    ax2.set_xticks(np.array(ind)+3*width)
+    ax2.set_xticklabels(labels+labels)
+
+    #ax.set_yscale('log')NA12878_prec_recall_{chrom}
+    #plt.xlim(())
+    #plt.ylim((0,1.0))
+    #plt.legend(loc='upper left')
+    plt.xlabel(" ",labelpad=10)
+
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.82)
+    #t = plt.suptitle(title)
+
+    ax2.set_axisbelow(True)
+
+    ticklabelpad = mpl.rcParams['xtick.major.pad']
+
+    ax2.annotate('coverage', xy=(-0.1,-0.03), xytext=(5, -ticklabelpad), ha='left', va='top',
+                xycoords='axes fraction', textcoords='offset points')
+    ax2.annotate('Whole Genome', xy=(0.16,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
+                xycoords='axes fraction', textcoords='offset points')
+    ax2.annotate('Segmental Duplications Only', xy=(0.58,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
+                xycoords='axes fraction', textcoords='offset points')
+    prettify_plot(ax2)
+
+    # credit to https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot
+    # Shrink current axis by 20%
+    #box = ax2.get_position()
+    #ax.set_position([box.x0, box.y0, box.width * 0.85, box.height])
+    # Put a legend to the right of the current axis
+    #ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+    #plt.show()
+    plt.savefig(output_file)
+
+
+def plot_haplotyping_results(reaper_errs, hapcut2_errs, output_file):
+    # errs should be in order: NA12878 30x, NA12878 44x, NA24385 69x, NA24149 32x NA24143, 30x
+    assert(len(reaper_errs) == 5)
+    assert(len(hapcut2_errs) == 5)
+
+    #unpickle the error objects
+    reaper_errs = [pickle.load(open(f,'rb')) for f in reaper_errs]
+    hapcut2_errs = [pickle.load(open(f,'rb')) for f in hapcut2_errs]
+
+    plt.figure(figsize=(7,5))
+    #mpl.rcParams['axes.titlepad'] = 50
+
+    width = 0.15
+    alpha1 = 0.6
+
+
+    def make_subplot(ax, ind, reaper_vals, hapcut2_vals, lab_reaper=None, lab_hapcut2=None):
+
+        plt.bar(ind+width, reaper_vals, color='#2200ff',
+                ecolor='black', # black error bar color
+                alpha=alpha1,      # transparency
+                width=width,      # smaller bar width
+                align='center',
+                label=lab_reaper,
+                zorder=0)
+        plt.bar(ind+2*width, hapcut2_vals, color='k',
+                ecolor='black', # black error bar color
+                alpha=alpha1,      # transparency
+                width=width,      # smaller bar width
+                align='center',
+                label=lab_hapcut2,
+                zorder=0)
+        # add some text for labels, title and axes ticks
+        #plt.xlim(-0.5,6)
+
+
+    def prettify_plot():
+
+        ax.yaxis.grid(True,color='grey', alpha=0.5, linestyle='--',zorder=1.0)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["bottom"].set_visible(False)
+        ax.spines["left"].set_visible(False)
+        plt.tick_params(axis="both", which="both", bottom=False, top=False,
+                    labelbottom=True, left=False, right=False, labelleft=True)
+
+
+    ind = [0,0.5,1,1.5,2]
+
+    ax = plt.subplot(211)
+    reaper_switch_mismatch = [e.get_switch_mismatch_rate() for e in reaper_errs]
+    hapcut2_switch_mismatch = [e.get_switch_mismatch_rate() for e in hapcut2_errs]
+    make_subplot(ax,np.array(ind), reaper_switch_mismatch, hapcut2_switch_mismatch, lab_reaper='Reaper Haplotype', lab_hapcut2='30x Illumina + HapCUT2 Haplotype')
+    ax.legend(loc='center left', bbox_to_anchor=(0.25,1.13),ncol=2)
+
+    plt.ylabel("Switch + Mismatch Error Rate")
+    #plt.ylim(0.99,1.0)
+    prettify_plot()
+    ax.set_xticks([])
+    ax.set_xticklabels([])
+
+    ax = plt.subplot(212)
+    plt.ylabel("N50\n")
+    reaper_N50 = [e.get_N50() for e in reaper_errs]
+    hapcut2_N50 = [e.get_N50() for e in hapcut2_errs]
+    make_subplot(ax,np.array(ind), reaper_N50, hapcut2_N50)
     prettify_plot()
     ax.set_xticks(np.array(ind)+1.5*width)
-    ax.set_xticklabels(labels+labels)
+    ax.set_xticklabels(['NA12878\n30x','NA12878\n44x','NA24385\n69x','NA24149\n32x','NA24143\n30x'])
 
     #ax.set_yscale('log')NA12878_prec_recall_{chrom}
     #plt.xlim(())
@@ -379,13 +492,6 @@ def plot_precision_recall_bars_simulation_extended(pacbio_ngmlr_dirlist_genome,
 
     ticklabelpad = mpl.rcParams['xtick.major.pad']
 
-    ax.annotate('coverage', xy=(-0.1,-0.03), xytext=(5, -ticklabelpad), ha='left', va='top',
-                xycoords='axes fraction', textcoords='offset points')
-    ax.annotate('Whole Genome', xy=(0.16,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
-                xycoords='axes fraction', textcoords='offset points')
-    ax.annotate('Segmental Duplications Only', xy=(0.58,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
-                xycoords='axes fraction', textcoords='offset points')
-
     # credit to https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot
     # Shrink current axis by 20%
     box = ax.get_position()
@@ -397,12 +503,15 @@ def plot_precision_recall_bars_simulation_extended(pacbio_ngmlr_dirlist_genome,
     plt.savefig(output_file)
 
 
-def plot_precision_recall_bars_NA12878_NA24385(reaper_with_haps_dirlist, reaper_nohaps_dirlist, gq_cutoff, labels, output_file):
+def plot_precision_recall_bars_NA12878_NA24385(pacbio_dirlist_NA24385, illumina_dirlist_NA24385,
+                                               pacbio_dirlist_NA12878, illumina_dirlist_NA12878,
+                                               gq_cutoffs_NA24385, gq_cutoffs_NA12878,
+                                               gq_cutoff_illumina, output_file):
 
     plt.figure(figsize=(7,5))
     #mpl.rcParams['axes.titlepad'] = 50
 
-    width = 0.15
+    width = 0.135
     alpha1 = 0.6
 
     def plot_bars(ax, ind, vals, color=None, lab=None):
@@ -412,11 +521,12 @@ def plot_precision_recall_bars_NA12878_NA24385(reaper_with_haps_dirlist, reaper_
                 alpha=alpha1,      # transparency
                 width=width,      # smaller bar width
                 align='center',
-                label=lab)
+                label=lab,
+                zorder=0)
 
     def prettify_plot():
 
-        ax.yaxis.grid(True,color='grey', alpha=0.5, linestyle='--')
+        ax.yaxis.grid(True,color='grey', alpha=0.5, linestyle='--',zorder=1.0)
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
         ax.spines["bottom"].set_visible(False)
@@ -425,23 +535,21 @@ def plot_precision_recall_bars_NA12878_NA24385(reaper_with_haps_dirlist, reaper_
                     labelbottom=True, left=False, right=False, labelleft=True)
 
 
-    ind1 = [0,0.25,0.5,0.75,1.0]
-    ind2 = [1.25]
-    ind3 = [2.0,2.25]
-    ind3 = [2.5]
+    ind1 = [0,0.15,0.3,0.45,0.6]
+    ind2 = [0.75]
+    ind3 = [1.05,1.2]
+    ind4 = [1.35]
 
-    ind = ind1 + ind2
-
-    pacbio_precisions_NA24385, pacbio_recalls_NA24385 = zip(*[get_precision_recall(d, gq_cutoff) for d in pacbio_dirlist_NA24385])
-    illumina_precisions_NA24385, illumina_recalls_NA24385 = zip(*[get_precision_recall(d, gq_cutoff) for d in illumina_dirlist_NA24385])
-    pacbio_precisions_NA12878, pacbio_recalls_NA12878 = zip(*[get_precision_recall(d, gq_cutoff) for d in pacbio_dirlist_NA12878])
-    illumina_precisions_NA12878, illumina_recalls_NA12878 = zip(*[get_precision_recall(d, gq_cutoff) for d in illumina_dirlist_NA12878])
+    pacbio_precisions_NA24385, pacbio_recalls_NA24385 = zip(*[get_precision_recall(d, g) for d,g in zip(pacbio_dirlist_NA24385, gq_cutoffs_NA24385)])
+    illumina_precisions_NA24385, illumina_recalls_NA24385 = zip(*[get_precision_recall(d, gq_cutoff_illumina) for d in illumina_dirlist_NA24385])
+    pacbio_precisions_NA12878, pacbio_recalls_NA12878 = zip(*[get_precision_recall(d, g) for d,g in zip(pacbio_dirlist_NA12878, gq_cutoffs_NA12878)])
+    illumina_precisions_NA12878, illumina_recalls_NA12878 = zip(*[get_precision_recall(d, gq_cutoff_illumina) for d in illumina_dirlist_NA12878])
 
     ax = plt.subplot(211)
-    plot_bars(ax, np.array(ind1), pacbio_precision_NA24385,color='#2200ff',labels=['PacBio SMRT'])
-    plot_bars(ax, np.array(ind2), illumina_precision_NA24385,color='#ff1900',labels=['Illumina'])
-    plot_bars(ax, np.array(ind3), pacbio_precision_NA12878,color='#2200ff')
-    plot_bars(ax, np.array(ind4), illumina_precision_NA12878,color='#ff1900')
+    plot_bars(ax, np.array(ind1), pacbio_precisions_NA24385,color='#2200ff',lab='PacBio SMRT')
+    plot_bars(ax, np.array(ind2), illumina_precisions_NA24385,color='#ff1900',lab='Illumina')
+    plot_bars(ax, np.array(ind3), pacbio_precisions_NA12878,color='#2200ff')
+    plot_bars(ax, np.array(ind4), illumina_precisions_NA12878,color='#ff1900')
     ax.legend(loc='center left', bbox_to_anchor=(0.25,1.13),ncol=2)
 
     plt.ylabel("Precision")
@@ -452,12 +560,12 @@ def plot_precision_recall_bars_NA12878_NA24385(reaper_with_haps_dirlist, reaper_
 
     ax = plt.subplot(212)
     plt.ylabel("Recall\n")
-    plot_bars(ax, np.array(ind1), pacbio_precision_NA24385,color='#2200ff')
-    plot_bars(ax, np.array(ind2), illumina_precision_NA24385,color='#ff1900')
-    plot_bars(ax, np.array(ind3), pacbio_precision_NA12878,color='#2200ff')
-    plot_bars(ax, np.array(ind4), illumina_precision_NA12878,color='#ff1900')
+    plot_bars(ax, np.array(ind1), pacbio_recalls_NA24385,color='#2200ff')
+    plot_bars(ax, np.array(ind2), illumina_recalls_NA24385,color='#ff1900')
+    plot_bars(ax, np.array(ind3), pacbio_recalls_NA12878,color='#2200ff')
+    plot_bars(ax, np.array(ind4), illumina_recalls_NA12878,color='#ff1900')
     prettify_plot()
-    ax.set_xticks(np.array(ind1+ind2+ind3+ind4)+1.5*width)
+    ax.set_xticks(np.array(ind1+ind2+ind3+ind4)+1.0*width)
     ax.set_xticklabels(['20','30','40','50','69','30','30','44','30'])
 
     #ax.set_yscale('log')NA12878_prec_recall_{chrom}
@@ -476,9 +584,9 @@ def plot_precision_recall_bars_NA12878_NA24385(reaper_with_haps_dirlist, reaper_
 
     ax.annotate('coverage', xy=(-0.1,-0.03), xytext=(5, -ticklabelpad), ha='left', va='top',
                 xycoords='axes fraction', textcoords='offset points')
-    ax.annotate('NA24385', xy=(0.16,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
+    ax.annotate('NA24385', xy=(0.27,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
                 xycoords='axes fraction', textcoords='offset points')
-    ax.annotate('NA12878', xy=(0.58,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
+    ax.annotate('NA12878', xy=(0.77,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
                 xycoords='axes fraction', textcoords='offset points')
 
     # credit to https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot
@@ -490,6 +598,104 @@ def plot_precision_recall_bars_NA12878_NA24385(reaper_with_haps_dirlist, reaper_
 
     #plt.show()
     plt.savefig(output_file)
+
+
+
+
+def plot_precision_recall_bars_NA12878_NA24385_with_haplotypefree(hap_dirlist_NA24385, nohap_dirlist_NA24385,
+                                               hap_dirlist_NA12878, nohap_dirlist_NA12878,
+                                               gq_cutoffs_NA24385, gq_cutoffs_NA12878, output_file):
+
+    plt.figure(figsize=(7,5))
+    #mpl.rcParams['axes.titlepad'] = 50
+
+    width = 0.05
+    alpha1 = 0.6
+
+    def plot_bars(ax, ind, vals1, vals2, lab1=None, lab2=None):
+
+        plt.bar(ind+width, vals1, color='#2200ff',
+                ecolor='black', # black error bar color
+                alpha=alpha1,      # transparency
+                width=width,      # smaller bar width
+                align='center',
+                label=lab1)
+        plt.bar(ind+2*width, vals2, color='k',
+                ecolor='black', # black error bar color
+                alpha=alpha1,      # transparency
+                width=width,      # smaller bar width
+                align='center',
+                label=lab2)
+
+    def prettify_plot():
+
+        ax.yaxis.grid(True,color='grey', alpha=0.5, linestyle='--')
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["bottom"].set_visible(False)
+        ax.spines["left"].set_visible(False)
+        plt.tick_params(axis="both", which="both", bottom=False, top=False,
+                    labelbottom=True, left=False, right=False, labelleft=True)
+
+
+    ind1 = [0,0.15,0.3,0.45,0.6]
+    ind2 = [0.9,1.05]
+
+    hap_precisions_NA24385, hap_recalls_NA24385 = zip(*[get_precision_recall(d, g) for d,g in zip(hap_dirlist_NA24385, gq_cutoffs_NA24385)])
+    nohap_precisions_NA24385, nohap_recalls_NA24385 = zip(*[get_precision_recall(d, g) for d,g in zip(nohap_dirlist_NA24385, gq_cutoffs_NA24385)])
+    hap_precisions_NA12878, hap_recalls_NA12878 = zip(*[get_precision_recall(d, g) for d,g in zip(hap_dirlist_NA12878,gq_cutoffs_NA12878)])
+    nohap_precisions_NA12878, nohap_recalls_NA12878 = zip(*[get_precision_recall(d, g) for d,g in zip(nohap_dirlist_NA12878,gq_cutoffs_NA12878)])
+
+    ax = plt.subplot(211)
+    plot_bars(ax, np.array(ind1), hap_precisions_NA24385, nohap_precisions_NA24385, lab1='With haplotype assembly', lab2='Without haplotype assembly')
+    plot_bars(ax, np.array(ind2), hap_precisions_NA12878, nohap_precisions_NA12878)
+    ax.legend(loc='center left', bbox_to_anchor=(0.25,1.13),ncol=2)
+
+    plt.ylabel("Precision")
+    plt.ylim(0.95,1.0)
+    prettify_plot()
+    ax.set_xticks([])
+    ax.set_xticklabels([])
+
+    ax = plt.subplot(212)
+    plt.ylabel("Recall\n")
+    plot_bars(ax, np.array(ind1), hap_recalls_NA24385, nohap_recalls_NA24385, lab1='With haplotype assembly', lab2='Without haplotype assembly')
+    plot_bars(ax, np.array(ind2), hap_recalls_NA12878, nohap_recalls_NA12878)
+    prettify_plot()
+    ax.set_xticks(np.array(ind1+ind2)+1.5*width)
+    ax.set_xticklabels(['20','30','40','50','69','30','44'])
+
+    #ax.set_yscale('log')NA12878_prec_recall_{chrom}
+    #plt.xlim(())
+    #plt.ylim((0,1.0))
+    #plt.legend(loc='upper left')
+    plt.xlabel(" ",labelpad=10)
+
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.90)
+    #t = plt.suptitle(title)
+
+    ax.set_axisbelow(True)
+
+    ticklabelpad = mpl.rcParams['xtick.major.pad']
+
+    ax.annotate('coverage', xy=(-0.1,-0.03), xytext=(5, -ticklabelpad), ha='left', va='top',
+                xycoords='axes fraction', textcoords='offset points')
+    ax.annotate('NA24385', xy=(0.23,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
+                xycoords='axes fraction', textcoords='offset points')
+    ax.annotate('NA12878', xy=(0.7,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
+                xycoords='axes fraction', textcoords='offset points')
+
+    # credit to https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot
+    # Shrink current axis by 20%
+    box = ax.get_position()
+    #ax.set_position([box.x0, box.y0, box.width * 0.85, box.height])
+    # Put a legend to the right of the current axis
+    #ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+    #plt.show()
+    plt.savefig(output_file)
+
 
 
 genomes_table_files = namedtuple('genomes_table_files', ['vcfeval_dir', 'vcfstats_genome', 'vcfstats_outside_GIAB', 'runtime'])
@@ -617,11 +823,7 @@ NA24143 (AJ mother) & $30\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
         print(s, file=outf)
 
 MAX_DEPTH = 50
-def plot_depth_of_mapped_vs_breadth(illumina_mapq0,illumina_mapq10,
-                                    illumina_mapq20,illumina_mapq30,
-                                    pacbio_mapq0,pacbio_mapq10,
-                                    pacbio_mapq20,pacbio_mapq30,
-                                    output_file):
+def plot_depth_of_mapped_vs_breadth(inputs, labels, colors, output_file):
 
     plt.figure(figsize=(6,6))
     ax = plt.subplot(111)
@@ -661,16 +863,24 @@ def plot_depth_of_mapped_vs_breadth(illumina_mapq0,illumina_mapq10,
         b_frac = []
         genome_len = sum(chr_sizes.values())*1.0
         # sorted cumulative breadth
-        for d, b in sorted(list(cml_breadth.items())):
+        for d in range(0,51):
             d_val.append(d)
-            b_frac.append(b/genome_len)
+            b_frac.append(cml_breadth[d]/genome_len)
+        #for d, b in sorted(list(cml_breadth.items())):
+        #    d_val.append(d)
+        #    b_frac.append(b/genome_len)
 
         return d_val, b_frac
 
     for input,label,color in zip(inputs, labels, colors):
-        if 'mapq0' not in input and 'mapq30' not in input:
-            continue
+        #if 'mapq0' not in input and 'mapq30' not in input:
+        #    continue
         d_val, b_frac = get_depth_breadth(input)
+        print(label + ':')
+        print("depth\tbreadth")
+        for d,b in zip(d_val, b_frac):
+            print("{}\t{}".format(d, b))
+        print("")
         plt.plot(d_val,b_frac,color=color,label=label)
 
     plt.grid(True,color='grey',linestyle='--',alpha=0.5)

@@ -21,7 +21,7 @@ import mapping_accuracy
 #                                   legendloc='lower left')
 
 ##################################################################################################################
-
+'''
 rule plot_pr_curve_simulation_segmental_duplications_compare_mappers:
     params: job_name = 'plot_pr_curve_simulation_segmental_duplications_compare_mappers',
             title = 'Simulated 40x Data: Using Different PacBio Mappers with Reaper in Segmental Duplications'
@@ -57,7 +57,7 @@ rule plot_pr_curve_simulation_segmental_duplications_compare_mappers:
                            xlim=(0,1.0),
                            ylim=(0.98,1.0),
                            legendloc='upper right')
-
+'''
 # VCFeval and plotting for segmental duplications as opposed to whole genome
 rule plot_pr_curve_simulation_segmental_duplications:
     params: job_name = 'plot_pr_curve_simulation_segmental_duplications',
@@ -106,7 +106,7 @@ rule vcfeval_rtgtools_segmental_duplications:
             ground_truth = 'data/{dataset}.1000g/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
             ground_truth_ix = 'data/{dataset}.1000g/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz.tbi',
             region_filter ='genome_tracks/segmental_duplications_0.99_similar_1000g.bed',
-            tg_sdf = 'data/genomes/1000g_v37_phase2.sdf'
+            tg_sdf = 'data/genomes/1000g.sdf'
     output: done = 'data/{dataset}.1000g/vcfeval_segdup/{calls_name}/{chrom,(\d+|X|Y|all)}.done'
     shell:
         '''
@@ -245,33 +245,33 @@ rule split_diploid_fasta:
     shell: 'cd {params.split_dir} && {PYFAIDX} -x ../ground_truth.fa'
 
 rule align_simulated_illumina:
-    params: job_name = 'align_simulated_illumina.{chrom}.{hap}.{cov}',
-            sort_prefix = 'data/simulation.1000g/aligned_reads/illumina/separate_chrom/{chrom}.hap{hap}.illumina.{cov}x.tmp'
+    params: job_name = 'align_simulated_illumina.{chrom}.{hap}.60x',
+            sort_prefix = 'data/simulation.1000g/aligned_reads/illumina/bwa_separate_chrom/{chrom}.hap{hap}.illumina.60x.tmp'
     input:
-        fastq   = 'data/simulation.1000g/fastq_reads/illumina/separate_chrom/{chrom}.hap{hap}.illumina.{cov}x.fastq',
+        fastq   = 'data/simulation.1000g/fastq_reads/illumina/separate_chrom/{chrom}.hap{hap}.illumina.60x.fastq.gz',
         hs37d5    = 'data/genomes/hs37d5.fa',
         hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
         hs37d5_bwt = 'data/genomes/hs37d5.fa.bwt'
     output:
-        bam = 'data/simulation.1000g/aligned_reads/illumina/separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap}.illumina.{cov,\d+}x.bam'
+        bam = temp('data/simulation.1000g/aligned_reads/illumina/bwa_separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap}.illumina.60x.bam')
     shell: '{BWA} mem -p -t 4 -T 0 {input.hs37d5} {input.fastq} | {SAMTOOLS} sort -T {params.sort_prefix} -@ 4 > {output.bam}'
 
 rule align_simulated_pacbio_bwa:
-    params: job_name = 'align_simulated_pacbio_bwa.{chrom}.{hap}.{cov}',
-            sort_prefix = 'data/simulation.1000g/aligned_reads/pacbio/bwa_separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x.tmp'
+    params: job_name = 'align_simulated_pacbio_bwa.{chrom}.{hap}.60x',
+            sort_prefix = 'data/simulation.1000g/aligned_reads/pacbio/bwa_separate_chrom/{chrom}.hap{hap}.pacbio.60x.tmp'
     input:
-        fastq   = 'data/simulation.1000g/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x.fastq',
+        fastq   = 'data/simulation.1000g/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.60x.fastq',
         hs37d5    = 'data/genomes/hs37d5.fa',
         hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
         hs37d5_bwt = 'data/genomes/hs37d5.fa.bwt'
     output:
-        bam = 'data/simulation.1000g/aligned_reads/pacbio/bwa_separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.{cov,\d+}x.bam',
+        bam = temp('data/simulation.1000g/aligned_reads/pacbio/bwa_separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.60x.bam'),
     shell: '{BWA} mem -x pacbio -t 4 -T 0 {input.hs37d5} {input.fastq} | {SAMTOOLS} sort -T {params.sort_prefix} -@ 4 > {output.bam}'
 
 rule convert_simulated_fastqs_pacbio_format:
-    params: job_name = 'convert_simulated_fastqs_pacbio_format.chr{chrom}.hap{hap}.{cov}x'
-    input:  'data/simulation.1000g/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x.fastq'
-    output: 'data/simulation.1000g/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x.pacbio_format.fa'
+    params: job_name = 'convert_simulated_fastqs_pacbio_format.chr{chrom}.hap{hap}.60x'
+    input:  'data/simulation.1000g/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.60x.fastq'
+    output: temp('data/simulation.1000g/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.60x.pacbio_format.fa')
     run:
         with pysam.FastxFile(input[0]) as infile, open(output[0],'w') as outfile:
             for i,record in enumerate(infile):
@@ -279,22 +279,22 @@ rule convert_simulated_fastqs_pacbio_format:
                 print(record.sequence, file=outfile)
 
 rule align_simulated_pacbio_blasr:
-    params: job_name = 'align_simulated_pacbio_blasr.{chrom}.{hap}.{cov}'
+    params: job_name = 'align_simulated_pacbio_blasr.{chrom}.{hap}.60x'
     input:
-        fastq   = 'data/simulation.1000g/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x.pacbio_format.fa',
+        fastq   = 'data/simulation.1000g/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.60x.pacbio_format.fa',
         hs37d5    = 'data/genomes/hs37d5.fa',
         hs37d5_sa = 'data/genomes/hs37d5.fa.sawriter.sa',
         hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
         hs37d5_bwt = 'data/genomes/hs37d5.fa.bwt'
-    output: sam = 'data/simulation.1000g/aligned_reads/pacbio/blasr_separate_chrom_unsorted/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.{cov,\d+}x.bam',
-    shell: '{BLASR} {input.fastq} {input.hs37d5} --sa {input.hs37d5_sa} --nproc 4 --bam --out {output}'
+    output: bam = temp('data/simulation.1000g/aligned_reads/pacbio/blasr_separate_chrom_unsorted/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.60x.bam'),
+    shell: '{BLASR} {input.fastq} {input.hs37d5} --sa {input.hs37d5_sa} --nproc 8 --bam --out {output}'
 
 rule sort_simulated_pacbio_blasr:
-    params: job_name = 'sort_simulated_pacbio_blasr.{chrom}.{hap}.{cov}',
-            sort_prefix = 'data/simulation.1000g/aligned_reads/pacbio/blasr_separate_chrom_unsorted/{chrom}.hap{hap}.pacbio.{cov}x.tmp'
-    input: 'data/simulation.1000g/aligned_reads/pacbio/blasr_separate_chrom_unsorted/{chrom}.hap{hap}.pacbio.{cov}x.bam'
-    output: 'data/simulation.1000g/aligned_reads/pacbio/blasr_separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.{cov,\d+}x.bam',
-    shell: '{SAMTOOLS} sort -T {params.sort_prefix} -@ 4 {input} > {output}'
+    params: job_name = 'sort_simulated_pacbio_blasr.{chrom}.{hap}.60x',
+            sort_prefix = 'data/simulation.1000g/aligned_reads/pacbio/blasr_separate_chrom_unsorted/{chrom}.hap{hap}.pacbio.60x.tmp'
+    input: 'data/simulation.1000g/aligned_reads/pacbio/blasr_separate_chrom_unsorted/{chrom}.hap{hap}.pacbio.60x.bam'
+    output: temp('data/simulation.1000g/aligned_reads/pacbio/blasr_separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.60x.bam'),
+    shell: '{SAMTOOLS} sort -T {params.sort_prefix} -@ 8 {input} > {output}'
 
 rule make_blasr_suffix_array:
     params: job_name = 'make_blasr_suffix_array.{genome}'
@@ -303,35 +303,29 @@ rule make_blasr_suffix_array:
     shell: '{SAWRITER} {output} {input}'
 
 rule align_simulated_pacbio_minimap2:
-    params: job_name = 'align_simulated_pacbio_minimap2.{chrom}.{hap}.{cov}',
-            sort_prefix = 'data/simulation.1000g/aligned_reads/pacbio/minimap2_separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x.tmp'
+    params: job_name = 'align_simulated_pacbio_minimap2.{chrom}.{hap}.60x',
+            sort_prefix = 'data/simulation.1000g/aligned_reads/pacbio/minimap2_separate_chrom/{chrom}.hap{hap}.pacbio.60x.tmp'
     input:
-        fastq   = 'data/simulation.1000g/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x.fastq',
+        fastq   = 'data/simulation.1000g/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.60x.fastq',
         hs37d5    = 'data/genomes/hs37d5.fa',
         hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
         hs37d5_mmi    = 'data/genomes/hs37d5.fa.mmi',
         hs37d5_bwt = 'data/genomes/hs37d5.fa.bwt'
     output:
-        bam = 'data/simulation.1000g/aligned_reads/pacbio/minimap2_separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.{cov,\d+}x.bam',
+        bam = temp('data/simulation.1000g/aligned_reads/pacbio/minimap2_separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.60x.bam'),
     shell: '{MINIMAP2} -ax map-pb {input.hs37d5_mmi} {input.fastq} | {SAMTOOLS} view -hb | {SAMTOOLS} sort -T {params.sort_prefix} -@ 4 > {output.bam}'
 
 rule align_simulated_pacbio_ngmlr:
-    params: job_name = 'align_simulated_pacbio_ngmlr.{chrom}.{hap}.{cov}',
-            sort_prefix = 'data/simulation.1000g/aligned_reads/pacbio/ngmlr_separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x.tmp'
+    params: job_name = 'align_simulated_pacbio_ngmlr.{chrom}.{hap}.60x',
+            sort_prefix = 'data/simulation.1000g/aligned_reads/pacbio/ngmlr_separate_chrom/{chrom}.hap{hap}.pacbio.60x.tmp'
     input:
-        fastq   = 'data/simulation.1000g/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x.fastq',
+        fastq   = 'data/simulation.1000g/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.60x.fastq',
         hs37d5    = 'data/genomes/hs37d5.fa',
         hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
         hs37d5_bwt = 'data/genomes/hs37d5.fa.bwt'
     output:
-        bam = 'data/simulation.1000g/aligned_reads/pacbio/ngmlr_separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.{cov,\d+}x.bam',
+        bam = temp('data/simulation.1000g/aligned_reads/pacbio/ngmlr_separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.60x.bam'),
     shell: '{NGMLR} -t 4 -x pacbio -r {input.hs37d5} -q {input.fastq} | {SAMTOOLS} view -hb | {SAMTOOLS} sort -T {params.sort_prefix} -@ 4 > {output.bam}'
-
-rule merge_illumina_chrom_bams:
-    params: job_name = 'merge_illumina_chrom_bams.{cov}',
-    input: expand('data/simulation.1000g/aligned_reads/illumina/illumina.bwa.{chrom}.{{cov}}x.bam', chrom=chroms)
-    output: 'data/simulation.1000g/aligned_reads/illumina/illumina.{cov,\d+}x.bam'
-    shell: '{SAMTOOLS} merge -O bam {output} {input}'
 
 ################################################################################
 # IMPORTANT
@@ -343,19 +337,50 @@ rule merge_illumina_chrom_bams:
 # from other chromosomes that mismap into the chromosome we're calling variants in.
 ################################################################################
 
-rule merge_haplotype_bams:
-    params: job_name = 'merge_haplotype_bams.{datatype}.{chrom}.{cov}.{aligner}',
-    input: 'data/simulation.1000g/aligned_reads/{datatype}/{aligner}_separate_chrom/{chrom}.hap1.{datatype}.{cov}x.bam',
-           'data/simulation.1000g/aligned_reads/{datatype}/{aligner}_separate_chrom/{chrom}.hap2.{datatype}.{cov}x.bam'
-    output: 'data/simulation.1000g/aligned_reads/{datatype}/{datatype}.{aligner}.{chrom,(\d+|X|Y|all)}.{cov,\d+}x.bam'
+rule rename_illumina_bam:
+    params: job_name = 'rename_illumina_bam.illumina.60x.bwa',
+    input: 'data/simulation.1000g/aligned_reads/illumina/illumina.bwa.all.60x.bam'
+    output: 'data/simulation.1000g/aligned_reads/illumina/illumina.60x.bam'
+    shell: 'mv {input} {output}'
+
+# SUBSAMPLE PACBIO BAM
+rule subsample_simulated_illumina_reads:
+    params: job_name = 'subsample_simulated_illumina.{cov}x'
+    input: bam = 'data/simulation.1000g/aligned_reads/illumina/illumina.60x.bam',
+    output: bam = temp('data/simulation.1000g/aligned_reads/illumina/illumina.{cov,(20|30|40)}x.bam')
+    run:
+        subsample_frac = float(wildcards.cov) / 60.0
+        shell('{SAMTOOLS} view -hb {input.bam} -s {subsample_frac} > {output.bam}')
+
+# SUBSAMPLE PACBIO BAM
+rule subsample_simulated_pacbio_reads:
+    params: job_name = 'subsample_simulated_pacbio.{aligner}.{cov}x'
+    input: bam = 'data/simulation.1000g/aligned_reads/pacbio/pacbio.{aligner}.all.60x.bam',
+    output: bam = temp('data/simulation.1000g/aligned_reads/pacbio/pacbio.{aligner}.all.{cov,(20|30|40)}x.bam')
+    run:
+        subsample_frac = float(wildcards.cov) / 60.0
+        shell('{SAMTOOLS} view -hb {input.bam} -s {subsample_frac} > {output.bam}')
+
+# SPLIT PACBIO BAM
+rule split_simulated_pacbio_bam:
+    params: job_name = 'split_simulated_pacbio_bam.{cov}.{chrom}'
+    input: bam = 'data/simulation.1000g/aligned_reads/pacbio/pacbio.{aligner}.all.{cov}x.bam',
+           bai = 'data/simulation.1000g/aligned_reads/pacbio/pacbio.{aligner}.all.{cov}x.bam.bai'
+    output: bam = 'data/simulation.1000g/aligned_reads/pacbio/pacbio.{aligner}.{chrom,(\d+)}.{cov,(20|30|40|60)}x.bam'
+    shell: '{SAMTOOLS} view -hb {input.bam} {wildcards.chrom} > {output.bam}'
+
+rule merge_simulated_bams:
+    params: job_name = 'merge_simulated_bams.{datatype}.60x.{aligner}',
+    input: expand('data/simulation.1000g/aligned_reads/{{datatype}}/{{aligner}}_separate_chrom/{chrom}.hap{h}.{{datatype}}.60x.bam',h=[1,2],chrom=chroms)
+    output: temp('data/simulation.1000g/aligned_reads/{datatype}/{datatype}.{aligner}.all.60x.bam')
     shell: '{SAMTOOLS} merge -O bam {output} {input}'
 
 rule simulate_illumina:
-    params: job_name = 'simulate_illumina.{chrom}.hap{hap}.{cov}',
-            output_prefix = 'data/simulation.1000g/fastq_reads/illumina/separate_chrom/{chrom}.hap{hap}.illumina.{cov}x'
+    params: job_name = 'simulate_illumina.{chrom}.hap{hap}.60x',
+            output_prefix = 'data/simulation.1000g/fastq_reads/illumina/separate_chrom/{chrom}.hap{hap}.illumina.60x'
     input: diploid_fasta = 'data/simulation.1000g/variants/ground_truth/ground_truth_separate_chrom/{chrom}_hap{hap}.fa'
     output:
-        fastq = 'data/simulation.1000g/fastq_reads/illumina/separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap,(1|2)}.illumina.{cov,\d+}x.fastq.gz'
+        fastq = temp('data/simulation.1000g/fastq_reads/illumina/separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap,(1|2)}.illumina.60x.fastq.gz')
     run:
         chrom_len = 0
         with pysam.FastaFile(input.diploid_fasta) as ff:
@@ -363,7 +388,7 @@ rule simulate_illumina:
                 chrom_len += ff.get_reference_length(ref)
 
         short_read_len = 100
-        haploid_cov = float(wildcards.cov) / 2.0 # the haploid coverage
+        haploid_cov = 30 #float(wildcards.cov) / 2.0 # the haploid coverage
         n_read_pairs = int(chrom_len * haploid_cov / (2*short_read_len))
         shell('''
         {DWGSIM} -H -z 0 -1 {short_read_len} -2 {short_read_len} -N {n_read_pairs} \
@@ -373,12 +398,14 @@ rule simulate_illumina:
         ''')
 
 rule simulate_pacbio:
-    params: job_name = 'simulate_pacbio.{chrom}.hap{hap}.{cov}',
-            output_prefix = 'data/simulation.1000g/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.{cov}x'
+    params: job_name = 'simulate_pacbio.{chrom}.hap{hap}.60x',
+            output_prefix = 'data/simulation.1000g/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.60x'
     input: diploid_fasta = 'data/simulation.1000g/variants/ground_truth/ground_truth_separate_chrom/{chrom}_hap{hap}.fa'
-    output: fq = 'data/simulation.1000g/fastq_reads/pacbio/separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.{cov,\d+}x.fastq'
+    output: fq = temp('data/simulation.1000g/fastq_reads/pacbio/separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.60x.fastq')
     run:
-        diploid_cov = int(float(wildcards.cov) / 2.0)
+        #this is the coverage you need to generate reads at for a diploid fasta,
+        # in order to get 60x when you align to haploid reference
+        diploid_cov = 30 #int(float(wildcards.cov) / 2.0)
         shell('''
         {SIMLORD} -rr {input.diploid_fasta} \
         --coverage {diploid_cov} --no-sam {params.output_prefix}

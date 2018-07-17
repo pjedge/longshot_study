@@ -24,7 +24,7 @@ chroms = ['{}'.format(i) for i in range(1,23)] + ['X']
 BEDTOOLS = 'bedtools' # v 2.27
 
 rule all:
-    input: expand('study/data/{individual}.hg38/aligned_reads/pacbio/pacbio.blasr.all.giab_full_coverage.bam',individual=['NA24143','NA24149'])
+    input: expand('data/{individual}.hg38/aligned_reads/pacbio/pacbio.blasr.all.giab_full_coverage.bam',individual=['NA24143','NA24149'])
 
 # file with 3 columns:
 # 1. URL of compressed pacbio hdf5 data
@@ -56,16 +56,25 @@ rule make_blasr_suffix_array:
 # for a single individual, merge all of their sorted, mapped pacbio bams into one big one.
 rule merge_giab_pacbio_blasr:
     params: job_name = 'merge_giab_pacbio_blasr.{individual}.hg38',
-    input: lambda wildcards: expand('data/{individual}.hg38/raw_pacbio/sorted_bam/archive{archive_number}.bam',individual=wildcards.individual, archive_number=list(range(num_hdf5_archives[wildcards.individual])))
-    output: 'study/data/{individual}.hg38/aligned_reads/pacbio/pacbio.blasr.all.giab_full_coverage.bam'
+    input: lambda wildcards: expand('data/{individual}.hg38/raw_pacbio/sorted_primary_bam/archive{archive_number}.bam',individual=wildcards.individual, archive_number=list(range(num_hdf5_archives[wildcards.individual])))
+    output: 'data/{individual}.hg38/aligned_reads/pacbio/pacbio.blasr.all.giab_full_coverage.bam'
     shell: '{SAMTOOLS} merge -@ 8 -O bam {output} {input}'
+
+# BLASR was run with the default -bestn 10,
+# so we have 10x as many alignments as we actually need.
+# so in this step we'll filter the BAM file for only primary alignments
+rule filter_primary_giab_pacbio_blasr:
+    params: job_name = 'filter_primary_giab_pacbio_blasr.{individual}.hg38.archive{archive_number}',
+    input: 'data/{individual}.hg38/raw_pacbio/sorted_bam/archive{archive_number}.bam'
+    output: temp('data/{individual}.hg38/raw_pacbio/sorted_primary_bam/archive{archive_number}.bam'),
+    shell: '{SAMTOOLS} view -F 256 -hb {input} > {output}'
 
 # sort a single pacbio bam
 rule sort_giab_pacbio_blasr:
     params: job_name = 'sort_giab_pacbio_blasr.{individual}.hg38.archive{archive_number}',
     input: 'data/{individual}.hg38/raw_pacbio/aligned_bam/archive{archive_number}.bam'
     output: temp('data/{individual}.hg38/raw_pacbio/sorted_bam/archive{archive_number}.bam'),
-    shell: '{SAMTOOLS} sort -T {output}.TMP -@ 8 -m 3G {input} > {output}'
+    shell: '{SAMTOOLS} sort -T {output}.TMP -@ 8 -m 1G {input} > {output}'
 
 # align the converted subread bam file to the reference genome
 rule align_giab_pacbio_blasr:

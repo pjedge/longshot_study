@@ -251,7 +251,7 @@ rule filter_vcf_outside_GIAB:
 rule filter_vcf_GQ:
     params: job_name = 'filter_vcf_GQ.{dataset}.{calls_name}.{chrom}.GQ{GQ}'
     input:  vcfgz = 'data/{dataset}/variants/{calls_name}/{chrom}.vcf.gz'
-    output: vcfgz = 'data/{dataset}/variants/{calls_name}/{chrom}.GQ{GQ}.vcf.gz',
+    output: vcfgz = 'data/{dataset}/variants/{calls_name}/{chrom}.GQ{GQ,\d+}.vcf.gz',
     shell: '{RTGTOOLS} RTG_MEM=12g vcffilter -g {wildcards.GQ} -i {input.vcfgz} -o {output.vcfgz}'
 
 sim_covs = [20,30,40,60]

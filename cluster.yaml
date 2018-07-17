@@ -48,6 +48,9 @@ align_simulated_pacbio_minimap2:
     walltime: '50:00:00'
     ppn: 4
 
+subsample_simulated_pacbio_reads:
+    walltime: '100:00:00'
+
 merge_simulated_bams:
     walltime: '100:00:00'
 
@@ -69,3 +72,6 @@ bax2bam:
 merge_bams:
     walltime: '100:00:00'
     ppn: 4
+
+filter_SNVs_gt_20_trio_confident:
+    ppn: 16

@@ -56,19 +56,24 @@ include: "NA24149.1000g.snakefile" # AJ Father, 1000g
 include: "aj_trio.snakefile" #
 include: "paper_tables_and_figures.snakefile"
 include: "haplotyping.snakefile"
+include: "make_variant_counts_table.snakefile"
 
 # DEFAULT
 rule all:
     input:
-        #'data/aj_trio/duplicated_regions/trio_shared_variant_sites/mendelian/all.vcf.gz',
-        'data/plots/simulation_pr_barplot_genome_vs_segdup.all.GQ50.png',
+        'data/aj_trio/duplicated_regions/trio_shared_variant_sites/mendelian/all.vcf.gz',
+        'data/plots/NA12878.1000g_prec_recall_all.png',
+        'data/plots/NA24143.hg38_prec_recall_all.png',
+        'data/plots/NA24149.hg38_prec_recall_all.png',
+        'data/plots/NA24385.hg38_prec_recall_all.png',
+        #'data/output/variant_counts_table.NA12878.1000g.blasr.44.GQ44.tex'
+        #'data/aj_trio/duplicated_regions/test_confident_trio_shared_variant_sites/mendelian/all.vcf.gz',
+        #'data/plots/simulation_pr_barplot_genome_vs_segdup.all.GQ50.png',
         #'data/plots/simulation_pr_barplot_genome_vs_segdup_extended.1.GQ50.png',
         #'data/plots/depth_vs_breadth_mappability.NA12878.30x.png',
-        #'data/plots/NA24385.hg38_prec_recall_all.png',
         #'data/plots/NA24385.1000g_prec_recall_all.png',
         #'data/plots/NA24143.1000g_prec_recall_all.png',
         #'data/plots/NA24149.1000g_prec_recall_all.png',
-        #'data/plots/NA12878.1000g_prec_recall_all.png',
         #'data/plots/supp_fig3_with_haplotypefree_precision_recall_bars_NA24385_NA12878.bwamem.1000g.png',
         #'data/plots/supp_fig3_with_haplotypefree_precision_recall_bars_NA24385_NA12878.blasr.hg38.png',
 
@@ -401,7 +406,7 @@ rule subsample_illumina_60x:
 rule tabix_index:
     params: job_name = lambda wildcards: 'tabix_index.{}'.format(str(wildcards.x).replace("/", "."))
     input:  '{x}.{filetype}.gz'
-    output: '{x}.{filetype}.gz.tbi'
+    output: '{x}.{filetype,(bed|vcf)}.gz.tbi'
     shell:  '{TABIX} -f -p {wildcards.filetype} {input}'
 
 # bgzip vcf
@@ -444,6 +449,13 @@ rule gunzip_bed:
     params: job_name = lambda wildcards: 'gunzip_bed.{id}.{build}.{}'.format(str(wildcards.x).replace("/", "."))
     input:  'data/{id}.{build}/{x}.bed.gz'
     output: 'data/{id}.{build,(1000g|hg38)}/{x}.bed'
+    shell:  'gunzip -c {input} > {output}'
+
+# gunzip_bed
+rule gunzip_genome_tracks_bed:
+    params: job_name = 'gunzip_bed.{x}'
+    input:  'genome_tracks/{x}.bed.gz'
+    output: 'genome_tracks/{x}.bed'
     shell:  'gunzip -c {input} > {output}'
 
 # index fasta reference
@@ -499,21 +511,23 @@ rule backup_reaper_run:
         mv data/NA24385.hg38/variants/reaper* data/BAK/NA24385.hg38/variants 2> /dev/null
         mv data/NA24385.hg38/vcfeval/reaper* data/BAK/NA24385.hg38/vcfeval 2> /dev/null
 
-        mkdir -p data/BAK/NA24143.1000g/variants
-        mkdir -p data/BAK/NA24143.1000g/vcfeval
-        mv data/NA24143.1000g/variants/reaper* data/BAK/NA24143.1000g/variants 2> /dev/null
-        mv data/NA24143.1000g/vcfeval/reaper* data/BAK/NA24143.1000g/vcfeval 2> /dev/null
+        #mkdir -p data/BAK/NA24143.1000g/variants
+        #mkdir -p data/BAK/NA24143.1000g/vcfeval
+        #mv data/NA24143.1000g/variants/reaper* data/BAK/NA24143.1000g/variants 2> /dev/null
+        #mv data/NA24143.1000g/vcfeval/reaper* data/BAK/NA24143.1000g/vcfeval 2> /dev/null
 
-        mkdir -p data/BAK/NA24149.1000g/variants
-        mkdir -p data/BAK/NA24149.1000g/vcfeval
-        mv data/NA24149.1000g/variants/reaper* data/BAK/NA24149.1000g/variants 2> /dev/null
-        mv data/NA24149.1000g/vcfeval/reaper* data/BAK/NA24149.1000g/vcfeval 2> /dev/null
+        #mkdir -p data/BAK/NA24149.1000g/variants
+        #mkdir -p data/BAK/NA24149.1000g/vcfeval
+        #mv data/NA24149.1000g/variants/reaper* data/BAK/NA24149.1000g/variants 2> /dev/null
+        #mv data/NA24149.1000g/vcfeval/reaper* data/BAK/NA24149.1000g/vcfeval 2> /dev/null
 
-        mkdir -p data/BAK/NA24385.1000g/variants
-        mkdir -p data/BAK/NA24385.1000g/vcfeval
-        mv data/NA24385.1000g/variants/reaper* data/BAK/NA24385.1000g/variants 2> /dev/null
-        mv data/NA24385.1000g/vcfeval/reaper* data/BAK/NA24385.1000g/vcfeval 2> /dev/null
+        #mkdir -p data/BAK/NA24385.1000g/variants
+        #mkdir -p data/BAK/NA24385.1000g/vcfeval
+        #mv data/NA24385.1000g/variants/reaper* data/BAK/NA24385.1000g/variants 2> /dev/null
+        #mv data/NA24385.1000g/vcfeval/reaper* data/BAK/NA24385.1000g/vcfeval 2> /dev/null
 
-        mkdir data/BAK/plots
-        mv data/plots data/BAK/plots 2> /dev/null
+        #mkdir data/BAK/plots
+        #mv data/plots data/BAK/plots 2> /dev/null
+
+        mv data/aj_trio data/BAK/aj_trio
         '''

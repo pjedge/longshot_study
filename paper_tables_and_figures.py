@@ -707,6 +707,12 @@ def get_snp_count(vcfstats_file):
         fstr = inf.read()
         return int(snps_re.findall(fstr)[0])
 
+def get_TsTv(vcfstats_file):
+    tstv_re = re.compile("\nSNP Transitions/Transversions: (\d+\.\d+)\s+")
+    with open(vcfstats_file,'r') as inf:
+        fstr = inf.read()
+        return float(tstv_re.findall(fstr)[0])
+
 def make_table_4_genomes(NA12878_table_files, NA24385_table_files,
                          NA24149_table_files, NA24143_table_files,
                          gq_cutoff, outfile):
@@ -741,7 +747,7 @@ NA12878   & $44\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
 NA24385 (AJ son) & $69\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
 NA24149 (AJ father) & $32\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
 NA24143 (AJ mother) & $30\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-\\hline
+# \\hline
 \\end{{tabular}}
 \\caption{{{{\\bf Summary of variants called on GIAB genomes.}}}}
 \\label{{tab:stats}}
@@ -901,6 +907,92 @@ def plot_depth_of_mapped_vs_breadth(inputs, labels, colors, output_file):
     plt.tight_layout()
 
     plt.savefig(output_file)
+
+
+def make_variant_counts_table(illumina_genome_stats,
+                              illumina_segdup_stats,
+                              illumina_GIAB_confident_stats,
+                              illumina_GIAB_nonconfident_stats,
+                              pacbio_genome_stats,
+                              pacbio_segdup_stats,
+                              pacbio_GIAB_confident_stats,
+                              pacbio_GIAB_nonconfident_stats,
+                              intersect_illumina_pacbio_genome_stats,
+                              intersect_illumina_pacbio_segdup_stats,
+                              intersect_illumina_pacbio_GIAB_confident_stats,
+                              intersect_illumina_pacbio_GIAB_nonconfident_stats,
+                              outfile):
+
+    # TsTv and num SNVs for illumina short reads
+    illumina_genome_TsTv = get_TsTv(illumina_genome_stats)
+    illumina_genome_numSNVs = get_snp_count(illumina_genome_stats)
+
+    illumina_segdup_TsTv = get_TsTv(illumina_segdup_stats)
+    illumina_segdup_numSNVs = get_snp_count(illumina_segdup_stats)
+
+    illumina_GIAB_confident_TsTv = get_TsTv(illumina_GIAB_confident_stats)
+    illumina_GIAB_confident_numSNVs = get_snp_count(illumina_GIAB_confident_stats)
+
+    illumina_GIAB_nonconfident_TsTv = get_TsTv(illumina_GIAB_nonconfident_stats)
+    illumina_GIAB_nonconfident_numSNVs = get_snp_count(illumina_GIAB_nonconfident_stats)
+
+
+    # TsTv and num SNVs for pacbio long reads
+    pacbio_genome_TsTv = get_TsTv(pacbio_genome_stats)
+    pacbio_genome_numSNVs = get_snp_count(pacbio_genome_stats)
+
+    pacbio_segdup_TsTv = get_TsTv(pacbio_segdup_stats)
+    pacbio_segdup_numSNVs = get_snp_count(pacbio_segdup_stats)
+
+    pacbio_GIAB_confident_TsTv = get_TsTv(pacbio_GIAB_confident_stats)
+    pacbio_GIAB_confident_numSNVs = get_snp_count(pacbio_GIAB_confident_stats)
+
+    pacbio_GIAB_nonconfident_TsTv = get_TsTv(pacbio_GIAB_nonconfident_stats)
+    pacbio_GIAB_nonconfident_numSNVs = get_snp_count(pacbio_GIAB_nonconfident_stats)
+
+
+    # TsTv and num SNVs for intersection of illumina and pacbio long reads
+    intersect_illumina_pacbio_genome_TsTv = get_TsTv(intersect_illumina_pacbio_genome_stats)
+    intersect_illumina_pacbio_genome_numSNVs = get_snp_count(intersect_illumina_pacbio_genome_stats)
+
+    intersect_illumina_pacbio_segdup_TsTv = get_TsTv(intersect_illumina_pacbio_segdup_stats)
+    intersect_illumina_pacbio_segdup_numSNVs = get_snp_count(intersect_illumina_pacbio_segdup_stats)
+
+    intersect_illumina_pacbio_GIAB_confident_TsTv = get_TsTv(intersect_illumina_pacbio_GIAB_confident_stats)
+    intersect_illumina_pacbio_GIAB_confident_numSNVs = get_snp_count(intersect_illumina_pacbio_GIAB_confident_stats)
+
+    intersect_illumina_pacbio_GIAB_nonconfident_TsTv = get_TsTv(intersect_illumina_pacbio_GIAB_nonconfident_stats)
+    intersect_illumina_pacbio_GIAB_nonconfident_numSNVs = get_snp_count(intersect_illumina_pacbio_GIAB_nonconfident_stats)
+
+    s = '''
+\\begin{{table}}[htbp]
+\\centering
+\\begin{{tabular}}{{lllll}}
+\\hline
+                                & Genome & Segmental    & Inside GIAB       & Outside GIAB      \\\\
+                                & (1-22) & Duplications & Confident Regions & Confident Regions \\\\
+\\hline
+ # SNVs, Illumina               & {}     & {}           & {}                & {}                \\\\
+ Ts/Tv,  Illumina               & {}     & {}           & {}                & {}                \\\\
+ # SNVs, PacBio                 & {}     & {}           & {}                & {}                \\\\
+ Ts/Tv,  PacBio                 & {}     & {}           & {}                & {}                \\\\
+ # SNVs, Illumina $\cap$ PacBio & {}     & {}           & {}                & {}                \\\\
+ Ts/Tv,  Illumina $\cap$ PacBio & {}     & {}           & {}                & {}                \\\\
+\\hline
+\\end{{tabular}}
+\\caption{{{{\\bf Number of variants called in various genomic regions with short reads, long reads,
+and their intersection.}}}}
+\\label{{tab:stats}}
+\\end{{table}}
+'''.format(illumina_genome_numSNVs, illumina_segdup_numSNVs, illumina_GIAB_confident_numSNVs, illumina_GIAB_nonconfident_numSNVs,
+           illumina_genome_TsTv, illumina_segdup_TsTv, illumina_GIAB_confident_TsTv, illumina_GIAB_nonconfident_TsTv,
+           pacbio_genome_numSNVs, pacbio_segdup_numSNVs, pacbio_GIAB_confident_numSNVs, pacbio_GIAB_nonconfident_numSNVs,
+           pacbio_genome_TsTv, pacbio_segdup_TsTv, pacbio_GIAB_confident_TsTv, pacbio_GIAB_nonconfident_TsTv,
+           intersect_illumina_pacbio_genome_numSNVs, intersect_illumina_pacbio_segdup_numSNVs, intersect_illumina_pacbio_GIAB_confident_numSNVs, intersect_illumina_pacbio_GIAB_nonconfident_numSNVs,
+           intersect_illumina_pacbio_genome_TsTv, intersect_illumina_pacbio_segdup_TsTv, intersect_illumina_pacbio_GIAB_confident_TsTv, intersect_illumina_pacbio_GIAB_nonconfident_TsTv)
+
+    with open(outfile,'w') as outf:
+        print(s, file=outf)
 
 
 if __name__ == '__main__':

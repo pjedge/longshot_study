@@ -12,7 +12,7 @@ from collections import defaultdict
 import sys
 sys.path.append('HapCUT2/utilities')
 import calculate_haplotype_statistics
-
+from analyze_variants import count_fp_near_true_indel
 
 mpl.rc('legend', fontsize=9)
 mpl.rc('xtick', labelsize=9)
@@ -34,6 +34,16 @@ def parseargs():
     args = parser.parse_args()
     return args
 
+def format_bp(basepairs):
+    if basepairs / 1e9 > 1.0:
+        return "{:.1f} Gb".format(basepairs / 1e9)
+    elif basepairs / 1e6 > 1.0:
+        return "{:.1f} Mb".format(basepairs / 1e6)
+    elif basepairs / 1e3 > 1.0:
+        return "{:.1f} kb".format(basepairs / 1e3)
+    else:
+        return "{} bp".format(int(basepairs))
+
 def plot_vcfeval(dirlist, labels, output_file, title, colors=['r','#3333ff','#ccccff','#9999ff','#8080ff','#6666ff'], xlim=(0.6,1.0), ylim=(0.95,1.0), legendloc='lower left'):
 
 
@@ -44,7 +54,7 @@ def plot_vcfeval(dirlist, labels, output_file, title, colors=['r','#3333ff','#cc
     ylim = (ylim[0]-ypad, ylim[1]+ypad)
 
     plt.figure();
-    ax1 = plt.subplot(111);
+    ax1 = plt.subplot(111)
     if title != None:
         plt.title(title)
 
@@ -715,9 +725,9 @@ def get_TsTv(vcfstats_file):
 
 def make_table_4_genomes(NA12878_table_files, NA24385_table_files,
                          NA24149_table_files, NA24143_table_files,
-                         gq_cutoff, outfile):
+                         gq_cutoffs, outfile):
 
-    def generate_table_line(table_files):
+    def generate_table_line(table_files, gq_cutoff):
 
         precision, recall = get_precision_recall(table_files.vcfeval_dir, gq_cutoff)
         with open(table_files.runtime,'r') as inf:
@@ -730,10 +740,10 @@ def make_table_4_genomes(NA12878_table_files, NA24385_table_files,
         return genomes_table_entry(SNVs_called=snvs_total, precision=precision, recall=recall,
                                    outside_GIAB=snvs_outside_giab, runtime=runtime)
 
-    NA12878 = generate_table_line(NA12878_table_files)
-    NA24385 = generate_table_line(NA24385_table_files)
-    NA24149 = generate_table_line(NA24149_table_files)
-    NA24143 = generate_table_line(NA24143_table_files)
+    NA12878 = generate_table_line(NA12878_table_files, gq_cutoffs[0])
+    NA24385 = generate_table_line(NA24385_table_files, gq_cutoffs[1])
+    NA24149 = generate_table_line(NA24149_table_files, gq_cutoffs[2])
+    NA24143 = generate_table_line(NA24143_table_files, gq_cutoffs[3])
 
     s = '''
 \\begin{{table}}[htbp]
@@ -766,9 +776,9 @@ def make_table_4_genomes_extended(NA12878_30x_table_files, NA12878_44x_table_fil
                                   NA24385_69x_table_files,
                                   NA24149_32x_table_files,
                                   NA24143_30x_table_files,
-                                  gq_cutoff, outfile):
+                                  gq_cutoffs, outfile):
 
-    def generate_table_line(table_files):
+    def generate_table_line(table_files, gq_cutoff):
 
         precision, recall = get_precision_recall(table_files.vcfeval_dir, gq_cutoff)
         with open(table_files.runtime,'r') as inf:
@@ -781,17 +791,17 @@ def make_table_4_genomes_extended(NA12878_30x_table_files, NA12878_44x_table_fil
         return genomes_table_entry(SNVs_called=snvs_total, precision=precision, recall=recall,
                                    outside_GIAB=snvs_outside_giab, runtime=runtime)
 
-    NA12878_30x = generate_table_line(NA12878_30x_table_files)
-    NA12878_44x = generate_table_line(NA12878_44x_table_files)
+    NA12878_30x = generate_table_line(NA12878_30x_table_files, gq_cutoffs[0])
+    NA12878_44x = generate_table_line(NA12878_44x_table_files, gq_cutoffs[1])
 
-    NA24385_20x = generate_table_line(NA24385_20x_table_files)
-    NA24385_30x = generate_table_line(NA24385_30x_table_files)
-    NA24385_40x = generate_table_line(NA24385_40x_table_files)
-    NA24385_50x = generate_table_line(NA24385_50x_table_files)
-    NA24385_69x = generate_table_line(NA24385_69x_table_files)
+    NA24385_20x = generate_table_line(NA24385_20x_table_files, gq_cutoffs[2])
+    NA24385_30x = generate_table_line(NA24385_30x_table_files, gq_cutoffs[3])
+    NA24385_40x = generate_table_line(NA24385_40x_table_files, gq_cutoffs[4])
+    NA24385_50x = generate_table_line(NA24385_50x_table_files, gq_cutoffs[5])
+    NA24385_69x = generate_table_line(NA24385_69x_table_files, gq_cutoffs[6])
 
-    NA24149_32x = generate_table_line(NA24149_32x_table_files)
-    NA24143_30x = generate_table_line(NA24143_30x_table_files)
+    NA24149_32x = generate_table_line(NA24149_32x_table_files, gq_cutoffs[7])
+    NA24143_30x = generate_table_line(NA24143_30x_table_files, gq_cutoffs[8])
 
     s = '''
 \\begin{{table}}[htbp]
@@ -908,27 +918,59 @@ def plot_depth_of_mapped_vs_breadth(inputs, labels, colors, output_file):
 
     plt.savefig(output_file)
 
-
-def make_variant_counts_table(illumina_genome_stats,
-                              illumina_segdup_stats,
+def make_variant_counts_table(chr1_22_region_size_file,
+                              segmental_duplications_95_region_size_file,
+                              segmental_duplications_99_region_size_file,
+                              confident_region_size_file,
+                              nonconfident_region_size_file,
+                              illumina_genome_stats,
+                              illumina_segdup95_stats,
+                              illumina_segdup99_stats,
                               illumina_GIAB_confident_stats,
                               illumina_GIAB_nonconfident_stats,
                               pacbio_genome_stats,
-                              pacbio_segdup_stats,
+                              pacbio_segdup95_stats,
+                              pacbio_segdup99_stats,
                               pacbio_GIAB_confident_stats,
                               pacbio_GIAB_nonconfident_stats,
+                              pacbio_minus_illumina_genome_stats,
+                              pacbio_minus_illumina_segdup95_stats,
+                              pacbio_minus_illumina_segdup99_stats,
+                              pacbio_minus_illumina_GIAB_confident_stats,
+                              pacbio_minus_illumina_GIAB_nonconfident_stats,
+                              illumina_minus_pacbio_genome_stats,
+                              illumina_minus_pacbio_segdup95_stats,
+                              illumina_minus_pacbio_segdup99_stats,
+                              illumina_minus_pacbio_GIAB_confident_stats,
+                              illumina_minus_pacbio_GIAB_nonconfident_stats,
                               intersect_illumina_pacbio_genome_stats,
-                              intersect_illumina_pacbio_segdup_stats,
+                              intersect_illumina_pacbio_segdup95_stats,
+                              intersect_illumina_pacbio_segdup99_stats,
                               intersect_illumina_pacbio_GIAB_confident_stats,
                               intersect_illumina_pacbio_GIAB_nonconfident_stats,
                               outfile):
+
+
+    def read_region_size(region_size_file):
+        with open(region_size_file,'r') as inf:
+            return int(inf.readline().strip())
+
+    # read in files containing bed file total lengths
+    chr1_22_region_size = read_region_size(chr1_22_region_size_file)
+    segmental_duplications_95_region_size = read_region_size(segmental_duplications_95_region_size_file)
+    segmental_duplications_99_region_size = read_region_size(segmental_duplications_99_region_size_file)
+    confident_region_size = read_region_size(confident_region_size_file)
+    nonconfident_region_size = read_region_size(nonconfident_region_size_file)
 
     # TsTv and num SNVs for illumina short reads
     illumina_genome_TsTv = get_TsTv(illumina_genome_stats)
     illumina_genome_numSNVs = get_snp_count(illumina_genome_stats)
 
-    illumina_segdup_TsTv = get_TsTv(illumina_segdup_stats)
-    illumina_segdup_numSNVs = get_snp_count(illumina_segdup_stats)
+    illumina_segdup95_TsTv = get_TsTv(illumina_segdup95_stats)
+    illumina_segdup95_numSNVs = get_snp_count(illumina_segdup95_stats)
+
+    illumina_segdup99_TsTv = get_TsTv(illumina_segdup99_stats)
+    illumina_segdup99_numSNVs = get_snp_count(illumina_segdup99_stats)
 
     illumina_GIAB_confident_TsTv = get_TsTv(illumina_GIAB_confident_stats)
     illumina_GIAB_confident_numSNVs = get_snp_count(illumina_GIAB_confident_stats)
@@ -941,8 +983,11 @@ def make_variant_counts_table(illumina_genome_stats,
     pacbio_genome_TsTv = get_TsTv(pacbio_genome_stats)
     pacbio_genome_numSNVs = get_snp_count(pacbio_genome_stats)
 
-    pacbio_segdup_TsTv = get_TsTv(pacbio_segdup_stats)
-    pacbio_segdup_numSNVs = get_snp_count(pacbio_segdup_stats)
+    pacbio_segdup95_TsTv = get_TsTv(pacbio_segdup95_stats)
+    pacbio_segdup95_numSNVs = get_snp_count(pacbio_segdup95_stats)
+
+    pacbio_segdup99_TsTv = get_TsTv(pacbio_segdup99_stats)
+    pacbio_segdup99_numSNVs = get_snp_count(pacbio_segdup99_stats)
 
     pacbio_GIAB_confident_TsTv = get_TsTv(pacbio_GIAB_confident_stats)
     pacbio_GIAB_confident_numSNVs = get_snp_count(pacbio_GIAB_confident_stats)
@@ -950,13 +995,47 @@ def make_variant_counts_table(illumina_genome_stats,
     pacbio_GIAB_nonconfident_TsTv = get_TsTv(pacbio_GIAB_nonconfident_stats)
     pacbio_GIAB_nonconfident_numSNVs = get_snp_count(pacbio_GIAB_nonconfident_stats)
 
+    # TsTv and num SNVs for SNVs unique to pacbio
+    pacbio_minus_illumina_genome_TsTv = get_TsTv(pacbio_minus_illumina_genome_stats)
+    pacbio_minus_illumina_genome_numSNVs = get_snp_count(pacbio_minus_illumina_genome_stats)
+
+    pacbio_minus_illumina_segdup95_TsTv = get_TsTv(pacbio_minus_illumina_segdup95_stats)
+    pacbio_minus_illumina_segdup95_numSNVs = get_snp_count(pacbio_minus_illumina_segdup95_stats)
+
+    pacbio_minus_illumina_segdup99_TsTv = get_TsTv(pacbio_minus_illumina_segdup99_stats)
+    pacbio_minus_illumina_segdup99_numSNVs = get_snp_count(pacbio_minus_illumina_segdup99_stats)
+
+    pacbio_minus_illumina_GIAB_confident_TsTv = get_TsTv(pacbio_minus_illumina_GIAB_confident_stats)
+    pacbio_minus_illumina_GIAB_confident_numSNVs = get_snp_count(pacbio_minus_illumina_GIAB_confident_stats)
+
+    pacbio_minus_illumina_GIAB_nonconfident_TsTv = get_TsTv(pacbio_minus_illumina_GIAB_nonconfident_stats)
+    pacbio_minus_illumina_GIAB_nonconfident_numSNVs = get_snp_count(pacbio_minus_illumina_GIAB_nonconfident_stats)
+
+    # TsTv and num SNVs for SNVs unique to illumina
+    illumina_minus_pacbio_genome_TsTv = get_TsTv(illumina_minus_pacbio_genome_stats)
+    illumina_minus_pacbio_genome_numSNVs = get_snp_count(illumina_minus_pacbio_genome_stats)
+
+    illumina_minus_pacbio_segdup95_TsTv = get_TsTv(illumina_minus_pacbio_segdup95_stats)
+    illumina_minus_pacbio_segdup95_numSNVs = get_snp_count(illumina_minus_pacbio_segdup95_stats)
+
+    illumina_minus_pacbio_segdup99_TsTv = get_TsTv(illumina_minus_pacbio_segdup99_stats)
+    illumina_minus_pacbio_segdup99_numSNVs = get_snp_count(illumina_minus_pacbio_segdup99_stats)
+
+    illumina_minus_pacbio_GIAB_confident_TsTv = get_TsTv(illumina_minus_pacbio_GIAB_confident_stats)
+    illumina_minus_pacbio_GIAB_confident_numSNVs = get_snp_count(illumina_minus_pacbio_GIAB_confident_stats)
+
+    illumina_minus_pacbio_GIAB_nonconfident_TsTv = get_TsTv(illumina_minus_pacbio_GIAB_nonconfident_stats)
+    illumina_minus_pacbio_GIAB_nonconfident_numSNVs = get_snp_count(illumina_minus_pacbio_GIAB_nonconfident_stats)
 
     # TsTv and num SNVs for intersection of illumina and pacbio long reads
     intersect_illumina_pacbio_genome_TsTv = get_TsTv(intersect_illumina_pacbio_genome_stats)
     intersect_illumina_pacbio_genome_numSNVs = get_snp_count(intersect_illumina_pacbio_genome_stats)
 
-    intersect_illumina_pacbio_segdup_TsTv = get_TsTv(intersect_illumina_pacbio_segdup_stats)
-    intersect_illumina_pacbio_segdup_numSNVs = get_snp_count(intersect_illumina_pacbio_segdup_stats)
+    intersect_illumina_pacbio_segdup95_TsTv = get_TsTv(intersect_illumina_pacbio_segdup95_stats)
+    intersect_illumina_pacbio_segdup95_numSNVs = get_snp_count(intersect_illumina_pacbio_segdup95_stats)
+
+    intersect_illumina_pacbio_segdup99_TsTv = get_TsTv(intersect_illumina_pacbio_segdup99_stats)
+    intersect_illumina_pacbio_segdup99_numSNVs = get_snp_count(intersect_illumina_pacbio_segdup99_stats)
 
     intersect_illumina_pacbio_GIAB_confident_TsTv = get_TsTv(intersect_illumina_pacbio_GIAB_confident_stats)
     intersect_illumina_pacbio_GIAB_confident_numSNVs = get_snp_count(intersect_illumina_pacbio_GIAB_confident_stats)
@@ -967,33 +1046,86 @@ def make_variant_counts_table(illumina_genome_stats,
     s = '''
 \\begin{{table}}[htbp]
 \\centering
-\\begin{{tabular}}{{lllll}}
+\\small
+\\begin{{tabular}}{{lllllll}}
 \\hline
-                                & Genome & Segmental    & Inside GIAB       & Outside GIAB      \\\\
-                                & (1-22) & Duplications & Confident Regions & Confident Regions \\\\
+                                                                        &                        & Genome  & Inside GIAB & Outside GIAB & Segmental Dup.       & Segmental Dup.       \\\\
+                                                                        &                        & (1-22)  & Confident   & Confident    & ($\geq 95\%$ similar)& ($\geq 99\%$ similar)\\\\
 \\hline
- # SNVs, Illumina               & {}     & {}           & {}                & {}                \\\\
- Ts/Tv,  Illumina               & {}     & {}           & {}                & {}                \\\\
- # SNVs, PacBio                 & {}     & {}           & {}                & {}                \\\\
- Ts/Tv,  PacBio                 & {}     & {}           & {}                & {}                \\\\
- # SNVs, Illumina $\cap$ PacBio & {}     & {}           & {}                & {}                \\\\
- Ts/Tv,  Illumina $\cap$ PacBio & {}     & {}           & {}                & {}                \\\\
+Region size                                                             &                        & {}      & {}          & {}           & {}                   & {}                   \\tabularnewline
+\\cellcolor[gray]{{0.9}}                                                &\\cellcolor[gray]{{0.9}}\# SNVs                &\\cellcolor[gray]{{0.9}}{:,}    &\\cellcolor[gray]{{0.9}}{:,}        &\\cellcolor[gray]{{0.9}}{:,}         &\\cellcolor[gray]{{0.9}}{:,}                 &\\cellcolor[gray]{{0.9}}{:,}                 \\tabularnewline
+\\multirow{{-2}}{{*}}{{\\cellcolor[gray]{{0.9}}PacBio}}               &\\cellcolor[gray]{{0.9}}Ts/Tv &\\cellcolor[gray]{{0.9}}{}      &\\cellcolor[gray]{{0.9}}{}          &\\cellcolor[gray]{{0.9}}{}           &\\cellcolor[gray]{{0.9}}{}                   &\\cellcolor[gray]{{0.9}}{}                   \\tabularnewline
+                                                                        & \# SNVs                & {:,}    & {:,}        & {:,}         & {:,}                 & {:,}                 \\tabularnewline
+\\multirow{{-2}}{{*}}{{Illumina}}                                         & Ts/Tv                  & {}      & {}          & {}           & {}                   & {}                   \\tabularnewline
+\\cellcolor[gray]{{0.9}}                                                      &\\cellcolor[gray]{{0.9}}\# SNVs                &\\cellcolor[gray]{{0.9}}{:,}    &\\cellcolor[gray]{{0.9}}{:,}        &\\cellcolor[gray]{{0.9}}{:,}         &\\cellcolor[gray]{{0.9}}{:,}                 &\\cellcolor[gray]{{0.9}}{:,}                 \\tabularnewline
+\\multirow{{-2}}{{*}}{{\\cellcolor[gray]{{0.9}}Unique to PacBio}}       &\\cellcolor[gray]{{0.9}}Ts/Tv &\\cellcolor[gray]{{0.9}}{}      &\\cellcolor[gray]{{0.9}}{}          &\\cellcolor[gray]{{0.9}}{}           &\\cellcolor[gray]{{0.9}}{}                   &\\cellcolor[gray]{{0.9}}{}                   \\tabularnewline
+                                                      &  \# SNVs                &  {:,}    &  {:,}        &  {:,}         &  {:,}                 &  {:,}                 \\tabularnewline
+\\multirow{{-2}}{{*}}{{Unique to Illumina}}       & Ts/Tv & {}      &  {}          &  {}           &  {}                   &  {}                   \\tabularnewline
+\\cellcolor[gray]{{0.9}}Shared                                         &\\cellcolor[gray]{{0.9}}\# SNVs                &\\cellcolor[gray]{{0.9}}{:,}    &\\cellcolor[gray]{{0.9}}{:,}        &\\cellcolor[gray]{{0.9}}{:,}         &\\cellcolor[gray]{{0.9}}{:,}                 &\\cellcolor[gray]{{0.9}}{:,}                 \\tabularnewline
+\\cellcolor[gray]{{0.9}}Illumina \\& PacBio                             &\\cellcolor[gray]{{0.9}}Ts/Tv                  &\\cellcolor[gray]{{0.9}}{}      &\\cellcolor[gray]{{0.9}}{}          &\\cellcolor[gray]{{0.9}}{}           &\\cellcolor[gray]{{0.9}}{}                   &\\cellcolor[gray]{{0.9}}{}                   \\tabularnewline
 \\hline
 \\end{{tabular}}
-\\caption{{{{\\bf Number of variants called in various genomic regions with short reads, long reads,
-and their intersection.}}}}
-\\label{{tab:stats}}
+\\caption{{{{\\bf Number of variants called for NA12878 in various genomic regions with short reads ($\mathbf{{30\\times}}$ coverage) and long reads ($\mathbf{{44\\times}}$ coverage).
+Statistics are also shown for the variants unique to each technology and the variants shared by both.}}}}
+\\label{{tab:variant_counts}}
 \\end{{table}}
-'''.format(illumina_genome_numSNVs, illumina_segdup_numSNVs, illumina_GIAB_confident_numSNVs, illumina_GIAB_nonconfident_numSNVs,
-           illumina_genome_TsTv, illumina_segdup_TsTv, illumina_GIAB_confident_TsTv, illumina_GIAB_nonconfident_TsTv,
-           pacbio_genome_numSNVs, pacbio_segdup_numSNVs, pacbio_GIAB_confident_numSNVs, pacbio_GIAB_nonconfident_numSNVs,
-           pacbio_genome_TsTv, pacbio_segdup_TsTv, pacbio_GIAB_confident_TsTv, pacbio_GIAB_nonconfident_TsTv,
-           intersect_illumina_pacbio_genome_numSNVs, intersect_illumina_pacbio_segdup_numSNVs, intersect_illumina_pacbio_GIAB_confident_numSNVs, intersect_illumina_pacbio_GIAB_nonconfident_numSNVs,
-           intersect_illumina_pacbio_genome_TsTv, intersect_illumina_pacbio_segdup_TsTv, intersect_illumina_pacbio_GIAB_confident_TsTv, intersect_illumina_pacbio_GIAB_nonconfident_TsTv)
+'''.format(format_bp(chr1_22_region_size), format_bp(confident_region_size), format_bp(nonconfident_region_size), format_bp(segmental_duplications_95_region_size), format_bp(segmental_duplications_99_region_size),
+           pacbio_genome_numSNVs, pacbio_GIAB_confident_numSNVs, pacbio_GIAB_nonconfident_numSNVs, pacbio_segdup95_numSNVs, pacbio_segdup99_numSNVs,
+           pacbio_genome_TsTv, pacbio_GIAB_confident_TsTv, pacbio_GIAB_nonconfident_TsTv, pacbio_segdup95_TsTv, pacbio_segdup99_TsTv,
+           illumina_genome_numSNVs, illumina_GIAB_confident_numSNVs, illumina_GIAB_nonconfident_numSNVs, illumina_segdup95_numSNVs, illumina_segdup99_numSNVs,
+           illumina_genome_TsTv, illumina_GIAB_confident_TsTv, illumina_GIAB_nonconfident_TsTv, illumina_segdup95_TsTv, illumina_segdup99_TsTv,
+           pacbio_minus_illumina_genome_numSNVs, pacbio_minus_illumina_GIAB_confident_numSNVs, pacbio_minus_illumina_GIAB_nonconfident_numSNVs, pacbio_minus_illumina_segdup95_numSNVs, pacbio_minus_illumina_segdup99_numSNVs,
+           pacbio_minus_illumina_genome_TsTv, pacbio_minus_illumina_GIAB_confident_TsTv, pacbio_minus_illumina_GIAB_nonconfident_TsTv, pacbio_minus_illumina_segdup95_TsTv, pacbio_minus_illumina_segdup99_TsTv,
+           illumina_minus_pacbio_genome_numSNVs, illumina_minus_pacbio_GIAB_confident_numSNVs, illumina_minus_pacbio_GIAB_nonconfident_numSNVs, illumina_minus_pacbio_segdup95_numSNVs, illumina_minus_pacbio_segdup99_numSNVs,
+           illumina_minus_pacbio_genome_TsTv, illumina_minus_pacbio_GIAB_confident_TsTv, illumina_minus_pacbio_GIAB_nonconfident_TsTv, illumina_minus_pacbio_segdup95_TsTv, illumina_minus_pacbio_segdup99_TsTv,
+           intersect_illumina_pacbio_genome_numSNVs, intersect_illumina_pacbio_GIAB_confident_numSNVs, intersect_illumina_pacbio_GIAB_nonconfident_numSNVs, intersect_illumina_pacbio_segdup95_numSNVs, intersect_illumina_pacbio_segdup99_numSNVs,
+           intersect_illumina_pacbio_genome_TsTv, intersect_illumina_pacbio_GIAB_confident_TsTv, intersect_illumina_pacbio_GIAB_nonconfident_TsTv,  intersect_illumina_pacbio_segdup95_TsTv, intersect_illumina_pacbio_segdup99_TsTv)
 
     with open(outfile,'w') as outf:
         print(s, file=outf)
 
+
+def plot_fp_near_indel(fp_vcfs, fixed_gq_VCFstats, scaled_gq_VCFstats, ground_truth,
+                       output_png, cov, fixed_gq, scaled_gqs):
+
+    fixed_gq_fp = []
+    scaled_gq_fp = []
+
+    for fp_vcf, fixed_gq_VCFstat, scaled_gq_VCFstat, scaled_gq in zip(fp_vcfs, fixed_gq_VCFstats, scaled_gq_VCFstats, scaled_gqs):
+
+        fixed_gq_count = count_fp_near_true_indel(fp_vcf, ground_truth, fixed_gq)
+        scaled_gq_count = count_fp_near_true_indel(fp_vcf, ground_truth, scaled_gq)
+
+        # count the total # of SNVs called at this cutoff
+        fixed_gq_total = get_snp_count(fixed_gq_VCFstat)
+        scaled_gq_total = get_snp_count(scaled_gq_VCFstat)
+
+        fixed_gq_fp.append(fixed_gq_count / fixed_gq_total)
+        scaled_gq_fp.append(scaled_gq_count / scaled_gq_total)
+
+    plt.figure();
+    ax1 = plt.subplot(111)
+
+    plt.plot(cov, fixed_gq_fp, color='r',label='Fixed GQ={}'.format(fixed_gq),linewidth=3,alpha=0.75)
+    plt.plot(cov, scaled_gq_fp, color='b',label='Coverage Scaled GQ',linewidth=3,alpha=0.75)
+
+    plt.grid(True,color='grey',linestyle='--',alpha=0.5)
+
+    ax1.spines["top"].set_visible(False)
+    ax1.spines["right"].set_visible(False)
+    ax1.spines["bottom"].set_visible(False)
+    ax1.spines["left"].set_visible(False)
+    plt.tick_params(axis="both", which="both", bottom="off", top="off",
+                labelbottom="on", left="off", right="off", labelleft="on")
+
+    #plt.xlim(xlim)
+    #plt.ylim(ylim)
+    plt.xlabel('Read Coverage')
+    plt.ylabel('Rate of FP SNVs at true indel sites')
+    plt.legend(loc='upper left')
+    plt.tight_layout()
+    ax1.set_axisbelow(True)
+    plt.savefig(output_png)
 
 if __name__ == '__main__':
     args = parseargs()

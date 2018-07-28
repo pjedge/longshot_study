@@ -4,6 +4,91 @@ import re
 from collections import defaultdict
 from matplotlib import pyplot as plt
 
+# bamfile should be filtered to only be segdups
+# bedfile contains the segmental duplications
+# chrom is an optional chromosome filter
+def mapping_accuracy_and_completeness_segdups(bamfile, bedfile, outfile, chrom_filter=None, min_mapq=30, delta=5000):
+
+    r = re.compile('startpos=(\d+)')
+
+    with pysam.AlignmentFile(bamfile, "rb") as bam, open(bedfile, 'r') as bed, open(outfile,'w') as outf:
+        for line in bed:
+
+            # parse the bedfile with segmental duplication regions
+            el = line.strip().split()
+            chrom = el[0]
+            start = int(el[1]) # 0-based
+            stop = int(el[2])  # 0-based, partially open
+
+            if chrom_filter != None and chrom != chrom_filter:
+                continue
+
+            # count the mean coverage in this region
+            cov_total = 0
+            pos10 = 0
+            pos20 = 0
+            pos30 = 0
+            pos40 = 0
+            pos50 = 0
+            pos60 = 0
+
+            for pileupcolumn in bam.pileup(chrom, start, stop, truncate=True):
+                n = pileupcolumn.nsegments
+                if n >= 10:
+                    pos10 += 1
+                if n >= 20:
+                    pos20 += 1
+                if n >= 30:
+                    pos30 += 1
+                if n >= 40:
+                    pos40 += 1
+                if n >= 50:
+                    pos50 += 1
+                if n >= 60:
+                    pos60 += 1
+
+                cov_total += n
+
+            region_size = (stop - start)
+            assert(region_size > 0)
+            
+            map_coverage = cov_total / region_size
+            cov10_frac = pos10 / region_size
+            cov20_frac = pos20 / region_size
+            cov30_frac = pos30 / region_size
+            cov40_frac = pos40 / region_size
+            cov50_frac = pos50 / region_size
+            cov60_frac = pos60 / region_size
+
+            # calculate the mapping accuracy in this segmental dup
+
+            correct = 0
+            incorrect = 0
+            #incorrect_pos_lst = []
+
+            for record in bam.fetch(chrom, start, stop):
+
+                if record.mapq < min_mapq:
+                    continue
+
+                m = r.search(record.qname)
+                correct_pos = int(m.group(1))
+                if abs(record.pos - correct_pos) < delta:
+                    correct += 1
+                else:
+                    incorrect += 1
+                    #incorrect_pos_lst.append(record.pos)
+
+            if  (correct + incorrect) > 0:
+                mapping_accuracy = correct / (correct + incorrect)
+            else:
+                mapping_accuracy = 0
+
+            # print line
+            line = '{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}'.format(chrom,start,stop,map_coverage,mapping_accuracy,
+            cov10_frac,cov20_frac,cov30_frac,cov40_frac,cov50_frac,cov60_frac)
+            print(line, file = outf)
+
 def mapping_accuracy(bamfile, plot_name, min_mapq=30, delta=5000):
 
     correct = 0

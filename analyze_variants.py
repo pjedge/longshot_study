@@ -6,7 +6,7 @@ import numpy as np
 from mpl_toolkits.axes_grid1.parasite_axes import SubplotHost
 from random import randrange
 
-category_data = namedtuple('category_data',['near_indel', 'in_homopol5', 'in_STR', 'in_LINE', 'in_SINE'])
+category_data = namedtuple('category_data',['misgenotyped','near_indel', 'in_homopol5', 'in_STR', 'in_LINE', 'in_SINE'])
 # INPUT
 # fasta_object: a pysam indexed fasta object
 # chrom, pos: chromosome name and 1-indexed position to analyze
@@ -33,25 +33,25 @@ def has_homopolymer(fasta_object, chrom, pos, pad=5, run_length=3):
 
     return False
 
-def generate_random_calls(ground_truth_bed_file, chrom, N):
+def generate_random_calls(chrom, chrlen, N, outfile):
 
-    var_pos_lst = []
-    with pysam.TabixFile(ground_truth_bed_file) as bed:
-        end = 0
-        for record in bed.fetch(reference=chrom,parser=pysam.asBed()):
-            end = record.end
+    pos_lst = []
 
-        while len(var_pos_lst) < N:
-            randpos = randrange(0, end+1)
-            # does the variant occur within 5 bases of an STR?
-            in_confident_region = False
-            for row in bed.fetch(chrom, randpos-1, randpos, parser=pysam.asBed()):
-                in_confident_region = True
+    for i in range(N):
+        pos_lst.append(randrange(0, chrlen))
 
-            if in_confident_region:
-                var_pos_lst.append((chrom, randpos))
+    pos_lst.sort()
 
-    return var_pos_lst
+    with open(outfile, 'w') as outf:
+
+        header = '''##fileformat=VCFv4.2
+##source=analyze_variants.py
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Float,Description="Genotype Quality">
+#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tRANDOM'''
+        print(header, file=outf)
+        for pos in pos_lst:
+            print("{}\t{}\t.\tN\tN\t100\tPASS\t.\tGT:GQ\t1/1:100".format(chrom, pos),file=outf)
 
 def get_var_pos_lst(calls_vcfgz, gq_cutoff):
 
@@ -62,38 +62,78 @@ def get_var_pos_lst(calls_vcfgz, gq_cutoff):
         for record in calls:
             if record.samples[0]['GQ'] < gq_cutoff:
                 continue
-            var_pos_lst.append((record.chrom, record.pos))
+
+            # currently only designed for variants that are simple SNVs
+            assert(len(record.alleles[0]) == 1)
+
+            var_pos_lst.append((record.chrom, record.pos, record.alleles[0],
+                                record.samples[0].alleles))
 
     return var_pos_lst
 
-def analyze_variants(chrom_name, fp_calls_vcfgz, fn_calls_vcfgz, ground_truth_vcfgz, ground_truth_bed_file, str_tabix_bed_file,
-                     line_tabix_bed_file, sine_tabix_bed_file, ref_fa, gq_cutoff, output_file):
+def analyze_variants(chrom_name, pacbio_calls_vcfgz, fp_calls_vcfgz, fn_calls_vcfgz, ground_truth_vcfgz, ground_truth_bed_file, random_positions_vcfgz,
+                     str_tabix_bed_file, line_tabix_bed_file, sine_tabix_bed_file, ref_fa, gq_cutoff, output_file):
 
-    def count_variant_categories(var_pos_lst):
+    def count_variant_categories(var_pos_lst, mode):
 
+        assert(mode in ['fp','fn','rand'])
         counts = defaultdict(int)
 
         total = 0
+        misgenotyped_ct = 0
         near_indel_ct = 0
         in_homopol5_ct = 0
+        in_homopol5_not_near_indel_ct = 0
         in_STR_ct = 0
         in_LINE_ct = 0
         in_SINE_ct = 0
 
-        with pysam.VariantFile(ground_truth_vcfgz) as ground_truth, \
+        with pysam.VariantFile(pacbio_calls_vcfgz) as pacbio_calls, \
+            pysam.VariantFile(ground_truth_vcfgz) as ground_truth, \
             pysam.TabixFile(str_tabix_bed_file) as str_bed, \
             pysam.TabixFile(line_tabix_bed_file) as line_bed, \
             pysam.TabixFile(sine_tabix_bed_file) as sine_bed, \
             pysam.FastaFile(ref_fa) as ref:
 
-            for ix, (chrom, pos) in enumerate(var_pos_lst):
+            # r, v are strings representing ref allele base, alt base
+            # gt is tuple of ints representing genotype
+            for ix, (chrom, pos, ref_base, alleles) in enumerate(var_pos_lst):
 
                 total += 1
                 assert(chrom == chrom_name)
 
+                # was the variant found, but misgenotyped?
+                misgenotyped = False
+                if mode in ['fp','fn']:
+                    # if we're analyzing FPs then in the FP file we had a list of
+                    # pacbio calls. we want to compare to the ground truth calls
+                    # if we're analyzing FNs then in the FN file we had a list of
+                    # ground truth calls. we want to compare to the pacbio calls.
+                    calls = ground_truth if mode == 'fp' else pacbio_calls
+                    for rec in calls.fetch(contig=chrom,start=pos-1,stop=pos):
+                        if rec.pos != pos:
+                            continue
+
+                        SNV = True
+                        for a in rec.alleles:
+                            if len(a) != 1:
+                                SNV = False
+
+                        if not SNV:
+                            continue
+
+                        assert(ref_base == rec.ref)
+
+                        if not set(rec.samples[0].alleles) == set(alleles):
+                            misgenotyped = True
+                            break
+
+                if misgenotyped:
+                    print("{} {} was misgenotyped".format(chrom, pos))
+
                 # does the variant occur within 30 bp of a true indel?
                 near_indel = False
-                indel_pad = 30
+                indel_pad = 10
                 for rec in ground_truth.fetch(contig=chrom,start=pos-indel_pad-1,stop=pos+indel_pad):
                     is_indel = (len(rec.samples[0].alleles[0]) != len(rec.ref) or
                                 len(rec.samples[0].alleles[1]) != len(rec.ref))
@@ -107,185 +147,150 @@ def analyze_variants(chrom_name, fp_calls_vcfgz, fn_calls_vcfgz, ground_truth_vc
 
                 # does the variant occur within 5 bases of an STR?
                 in_STR = False
-                str_pad = 5
+                str_pad = 0
                 for row in str_bed.fetch(chrom, pos-1-str_pad, pos+str_pad, parser=pysam.asBed()):
                     in_STR = True
 
                 # does the variant occur within 5 bases of a LINE?
                 in_LINE = False
-                line_pad = 5
+                line_pad = 0
                 for row in line_bed.fetch(chrom, pos-1-line_pad, pos+line_pad, parser=pysam.asBed()):
                     in_LINE = True
 
                 # does the variant occur within 5 bases of a SINE?
                 in_SINE = False
-                sine_pad = 5
+                sine_pad = 0
                 for row in sine_bed.fetch(chrom, pos-1-sine_pad, pos+sine_pad, parser=pysam.asBed()):
                     in_SINE = True
 
+                misgenotyped_ct += misgenotyped
                 near_indel_ct += near_indel
                 in_homopol5_ct += in_homopol5
+                in_homopol5_not_near_indel_ct += in_homopol5 and not near_indel
                 in_STR_ct += in_STR
                 in_LINE_ct += in_LINE
                 in_SINE_ct += in_SINE
 
-                counts[category_data(near_indel=near_indel, in_homopol5=in_homopol5,
-                       in_STR=in_STR, in_LINE=in_LINE, in_SINE=in_SINE)] += 1
+                counts[category_data(misgenotyped=misgenotyped, near_indel=near_indel, in_homopol5=in_homopol5,
+                                     in_STR=in_STR, in_LINE=in_LINE, in_SINE=in_SINE)] += 1
 
         assert(total == sum(counts.values()))
 
         #bit_table = []
         #row_labels = []
-        result_fracs = [near_indel_ct/total,
-                             in_homopol5_ct/total,
-                             in_STR_ct/total,
-                             in_LINE_ct/total,
-                             in_SINE_ct/total]
+        result_fracs = [misgenotyped_ct/total,
+                        near_indel_ct/total,
+                        in_homopol5_ct/total,
+                        in_homopol5_not_near_indel_ct/total,
+                        in_STR_ct/total,
+                        in_LINE_ct/total,
+                        in_SINE_ct/total]
 
 
         print("Counts of variants in categories (categories may overlap):")
-        print("Near true indel (within 30 bp): {:.3f}".format(near_indel_ct))
+        print("Misgenotyped:                   {:.3f}".format(misgenotyped_ct))
+        print("Near true indel (within 10 bp): {:.3f}".format(near_indel_ct))
         print("In homopolymer (len >= 5):      {:.3f}".format(in_homopol5_ct))
-        print("In STR (+- 5 bp):               {:.3f}".format(in_STR_ct))
-        print("In LINE (+- 5 bp):              {:.3f}".format(in_LINE_ct))
-        print("In SINE (+- 5 bp):              {:.3f}".format(in_SINE_ct))
+        print("In homopolymer, not near indel: {:.3f}".format(in_homopol5_not_near_indel_ct))
+        print("In STR:               {:.3f}".format(in_STR_ct))
+        print("In LINE:              {:.3f}".format(in_LINE_ct))
+        print("In SINE:              {:.3f}".format(in_SINE_ct))
         print("")
         print("")
         print("Fractions for overlapped categories:")
         print("Near indel\tIn homopolymer\tIn STR\tIn LINE\tIn SINE\tFraction of Variants")
 
         print("Fraction of variants in categories (categories may overlap):")
-        print("Near true indel (within 30 bp): {:.3f}".format(near_indel_ct/total))
+        print("Misgenotyped:                   {:.3f}".format(misgenotyped_ct/total))
+        print("Near true indel (within 10 bp): {:.3f}".format(near_indel_ct/total))
         print("In homopolymer (len >= 5):      {:.3f}".format(in_homopol5_ct/total))
-        print("In STR (+- 5 bp):               {:.3f}".format(in_STR_ct/total))
-        print("In LINE (+- 5 bp):              {:.3f}".format(in_LINE_ct/total))
-        print("In SINE (+- 5 bp):              {:.3f}".format(in_SINE_ct/total))
+        print("In homopolymer, not near indel: {:.3f}".format(in_homopol5_not_near_indel_ct/total))
+        print("In STR:               {:.3f}".format(in_STR_ct/total))
+        print("In LINE:              {:.3f}".format(in_LINE_ct/total))
+        print("In SINE:              {:.3f}".format(in_SINE_ct/total))
         print("")
         print("")
         print("Fractions for overlapped categories:")
-        print("Near indel\tIn homopolymer\tIn STR\tIn LINE\tIn SINE\tFraction of Variants")
+        print("Misgenotyped\tNear indel\tIn homopolymer\tIn STR\tIn LINE\tIn SINE\tFraction of Variants")
         sorted_counts = sorted(counts.items(),key=lambda x: x[0])
 
         for cats, count in sorted_counts:
 
-            print("{}\t{}\t{}\t{}\t{}\t{:.3f}".format(int(cats.near_indel), int(cats.in_homopol5),
+            print("{}\t{}\t{}\t{}\t{}\t{}\t{:.3f}".format(int(cats.misgenotyped),int(cats.near_indel), int(cats.in_homopol5),
             int(cats.in_STR), int(cats.in_LINE), int(cats.in_SINE), count / total))
-            #bit_table.append((int(cats.near_indel), int(cats.in_homopol5),
-            #int(cats.in_STR), int(cats.in_LINE), int(cats.in_SINE)))
-            #row_labels.append("{:.3f}".format(count / total))
 
-        #return bit_table, row_labels, col_labels_bottom
         return result_fracs
 
-    #random_var_pos = generate_random_calls(ground_truth_bed_file, chrom_name, 100000)
-
+    #N = 100000
+    #random_var_pos = generate_random_calls(ground_truth_bed_file, chrom_name, N)
     print("Analyzing False Positives...\n")
-    fp_fracs = count_variant_categories(get_var_pos_lst(fp_calls_vcfgz, gq_cutoff))
+    fp_fracs = count_variant_categories(get_var_pos_lst(fp_calls_vcfgz, gq_cutoff), 'fp')
     print("Analyzing False Negatives...\n")
-    fn_fracs = count_variant_categories(get_var_pos_lst(fn_calls_vcfgz, gq_cutoff))
-    exit(0)
+    fn_fracs = count_variant_categories(get_var_pos_lst(fn_calls_vcfgz, gq_cutoff), 'fn')
     print("Analyzing Random Positions...\n")
-    random_fracs = count_variant_categories(random_var_pos)
+    random_fracs = count_variant_categories(get_var_pos_lst(random_positions_vcfgz, gq_cutoff), 'rand')
     print(fp_fracs)
     print(fn_fracs)
     print(random_fracs)
+
+    #for i in range(0,len(random_fracs)):
+    #    if random_fracs[i] == 0:
+    #        random_fracs[i] = (1/N)**2
 
     s = '''
 \\begin{{table}}[htbp]
 \\centering
 \\begin{{tabular}}{{lrrrrr}}
 \\hline
-Genome      & False          & False          & Random    & FP/random & FN/random  \\\\
-            & Positives (FP) & Negatives (FN) & Positions &           &            \\\\
+Genome      & False          & False          & FP         & FN         \\\\
+            & Positives (FP) & Negatives (FN) & Enrichment & Enrichment \\\\
 \\hline
-Near indel     & {:.3f} & {:.3f} & {:.3f} & {:.3f} & {:.3f} \\\\
-In homopolymer & {:.3f} & {:.3f} & {:.3f} & {:.3f} & {:.3f} \\\\
-In STR         & {:.3f} & {:.3f} & {:.3f} & {:.3f} & {:.3f} \\\\
-In LINE        & {:.3f} & {:.3f} & {:.3f} & {:.3f} & {:.3f} \\\\
-In SINE        & {:.3f} & {:.3f} & {:.3f} & {:.3f} & {:.3f} \\\\
+Misgenotyped SNV & {:.3f} & {:.3f} & - & - \\\\
+  & {:.3f} & {:.3f} & {:.3f} \\\\
+In homopolymer & {:.3f} & {:.3f} & {:.3f} & {:.3f} \\\\
+In homopolymer & {:.3f} & {:.3f} & {:.3f} & {:.3f} \\\\
+(not near indel) &      &        &        &        \\\\
+In STR         & {:.3f} & {:.3f} & {:.3f} & {:.3f} \\\\
+In LINE        & {:.3f} & {:.3f} & {:.3f} & {:.3f} \\\\
+In SINE        & {:.3f} & {:.3f} & {:.3f} & {:.3f} \\\\
 \\hline
 \\end{{tabular}}
 \\caption{{{{\\bf Fractions of False Positive (FN) and False Negative (FN) variant calls that
-coincide with genomic locations or features. For comparison, random positions from
+were misgenotyped or coincide with genomic features. For comparison, random positions from
 the GIAB confident regions were selected and subjected to the same analysis. The
-last two columns show the fold difference compared to the random positions.}}}}
+last two columns show the fold enrichment compared to the random positions.}}}}
 \\label{{tab:stats}}
 \\end{{table}}
-'''.format(fp_fracs[0], fn_fracs[0], random_fracs[0], fp_fracs[0]/random_fracs[0], fn_fracs[0]/random_fracs[0],
-           fp_fracs[1], fn_fracs[1], random_fracs[1], fp_fracs[1]/random_fracs[1], fn_fracs[1]/random_fracs[1],
-           fp_fracs[2], fn_fracs[2], random_fracs[2], fp_fracs[2]/random_fracs[2], fn_fracs[2]/random_fracs[2],
-           fp_fracs[3], fn_fracs[3], random_fracs[3], fp_fracs[3]/random_fracs[3], fn_fracs[3]/random_fracs[3],
-           fp_fracs[4], fn_fracs[4], random_fracs[4], fp_fracs[4]/random_fracs[4], fn_fracs[4]/random_fracs[4])
+'''.format(fp_fracs[0], fn_fracs[0],
+           fp_fracs[1], fn_fracs[1], fp_fracs[1]/random_fracs[1], fn_fracs[1]/random_fracs[1],
+           fp_fracs[2], fn_fracs[2], fp_fracs[2]/random_fracs[2], fn_fracs[2]/random_fracs[2],
+           fp_fracs[3], fn_fracs[3], fp_fracs[3]/random_fracs[3], fn_fracs[3]/random_fracs[3],
+           fp_fracs[4], fn_fracs[4], fp_fracs[4]/random_fracs[4], fn_fracs[4]/random_fracs[4],
+           fp_fracs[5], fn_fracs[5], fp_fracs[5]/random_fracs[5], fn_fracs[5]/random_fracs[5],
+           fp_fracs[6], fn_fracs[6], fp_fracs[6]/random_fracs[6], fn_fracs[6]/random_fracs[6])
 
     with open(output_file,'w') as outf:
         print(s, file=outf)
 
-    col_labels = ["Near indel", "In homopolymer", "In STR", "In LINE", "In SINE"]
+def count_fp_near_true_indel(fp_calls_vcfgz, ground_truth_vcfgz, gq_cutoff):
 
-    '''
-    # credit to this SO thread: https://stackoverflow.com/questions/33283601/manually-defined-axis-labels-for-matplotlib-imshow
+    near_indel_ct = 0
+    indel_pad = 10
+    var_pos_lst = get_var_pos_lst(fp_calls_vcfgz, gq_cutoff)
 
-    ###########################################################################
-    # plot false positive table
-    ###########################################################################
+    with pysam.VariantFile(ground_truth_vcfgz) as ground_truth:
 
-    fig = plt.figure()
-    ax1 = SubplotHost(fig, 1,2,1)
-    fig.add_subplot(ax1)
+        for ix, (chrom, pos, ref_base, alleles) in enumerate(var_pos_lst):
+            # does the variant occur within 30 bp of a true indel?
+            near_indel = False
+            for rec in ground_truth.fetch(contig=chrom,start=pos-indel_pad-1,stop=pos+indel_pad):
+                is_indel = (len(rec.samples[0].alleles[0]) != len(rec.ref) or
+                            len(rec.samples[0].alleles[1]) != len(rec.ref))
 
-    # set bottom ticks
-    ax1.set_xticks(list(range(0,len(col_labels))))
-    ax1.set_xticklabels(fp_col_labels_bottom,rotation='vertical')
-    #ax1.set_xlabel("Total Fraction\n in Category")
-    ax1.tick_params(length=0)
-    ax1.imshow(fp_bit_table, cmap='Greys', interpolation='nearest')
+                if is_indel:
+                    near_indel = True
+                    break
 
-    ax2 = ax1.twin()
-    # set top ticks
-    ax2.set_xticks(list(range(0,len(col_labels))))
-    ax2.set_xticklabels(col_labels,rotation='vertical')
-    ax2.xaxis.tick_top()
-    ax2.tick_params(length=0)
-    ax2.set_yticks([])
+            near_indel_ct += near_indel
 
-    # set row ticks
-    ax1.set_yticks(list(range(0,len(fp_row_labels))))
-    ax1.set_yticklabels(fp_row_labels)
-    plt.ylabel("Fraction of variants\n in intersection of categories")
-
-    plt.title("False Positive Variants",y=1.5)
-    #plt.subplots_adjust(top=0.8, bottom=0.15)
-
-    ###########################################################################
-    # plot false negative table
-    ###########################################################################
-
-    ax1 = SubplotHost(fig, 1,2,2)
-
-    fig.add_subplot(ax1)
-
-    # set bottom ticks
-    ax1.set_xticks(list(range(0,len(col_labels))))
-    ax1.set_xticklabels(fn_col_labels_bottom,rotation='vertical')
-    #ax1.set_xlabel("Total Fraction\n in Category")
-    ax1.tick_params(length=0)
-    ax1.imshow(fn_bit_table, cmap='Greys', interpolation='nearest')
-
-    ax2 = ax1.twin()
-    # set top ticks
-    ax2.set_xticks(list(range(0,len(col_labels))))
-    ax2.set_xticklabels(col_labels,rotation='vertical')
-    ax2.xaxis.tick_top()
-    ax2.tick_params(length=0)
-    ax2.set_yticks([])
-
-    # set row ticks
-    ax1.set_yticks(list(range(0,len(fn_row_labels))))
-    ax1.set_yticklabels(fn_row_labels)
-    #plt.ylabel("Fraction of variants\n in intersection of categories")
-    plt.title("False Negative Variants",y=1.5)
-    fig.text(0.5, -0.03, "Total Fraction of Variants in Category", ha='center')
-
-    plt.subplots_adjust(top=0.7, bottom=0.15, wspace=0.2)
-    plt.savefig(output_figure)
-    '''
+    return near_indel_ct

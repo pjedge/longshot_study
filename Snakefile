@@ -1,5 +1,5 @@
 import paper_tables_and_figures as ptf
-from analyze_variants import analyze_variants
+from analyze_variants import analyze_variants, generate_random_calls
 import time
 from replace_empty_gt_with_reference import replace_empty_gt_with_reference
 import sys
@@ -57,16 +57,33 @@ include: "aj_trio.snakefile" #
 include: "paper_tables_and_figures.snakefile"
 include: "haplotyping.snakefile"
 include: "make_variant_counts_table.snakefile"
+include: "duplicated_gene_visualization.snakefile"
 
 # DEFAULT
 rule all:
     input:
-        'data/aj_trio/duplicated_regions/trio_shared_variant_sites/mendelian/all.vcf.gz',
-        #'data/plots/NA12878.1000g_prec_recall_all.png',
-        'data/plots/NA24143.hg38_prec_recall_all.png',
-        'data/plots/NA24149.hg38_prec_recall_all.png',
-        'data/plots/NA24385.hg38_prec_recall_all.png',
+        'data/simulation.1000g/aligned_reads/pacbio/segdup95_stats/all.stats.bed'
+        #'data/plots/plot_fp_near_indel.NA24385.hg38.png'
+        #expand('data/output/variant_analysis_fp_fn__NA24385.hg38__GQ50__reaper.pacbio.blasr.{cov}x.-z__1.tex',cov=[20,30,40,50,69]),
+        #'data/output/variant_analysis_fp_fn__NA12878.1000g__GQ44__reaper.pacbio.blasr.44x.-z__1.tex'
         #'data/output/variant_counts_table.NA12878.1000g.blasr.44.GQ44.tex'
+        #'data/NA12878.1000g/duplicated_gene_vis/pacbio.44x.dup_genes.bam.bai',   # bam file for duplicated gene visualization
+        #'data/NA12878.1000g/duplicated_gene_vis/illumina.30x.dup_genes.bam.bai'  # bam file for duplicated gene visualization
+        #'data/output/four_GIAB_genomes_table.aj_trio_hg38_blasr.all.tex',
+        #'data/output/four_GIAB_genomes_table_extended.aj_trio_hg38_blasr.all.tex',
+        #'data/plots/haplotyping_results_barplot.png'
+        #'data/plots/fig3_precision_recall_bars_NA24385_NA12878.blasr.hg38.png'
+        #'data/plots/depth_vs_breadth_mappability.simulation.30x.png',
+        #'data/aj_trio/duplicated_regions/trio_shared_variant_sites/mendelian/NA24143.30x.pileup_over_mendelian_positions.txt',
+        #'data/aj_trio/duplicated_regions/trio_shared_variant_sites/mendelian/NA24149.32x.pileup_over_mendelian_positions.txt',
+        #'data/plots/simulation_pr_barplot_genome_vs_segdup.all.GQ50.png',
+        #'data/aj_trio/duplicated_regions/trio_shared_variant_sites/mendelian/all.vcf.gz',
+        #'data/output/variant_counts_table.NA12878.1000g.blasr.44.GQ44.tex'
+
+        #'data/plots/NA12878.1000g_prec_recall_all.png',
+        #'data/plots/NA24143.hg38_prec_recall_all.png',
+        #'data/plots/NA24149.hg38_prec_recall_all.png',
+        #'data/plots/NA24385.hg38_prec_recall_all.png',
         #'data/aj_trio/duplicated_regions/test_confident_trio_shared_variant_sites/mendelian/all.vcf.gz',
         #'data/plots/simulation_pr_barplot_genome_vs_segdup.all.GQ50.png',
         #'data/plots/simulation_pr_barplot_genome_vs_segdup_extended.1.GQ50.png',
@@ -108,6 +125,14 @@ rule all:
         #'data/NA24143.hg38/vcfeval/illumina_30x.filtered/all.done',
         #'data/NA24149.hg38/vcfeval/illumina_30x.filtered/all.done',
 
+
+rule run_pileups:
+    params: job_name = 'run_pileups_{individual}.{cov}x',
+    input:  bam = 'data/{individual}.hg38/aligned_reads/pacbio/pacbio.blasr.all.{cov}x.bam',
+            pos = 'data/aj_trio/duplicated_regions/trio_shared_variant_sites/mendelian/all.positions_only.txt'
+    output: txt = 'data/aj_trio/duplicated_regions/trio_shared_variant_sites/mendelian/{individual}.{cov}x.pileup_over_mendelian_positions.txt',
+    shell: 'python3 run_pileups.py {input.bam} {input.pos} > {output.txt}'
+
 # this function takes in a chromosome name in 1..22,X and a "genome build" name
 # and appends a 'chr' prefix to the chrom name if the genome build is hg38
 def chr_prefix(chrom, build):
@@ -131,6 +156,17 @@ def formatted_time_to_seconds(fmt_time):
     assert(len(vals) == 3)
     hh, mm, ss = vals
     return hh*3600 + mm*60 + ss
+
+rule rtg_filter_reaper_MEC_AQ:
+    params: job_name = 'rtg_filter_reaper_MEC_AQ.{individual}.{build}.{aligner}.{cov}x.chr{chrom}',
+    input:  vcfgz = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov}x.-z/{chrom}.vcf.gz',
+            tbi   = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov}x.-z/{chrom}.vcf.gz.tbi',
+    output: vcf = 'data/{individual}.{build}/variants/reaper.filtered.pacbio.{aligner}.{cov}x.-z/{chrom}.vcf',
+    shell:
+        '''
+        {RTGTOOLS} RTG_MEM=12g vcffilter --keep-expr "INFO.AQ > 7" --fail=AQ -i {input.vcfgz} -o {output.vcf}.gz
+        gunzip {output.vcf}.gz
+        '''
 
 rule vcfeval_rtgtools:
     params: job_name = 'vcfeval_rtgtools.{individual}.{build}.{calls_name}.{chrom}',
@@ -163,12 +199,16 @@ rule rtg_decompose_variants_ground_truth:
     shell: '{RTGTOOLS} RTG_MEM=12g vcfdecompose --break-mnps --break-indels -i {input.vcfgz} -o {output.vcfgz}'
 
 rule analyze_variants:
-    params: job_name = 'analyze_variants.{individual}.{build}.{chrom}.{calls_name}',
-    input:  fp_calls = 'data/{individual}.{build}/vcfeval/{calls_name}/{chrom}/fp.vcf.gz',
-            fn_calls = 'data/{individual}.{build}/vcfeval/{calls_name}/{chrom}/fn.vcf.gz',
+    params: job_name = 'analyze_variants.{individual}.{build}.{chrom}.{calls_name}.GQ{GQ}',
+    input:  vcfeval = 'data/{individual}.{build}/vcfeval/{calls_name}/{chrom}.done',
+            pacbio_calls_vcfgz = 'data/{individual}.{build}/variants/{calls_name}/{chrom}.GQ{GQ}.vcf.gz',
+            pacbio_calls_ix = 'data/{individual}.{build}/variants/{calls_name}/{chrom}.GQ{GQ}.vcf.gz.tbi',
             ground_truth_vcfgz = 'data/{individual}.{build}/variants/ground_truth/ground_truth.vcf.gz',
+            ground_truth_ix = 'data/{individual}.{build}/variants/ground_truth/ground_truth.vcf.gz.tbi',
             ground_truth_bed = 'data/{individual}.{build}/variants/ground_truth/region_filter.bed.gz',
             ground_truth_bed_ix = 'data/{individual}.{build}/variants/ground_truth/region_filter.bed.gz.tbi',
+            random_positions_vcfgz = 'data/{individual}.{build}/random_positions/{chrom}.confident_only.vcf.gz',
+            random_positions_ix = 'data/{individual}.{build}/random_positions/{chrom}.confident_only.vcf.gz.tbi',
             str_bed = 'genome_tracks/STRs_{build}.bed.gz',
             str_bed_ix = 'genome_tracks/STRs_{build}.bed.gz.tbi',
             line_bed = 'genome_tracks/LINEs_{build}.bed.gz',
@@ -179,18 +219,50 @@ rule analyze_variants:
             ref_1000g_fai = 'data/genomes/hs37d5.fa.fai',
             ref_hg38_fa = 'data/genomes/hg38.fa',
             ref_hg38_fai = 'data/genomes/hg38.fa.fai'
-    output: tex = 'data/output/variant_analysis_fp_fn__{individual}__{calls_name}__{chrom}.tex'
+    output: tex = 'data/output/variant_analysis_fp_fn__{individual}.{build}__GQ{GQ}__{calls_name}__{chrom}.tex'
     run:
-        analyze_variants(chrom_name = wildcards.chrom,
-                         fp_calls_vcfgz = input.fp_calls,
-                         fn_calls_vcfgz = input.fn_calls,
+        analyze_variants(chrom_name = chr_prefix(wildcards.chrom, wildcards.build),
+                         pacbio_calls_vcfgz = input.pacbio_calls_vcfgz,
+                         fp_calls_vcfgz = os.path.join(input.vcfeval[:-5],'fp.vcf.gz'),
+                         fn_calls_vcfgz =  os.path.join(input.vcfeval[:-5],'fn.vcf.gz'),
                          ground_truth_vcfgz = input.ground_truth_vcfgz,
                          ground_truth_bed_file = input.ground_truth_bed,
+                         random_positions_vcfgz = input.random_positions_vcfgz,
                          str_tabix_bed_file = input.str_bed,
                          line_tabix_bed_file = input.line_bed,
                          sine_tabix_bed_file = input.sine_bed,
                          ref_fa = ref_file[wildcards.build],
+                         gq_cutoff = float(wildcards.GQ),
                          output_file = output.tex)
+
+def get_chr_len(chrom, sizes_file):
+    with open(sizes_file,'r') as inf:
+        for line in inf:
+            el = line.strip().split('\t')
+            if chrom == el[0]:
+                return int(el[1])
+
+        print("CHROMOSOME SIZE NOT FOUND")
+        exit(1)
+
+rule filter_random_positions:
+    params: job_name = 'filter_random_positions.{build}.{chrom}',
+    input:  vcfgz = 'data/{individual}.{build}/random_positions/{chrom}.whole_chrom.vcf.gz',
+            tbi   = 'data/{individual}.{build}/random_positions/{chrom}.whole_chrom.vcf.gz.tbi',
+            bed   = 'data/{individual}.{build}/variants/ground_truth/region_filter.bed'
+    output: vcfgz = 'data/{individual}.{build,(1000g|hg38)}/random_positions/{chrom}.confident_only.vcf.gz'
+    shell: '{RTGTOOLS} RTG_MEM=12g vcffilter --bed-regions={input.bed} -i {input.vcfgz} -o {output.vcfgz}'
+
+rule generate_random_positions:
+    params: job_name = 'generate_random_positions.{chrom}.{build}'
+    input: sizes_file = 'genome_tracks/{build}.chrom.sizes.txt'
+    output: vcf = 'data/{individual}.{build,(1000g|hg38)}/random_positions/{chrom}.whole_chrom.vcf',
+            vcfgz = 'data/{individual}.{build,(1000g|hg38)}/random_positions/{chrom}.whole_chrom.vcf.gz',
+    run:
+        chrom_name = chr_prefix(wildcards.chrom, wildcards.build)
+        chrlen = get_chr_len(chrom_name, input.sizes_file)
+        generate_random_calls(chrom_name, chrlen, 100000, output.vcf)
+        shell('bgzip -c {output.vcf} > {output.vcfgz}')
 
 rule rtg_filter_SNVs_ground_truth:
     params: job_name = 'rtg_filter_SNVs_ground_truth.{individual}.{build}',
@@ -211,7 +283,7 @@ rule filter_illumina_SNVs:
 rule combine_chrom:
     params: job_name = 'combine_chroms.{individual}.{build}.{calls_name}',
     input: expand('data/{{individual}}.{{build}}/variants/{{calls_name}}/{chrom}.vcf',chrom=chroms)
-    output: 'data/{individual}.{build}/variants/{calls_name}/all.vcf'
+    output: 'data/{individual}.{build}/variants/{calls_name,(illumina|reaper.pacbio).+}/all.vcf'
     shell:
         '''
         grep -P '^#' {input[0]} > {output}; # grep header
@@ -304,7 +376,6 @@ rule call_variants_Illumina:
           > {output.vcf}
         ''')
         t2 = time.time()
-
         with open(output.runtime,'w') as outf:
             print(seconds_to_formatted_time(t2-t1),file=outf)
 
@@ -314,17 +385,31 @@ rule combine_coverages:
     output: 'data/{individual}.{build}/aligned_reads/{tech}/genomecov_histograms_mapq{mapq}/{info}__all.txt'
     shell: 'cat {input} > {output}'
 
-rule generate_coverage_histogram:
-    params: job_name = 'generate_coverage_histogram.{individual}.{build}.{tech}.{info}.MAPQ{mapq}.{chrom}'
-    input:  'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam'
-    output: 'data/{individual}.{build}/aligned_reads/{tech}/genomecov_histograms_mapq{mapq}/{info}__{chrom,(\d+)}.txt'
+rule generate_coverage_histogram_illumina:
+    params: job_name = 'generate_coverage_histogram_illumina.{individual}.{build}.MAPQ{mapq}.{chrom}'
+    input:  bam = 'data/{individual}.{build}/aligned_reads/illumina/illumina.30x.bam',
+            bai = 'data/{individual}.{build}/aligned_reads/illumina/illumina.30x.bam.bai'
+    output: 'data/{individual}.{build}/aligned_reads/illumina/genomecov_histograms_mapq{mapq}/illumina.30x__{chrom,(\d+)}.txt'
+    run:
+        w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
+        shell('''
+        {SAMTOOLS} view -F 3844 -q {wildcards.mapq} {input.bam} -hb {w_chrom} | \
+        {BEDTOOLS} genomecov -ibam - | \
+        grep -P '^{w_chrom}\\t' > {output}
+        ''')
+
+rule generate_coverage_histogram_pacbio:
+    params: job_name = 'generate_coverage_histogram_pacbio.{individual}.{build}.MAPQ{mapq}.{chrom}'
+    input:  bam = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.blasr.{chrom}.30x.bam',
+            bai = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.blasr.{chrom}.30x.bam.bai'
+    output: 'data/{individual}.{build}/aligned_reads/pacbio/genomecov_histograms_mapq{mapq}/pacbio.blasr.all.30x__{chrom,(\d+)}.txt'
     run:
         w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
         # NA12878 is an exception, actually has hg19 chrom names instead of 1000g chrom names
         if wildcards.individual == 'NA12878' and wildcards.build == '1000g' and wildcards.tech=='pacbio':
             w_chrom = 'chr' + w_chrom
         shell('''
-        {SAMTOOLS} view -F 3844 -q {wildcards.mapq} {input} -hb {w_chrom} | \
+        {SAMTOOLS} view -F 3844 -q {wildcards.mapq} {input.bam} -hb {w_chrom} | \
         {BEDTOOLS} genomecov -ibam - | \
         grep -P '^{w_chrom}\\t' > {output}
         ''')
@@ -381,6 +466,17 @@ rule download_hg38_sdf:
         mv data/genomes/GRCh38.sdf data/genomes/hg38.sdf
         '''
 
+rule sort_hg38_genome_track:
+    params: job_name = 'sort_hg38_genome_track.{track}',
+    input: track = 'genome_tracks/{track}_hg38.unsorted.bed.gz',
+           genome_file = 'genome_tracks/hg38.chrom.sizes.txt'
+    output: track = 'genome_tracks/{track}_hg38.bed.gz',
+    shell:
+        '''
+        {BEDTOOLS} sort -faidx {input.genome_file} -i {input.track} | \
+        bgzip -c > {output.track}
+        '''
+
 rule convert_genome_track_to_1000g:
     params: job_name = 'convert_genome_track_to_1000g.{track}',
     input: track = 'genome_tracks/{track}_hg19.bed.gz',
@@ -389,7 +485,7 @@ rule convert_genome_track_to_1000g:
     shell:
         '''
         gunzip -c {input.track} | \
-        python3 filter_bed_chroms.py | \
+        python3 filter_bed_chroms.py --remove_chr | \
         {BEDTOOLS} sort -g {input.names} | \
         bgzip -c > {output.track}
         '''
@@ -433,8 +529,8 @@ rule bgzip_ground_truth:
 # bgzip bed
 rule bgzip_bed:
     params: job_name = 'bgzip_bed.{individual}.{build}.{calls_name}.{build}'
-    input: 'data/{individual}.{build}/variants/{calls_name}/region_filter.{build}.bed'
-    output: 'data/{individual}.{build}/variants/{calls_name}/region_filter.{build}.bed.gz'
+    input: 'data/{individual}.{build}/variants/{calls_name}/region_filter.bed'
+    output: 'data/{individual}.{build}/variants/{calls_name}/region_filter.bed.gz'
     shell:  '{BGZIP} -c {input} > {output}'
 
 # gunzip fasta
@@ -445,11 +541,11 @@ rule gunzip_fasta:
     shell:  'gunzip {input}'
 
 # gunzip_bed
-rule gunzip_bed:
-    params: job_name = lambda wildcards: 'gunzip_bed.{id}.{build}.{}'.format(str(wildcards.x).replace("/", "."))
-    input:  'data/{id}.{build}/{x}.bed.gz'
-    output: 'data/{id}.{build,(1000g|hg38)}/{x}.bed'
-    shell:  'gunzip -c {input} > {output}'
+#rule gunzip_bed:
+#    params: job_name = lambda wildcards: 'gunzip_bed.{id}.{build}.{}'.format(str(wildcards.x).replace("/", "."))
+#    input:  'data/{id}.{build}/{x}.bed.gz'
+#    output: 'data/{id}.{build,(1000g|hg38)}/{x}.bed'
+#    shell:  'gunzip -c {input} > {output}'
 
 # gunzip_bed
 rule gunzip_genome_tracks_bed:

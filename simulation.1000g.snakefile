@@ -21,43 +21,7 @@ import mapping_accuracy
 #                                   legendloc='lower left')
 
 ##################################################################################################################
-'''
-rule plot_pr_curve_simulation_segmental_duplications_compare_mappers:
-    params: job_name = 'plot_pr_curve_simulation_segmental_duplications_compare_mappers',
-            title = 'Simulated 40x Data: Using Different PacBio Mappers with Reaper in Segmental Duplications'
-    input:
-        bwa_q10 = 'data/simulation.1000g/vcfeval_segdup/reaper.pacbio.bwa.40x.-z_-q_10/{chrom}.done',
-        blasr_q10 = 'data/simulation.1000g/vcfeval_segdup/reaper.pacbio.blasr.40x.-z_-q_10/{chrom}.done',
-        minimap2_q10 = 'data/simulation.1000g/vcfeval_segdup/reaper.pacbio.minimap2.40x.-z_-q_10/{chrom}.done',
-        ngmlr_q10 = 'data/simulation.1000g/vcfeval_segdup/reaper.pacbio.ngmlr.40x.-z_-q_10/{chrom}.done',
-        bwa_q20 = 'data/simulation.1000g/vcfeval_segdup/reaper.pacbio.bwa.40x.-z_-q_20/{chrom}.done',
-        blasr_q20 = 'data/simulation.1000g/vcfeval_segdup/reaper.pacbio.blasr.40x.-z_-q_20/{chrom}.done',
-        minimap2_q20 = 'data/simulation.1000g/vcfeval_segdup/reaper.pacbio.minimap2.40x.-z_-q_20/{chrom}.done',
-        ngmlr_q20 = 'data/simulation.1000g/vcfeval_segdup/reaper.pacbio.ngmlr.40x.-z_-q_20/{chrom}.done',
-        bwa_q30 = 'data/simulation.1000g/vcfeval_segdup/reaper.pacbio.bwa.40x.-z_-q_30/{chrom}.done',
-        blasr_q30 = 'data/simulation.1000g/vcfeval_segdup/reaper.pacbio.blasr.40x.-z_-q_30/{chrom}.done',
-        minimap2_q30 = 'data/simulation.1000g/vcfeval_segdup/reaper.pacbio.minimap2.40x.-z_-q_30/{chrom}.done',
-        ngmlr_q30 = 'data/simulation.1000g/vcfeval_segdup/reaper.pacbio.ngmlr.40x.-z_-q_30/{chrom}.done',
-    output:
-        png = 'data/plots/compare_mappers_reaper_in_segdups_simulation_{chrom,(\d+|X|Y|all)}.png'
-    run:
-        ptf.plot_vcfeval([input.bwa_q10[:-5], input.bwa_q20[:-5], input.bwa_q30[:-5],
-                          input.blasr_q10[:-5], input.blasr_q20[:-5], input.blasr_q30[:-5],
-                          input.minimap2_q10[:-5], input.minimap2_q20[:-5], input.minimap2_q30[:-5],
-                          input.ngmlr_q10[:-5], input.ngmlr_q20[:-5], input.ngmlr_q30[:-5]],
-                           ['Reaper, BWA, mapq >= 10', 'Reaper, BWA, mapq >= 20', 'Reaper, BWA, mapq >= 30',
-                           'Reaper, BLASR, mapq >= 10', 'Reaper, BLASR, mapq >= 20', 'Reaper, BLASR, mapq >= 30',
-                           'Reaper, MINIMAP2, mapq >= 10', 'Reaper, MINIMAP2, mapq >= 20', 'Reaper, MINIMAP2, mapq >= 30',
-                           'Reaper, NGMLR, mapq >= 10', 'Reaper, NGMLR, mapq >= 20', 'Reaper, NGMLR, mapq >= 30',],
-                           output.png,params.title,
-                           colors=['#f78383','#ff4949','#ff0000',
-                           '#9997fc','#6360ff','#0400ff',
-                           '#a3a3a3','#5b5b5b','#000000',
-                           '#93ff9b','#60ff6b','#00ff11'],
-                           xlim=(0,1.0),
-                           ylim=(0.98,1.0),
-                           legendloc='upper right')
-'''
+
 # VCFeval and plotting for segmental duplications as opposed to whole genome
 rule plot_pr_curve_simulation_segmental_duplications:
     params: job_name = 'plot_pr_curve_simulation_segmental_duplications',
@@ -96,8 +60,7 @@ rule plot_pr_curve_simulation_segmental_duplications:
                                    ylim=(0.98,1.0),
                                    legendloc='upper right')
 
-# NOTE!!! we are filtering out indels but also MNPs which we may call as multiple SNVs
-# therefore this isn't totally correct and it'd probably be better to use ROC with indels+SNVs VCF.
+
 rule vcfeval_rtgtools_segmental_duplications:
     params: job_name = 'vcfeval_rtgtools_segdup.{dataset}.1000g.{calls_name}.{chrom}',
             region_arg = lambda wildcards: '--region={}'.format(wildcards.chrom) if wildcards.chrom != 'all' else ''
@@ -105,7 +68,7 @@ rule vcfeval_rtgtools_segmental_duplications:
             calls_ix = 'data/{dataset}.1000g/variants/{calls_name}/{chrom}.vcf.gz.tbi',
             ground_truth = 'data/{dataset}.1000g/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
             ground_truth_ix = 'data/{dataset}.1000g/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz.tbi',
-            region_filter ='genome_tracks/segmental_duplications_0.99_similar_1000g.bed',
+            region_filter ='genome_tracks/segmental_duplications_0.95_similar_1000g.bed',
             tg_sdf = 'data/genomes/1000g.sdf'
     output: done = 'data/{dataset}.1000g/vcfeval_segdup/{calls_name}/{chrom,(\d+|X|Y|all)}.done'
     shell:
@@ -132,12 +95,42 @@ rule calculate_mapping_accuracy:
         with open(output.acc,'w') as outf:
             print('mapping_accuracy={}'.format(acc),file=outf)
 
-rule filter_chr1_segdup:
-    params: job_name = 'filter_chr1_segdup.{chrom}'
+#rule filter_simulation_segdup_blasr:
+#    params: job_name = 'filter_simulation_segdup.blasr.{chrom}'
+#    input:  bam = 'data/simulation.1000g/aligned_reads/pacbio/pacbio.blasr.{chrom}.60x.bam'
+#            bed = 'genome_tracks/segmental_duplications_{frac}_similar_1000g.bed'
+#    output: bam = 'data/simulation.1000g/aligned_reads/pacbio/pacbio.blasr.{chrom}.60x.segdup{frac}.bam'
+#    shell: '{BEDTOOLS} intersect -a {input.bam} -b {input.bed} -wa > {output.bam}'
+
+
+rule combine_segdup_stats:
+    params: job_name = 'combine_segdup_stats'
+    input:  expand('data/simulation.1000g/aligned_reads/pacbio/segdup95_stats/{chrom}.stats.bed',chrom=chroms)
+    output: 'data/simulation.1000g/aligned_reads/pacbio/segdup95_stats/all.stats.bed'
+    shell: 'cat {input} > {output}'
+
+rule get_segdup_stats:
+    params: job_name = 'get_segdup_stats.{chrom}'
+    input:  bam = 'data/simulation.1000g/aligned_reads/pacbio/pacbio.blasr.{chrom}.60x.filtered.mapq30.segdup95.bam',
+            bai = 'data/simulation.1000g/aligned_reads/pacbio/pacbio.blasr.{chrom}.60x.filtered.mapq30.segdup95.bam.bai',
+            bed = 'genome_tracks/segmental_duplications_0.95_similar_1000g.bed'
+    output: bed = 'data/simulation.1000g/aligned_reads/pacbio/segdup95_stats/{chrom}.stats.bed'
+    run:
+        mapping_accuracy.mapping_accuracy_and_completeness_segdups(bamfile=input.bam,
+                                                                   bedfile=input.bed,
+                                                                   outfile=output.bed,
+                                                                   chrom_filter=wildcards.chrom,
+                                                                   min_mapq=30,
+                                                                   delta=5000)
+
+rule filter_simulation_segdup_blasr:
+    params: job_name = 'filter_simulation_segdup.blasr.{chrom}'
     input:  bam = 'data/simulation.1000g/aligned_reads/pacbio/pacbio.blasr.{chrom}.60x.bam',
-            bed = 'genome_tracks/segmental_duplications_0.99_similar_1000g.bed'
-    output: bam = 'data/simulation.1000g/aligned_reads/pacbio/pacbio.blasr.{chrom}.60x.segdup.bam'
-    shell: '{BEDTOOLS} intersect -a {input.bam} -b {input.bed} -wa > {output.bam}'
+            bed = 'genome_tracks/segmental_duplications_0.95_similar_1000g.bed'
+    output: bam = 'data/simulation.1000g/aligned_reads/pacbio/pacbio.blasr.{chrom}.60x.filtered.mapq30.segdup95.bam'
+    shell: '{SAMTOOLS} view -hb -F 3844 -q 30 {input.bam} -L {input.bed} > {output.bam}'
+
+####################################################################################################################
 
 rule plot_pr_curve_simulation:
     params: job_name = 'plot_pr_curve_simulation',
@@ -347,7 +340,7 @@ rule rename_illumina_bam:
 rule subsample_simulated_illumina_reads:
     params: job_name = 'subsample_simulated_illumina.{cov}x'
     input: bam = 'data/simulation.1000g/aligned_reads/illumina/illumina.60x.bam',
-    output: bam = temp('data/simulation.1000g/aligned_reads/illumina/illumina.{cov,(20|30|40)}x.bam')
+    output: bam = 'data/simulation.1000g/aligned_reads/illumina/illumina.{cov,(20|30|40)}x.bam'
     run:
         subsample_frac = float(wildcards.cov) / 60.0
         shell('{SAMTOOLS} view -hb {input.bam} -s {subsample_frac} > {output.bam}')
@@ -356,7 +349,7 @@ rule subsample_simulated_illumina_reads:
 rule subsample_simulated_pacbio_reads:
     params: job_name = 'subsample_simulated_pacbio.{aligner}.{cov}x'
     input: bam = 'data/simulation.1000g/aligned_reads/pacbio/pacbio.{aligner}.all.60x.bam',
-    output: bam = temp('data/simulation.1000g/aligned_reads/pacbio/pacbio.{aligner}.all.{cov,(20|30|40)}x.bam')
+    output: bam = 'data/simulation.1000g/aligned_reads/pacbio/pacbio.{aligner}.all.{cov,(20|30|40)}x.bam'
     run:
         subsample_frac = float(wildcards.cov) / 60.0
         shell('{SAMTOOLS} view -hb {input.bam} -s {subsample_frac} > {output.bam}')
@@ -372,7 +365,7 @@ rule split_simulated_pacbio_bam:
 rule merge_simulated_bams:
     params: job_name = 'merge_simulated_bams.{datatype}.60x.{aligner}',
     input: expand('data/simulation.1000g/aligned_reads/{{datatype}}/{{aligner}}_separate_chrom/{chrom}.hap{h}.{{datatype}}.60x.bam',h=[1,2],chrom=chroms)
-    output: temp('data/simulation.1000g/aligned_reads/{datatype}/{datatype}.{aligner}.all.60x.bam')
+    output: 'data/simulation.1000g/aligned_reads/{datatype}/{datatype}.{aligner}.all.60x.bam'
     shell: '{SAMTOOLS} merge -O bam {output} {input}'
 
 rule simulate_illumina:

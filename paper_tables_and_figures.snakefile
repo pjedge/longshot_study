@@ -1,47 +1,9 @@
 from paper_tables_and_figures import genomes_table_files
 
-'''
-rule plot_pr_curve_varyQ:
-    params: job_name = 'plot_pr_curve_varyQ',
-            title = 'Impact of Haplotype Q Parameter'
+rule plot_true_indel_FP_fixed_GQ:
+    params: job_name = 'plot_true_indel_FP_fixed_GQ',
     input:
-        NA12878_30x_Q50 = 'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-Q_50/{chrom}.done',
-        NA12878_30x_Q20 = 'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-Q_20/{chrom}.done',
-        NA12878_30x_Q1 = 'data/NA12878/vcfeval/reaper.pacbio.blasr.30x.-z_-Q_1/{chrom}.done',
-        NA12878_20x_Q50 = 'data/NA12878/vcfeval/reaper.pacbio.blasr.20x.-z_-Q_50/{chrom}.done',
-        NA12878_20x_Q20 = 'data/NA12878/vcfeval/reaper.pacbio.blasr.20x.-z_-Q_20/{chrom}.done',
-        NA12878_20x_Q1 = 'data/NA12878/vcfeval/reaper.pacbio.blasr.20x.-z_-Q_1/{chrom}.done',
-    output:
-        png = 'data/plots/effect_of_Q_param_PRcurve_{chrom}.png'
-    run:
-        ptf.plot_vcfeval([input.NA12878_30x_Q50[:-5], input.NA12878_20x_Q50[:-5],
-                          input.NA12878_30x_Q20[:-5], input.NA12878_20x_Q20[:-5],
-                          input.NA12878_30x_Q1[:-5], input.NA12878_20x_Q1[:-5]],
-                         ['NA12878, 30x (Q50)', 'NA12878, 20x (Q50)',
-                          'NA12878, 30x (Q20)', 'NA12878, 20x (Q20)',
-                          'NA12878, 30x (Q1)', 'NA12878, 20x (Q1)'],
-                           output.png,params.title,
-                           colors=['#ff0000','#ff4f4f', # red
-                                   '#ffff02','#ffff6b', #blue
-                                   '#0400fc','#514efc'], #yellow
-                           xlim=(0.85,1.0),ylim=(0.985,1.0))
-
-rule plot_pr_curve_3_mappers:
-    params: job_name = 'plot_pr_curve_3_mappers',
-            title = 'Effect of Mapper on Precision/Recall for Reaper\n32x PacBio data for AJ Father, chr20'
-    input:
-        NA24149_blasr = 'data/NA24149/vcfeval/reaper.pacbio.blasr.32x.-z/20.done',
-        NA24149_ngmlr = 'data/NA24149/vcfeval/reaper.pacbio.ngmlr.32x.-z/20.done',
-        NA24149_bwa = 'data/NA24149/vcfeval/reaper.pacbio.bwa.32x.-z/20.done',
-    output:
-        png = 'data/plots/PR_curve_3_mappers_AJ_father_chr20.png'
-    run:
-        ptf.plot_vcfeval([input.NA24149_blasr[:-5],input.NA24149_ngmlr[:-5],input.NA24149_bwa[:-5]],
-                         ['BLASR', 'NGMLR', 'BWA'],
-                           output.png,params.title,
-                           colors=['k','b','r'],
-                           xlim=(0.5,1.0),ylim=(0.5,1.0))
-'''
+        expand('data/output/variant_analysis_fp_fn__NA24385.hg38__GQ50__reaper.pacbio.blasr.{cov}x.-z__1.tex',cov=[20,30,40,50,69])
 
 rule plot_pr_curve_impact_of_haplotyping:
     params: job_name = 'plot_pr_curve_impact_of_haplotyping',
@@ -94,26 +56,26 @@ rule plot_pr_curve_NA24385_impact_of_haplotyping:
                            xlim=(0.70,1.0),ylim=(0.975,1.0))
 
 rule make_four_genomes_table:
-    params: job_name = 'make_four_genomes_table.aj_trio_{aj_trio_build}_{aj_trio_aligner}.{chrom}.{GQ}'
+    params: job_name = 'make_four_genomes_table.aj_trio_{aj_trio_build}_{aj_trio_aligner}.{chrom}'
     input:
         NA12878_vcfeval = 'data/NA12878.1000g/vcfeval/reaper.pacbio.blasr.44x.-z/{chrom}.done',
-        NA12878_vcfstats_genome = 'data/NA12878.1000g/variants/reaper.pacbio.blasr.44x.-z/{chrom}.GQ{GQ}.vcf.stats',
-        NA12878_vcfstats_outside_giab = 'data/NA12878.1000g/variants/reaper.pacbio.blasr.44x.-z/{chrom}.outside_GIAB.GQ{GQ}.vcf.stats',
+        NA12878_vcfstats_genome = 'data/NA12878.1000g/variants/reaper.pacbio.blasr.44x.-z/{chrom}.GQ44.vcf.stats',
+        NA12878_vcfstats_outside_giab = 'data/NA12878.1000g/variants/reaper.pacbio.blasr.44x.-z/{chrom}.outside_GIAB.GQ44.vcf.stats',
         NA12878_runtime = 'data/NA12878.1000g/variants/reaper.pacbio.blasr.44x.-z/{chrom}.vcf.runtime',
         NA24385_vcfeval = 'data/NA24385.{aj_trio_build}/vcfeval/reaper.pacbio.{aj_trio_aligner}.69x.-z/{chrom}.done',
-        NA24385_vcfstats_genome = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.69x.-z/{chrom}.GQ{GQ}.vcf.stats',
-        NA24385_vcfstats_outside_giab = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.69x.-z/{chrom}.outside_GIAB.GQ{GQ}.vcf.stats',
+        NA24385_vcfstats_genome = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.69x.-z/{chrom}.GQ69.vcf.stats',
+        NA24385_vcfstats_outside_giab = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.69x.-z/{chrom}.outside_GIAB.GQ69.vcf.stats',
         NA24385_runtime = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.69x.-z/{chrom}.vcf.runtime',
         NA24149_vcfeval = 'data/NA24149.{aj_trio_build}/vcfeval/reaper.pacbio.{aj_trio_aligner}.32x.-z/{chrom}.done',
-        NA24149_vcfstats_genome = 'data/NA24149.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.32x.-z/{chrom}.GQ{GQ}.vcf.stats',
-        NA24149_vcfstats_outside_giab = 'data/NA24149.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.32x.-z/{chrom}.outside_GIAB.GQ{GQ}.vcf.stats',
+        NA24149_vcfstats_genome = 'data/NA24149.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.32x.-z/{chrom}.GQ32.vcf.stats',
+        NA24149_vcfstats_outside_giab = 'data/NA24149.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.32x.-z/{chrom}.outside_GIAB.GQ32.vcf.stats',
         NA24149_runtime = 'data/NA24149.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.32x.-z/{chrom}.vcf.runtime',
         NA24143_vcfeval = 'data/NA24143.{aj_trio_build}/vcfeval/reaper.pacbio.{aj_trio_aligner}.30x.-z/{chrom}.done',
-        NA24143_vcfstats_genome = 'data/NA24143.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.30x.-z/{chrom}.GQ{GQ}.vcf.stats',
-        NA24143_vcfstats_outside_giab = 'data/NA24143.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.30x.-z/{chrom}.outside_GIAB.GQ{GQ}.vcf.stats',
+        NA24143_vcfstats_genome = 'data/NA24143.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.30x.-z/{chrom}.GQ30.vcf.stats',
+        NA24143_vcfstats_outside_giab = 'data/NA24143.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.30x.-z/{chrom}.outside_GIAB.GQ30.vcf.stats',
         NA24143_runtime = 'data/NA24143.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.30x.-z/{chrom}.vcf.runtime',
     output:
-        table = 'data/output/four_GIAB_genomes_table.aj_trio_{aj_trio_build}_{aj_trio_aligner}.{chrom}.GQ{GQ}.tex'
+        table = 'data/output/four_GIAB_genomes_table.aj_trio_{aj_trio_build}_{aj_trio_aligner}.{chrom}.tex'
     run:
         NA12878_table_files = genomes_table_files(input.NA12878_vcfeval[:-5],
                                                   input.NA12878_vcfstats_genome,
@@ -136,49 +98,49 @@ rule make_four_genomes_table:
                                                   input.NA24143_runtime)
         ptf.make_table_4_genomes(NA12878_table_files, NA24385_table_files,
                                  NA24149_table_files, NA24143_table_files,
-                                 float(wildcards.GQ), output.table)
+                                 [44,69,32,30], output.table)
 
 rule make_four_genomes_table_extended:
-    params: job_name = 'make_four_genomes_table_extended.aj_trio_{aj_trio_build}_{aj_trio_aligner}.{chrom}.{GQ}'
+    params: job_name = 'make_four_genomes_table_extended.aj_trio_{aj_trio_build}_{aj_trio_aligner}.{chrom}'
     input:
         NA12878_30x_vcfeval = 'data/NA12878.1000g/vcfeval/reaper.pacbio.blasr.30x.-z/{chrom}.done',
-        NA12878_30x_vcfstats_genome = 'data/NA12878.1000g/variants/reaper.pacbio.blasr.30x.-z/{chrom}.GQ{GQ}.vcf.stats',
-        NA12878_30x_vcfstats_outside_giab = 'data/NA12878.1000g/variants/reaper.pacbio.blasr.30x.-z/{chrom}.outside_GIAB.GQ{GQ}.vcf.stats',
+        NA12878_30x_vcfstats_genome = 'data/NA12878.1000g/variants/reaper.pacbio.blasr.30x.-z/{chrom}.GQ30.vcf.stats',
+        NA12878_30x_vcfstats_outside_giab = 'data/NA12878.1000g/variants/reaper.pacbio.blasr.30x.-z/{chrom}.outside_GIAB.GQ30.vcf.stats',
         NA12878_30x_runtime = 'data/NA12878.1000g/variants/reaper.pacbio.blasr.30x.-z/{chrom}.vcf.runtime',
         NA12878_44x_vcfeval = 'data/NA12878.1000g/vcfeval/reaper.pacbio.blasr.44x.-z/{chrom}.done',
-        NA12878_44x_vcfstats_genome = 'data/NA12878.1000g/variants/reaper.pacbio.blasr.44x.-z/{chrom}.GQ{GQ}.vcf.stats',
-        NA12878_44x_vcfstats_outside_giab = 'data/NA12878.1000g/variants/reaper.pacbio.blasr.44x.-z/{chrom}.outside_GIAB.GQ{GQ}.vcf.stats',
+        NA12878_44x_vcfstats_genome = 'data/NA12878.1000g/variants/reaper.pacbio.blasr.44x.-z/{chrom}.GQ44.vcf.stats',
+        NA12878_44x_vcfstats_outside_giab = 'data/NA12878.1000g/variants/reaper.pacbio.blasr.44x.-z/{chrom}.outside_GIAB.GQ44.vcf.stats',
         NA12878_44x_runtime = 'data/NA12878.1000g/variants/reaper.pacbio.blasr.44x.-z/{chrom}.vcf.runtime',
         NA24385_20x_vcfeval = 'data/NA24385.{aj_trio_build}/vcfeval/reaper.pacbio.{aj_trio_aligner}.20x.-z/{chrom}.done',
-        NA24385_20x_vcfstats_genome = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.20x.-z/{chrom}.GQ{GQ}.vcf.stats',
-        NA24385_20x_vcfstats_outside_giab = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.20x.-z/{chrom}.outside_GIAB.GQ{GQ}.vcf.stats',
+        NA24385_20x_vcfstats_genome = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.20x.-z/{chrom}.GQ20.vcf.stats',
+        NA24385_20x_vcfstats_outside_giab = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.20x.-z/{chrom}.outside_GIAB.GQ20.vcf.stats',
         NA24385_20x_runtime = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.20x.-z/{chrom}.vcf.runtime',
         NA24385_30x_vcfeval = 'data/NA24385.{aj_trio_build}/vcfeval/reaper.pacbio.{aj_trio_aligner}.30x.-z/{chrom}.done',
-        NA24385_30x_vcfstats_genome = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.30x.-z/{chrom}.GQ{GQ}.vcf.stats',
-        NA24385_30x_vcfstats_outside_giab = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.30x.-z/{chrom}.outside_GIAB.GQ{GQ}.vcf.stats',
+        NA24385_30x_vcfstats_genome = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.30x.-z/{chrom}.GQ30.vcf.stats',
+        NA24385_30x_vcfstats_outside_giab = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.30x.-z/{chrom}.outside_GIAB.GQ30.vcf.stats',
         NA24385_30x_runtime = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.30x.-z/{chrom}.vcf.runtime',
         NA24385_40x_vcfeval = 'data/NA24385.{aj_trio_build}/vcfeval/reaper.pacbio.{aj_trio_aligner}.40x.-z/{chrom}.done',
-        NA24385_40x_vcfstats_genome = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.40x.-z/{chrom}.GQ{GQ}.vcf.stats',
-        NA24385_40x_vcfstats_outside_giab = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.40x.-z/{chrom}.outside_GIAB.GQ{GQ}.vcf.stats',
+        NA24385_40x_vcfstats_genome = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.40x.-z/{chrom}.GQ40.vcf.stats',
+        NA24385_40x_vcfstats_outside_giab = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.40x.-z/{chrom}.outside_GIAB.GQ40.vcf.stats',
         NA24385_40x_runtime = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.40x.-z/{chrom}.vcf.runtime',
         NA24385_50x_vcfeval = 'data/NA24385.{aj_trio_build}/vcfeval/reaper.pacbio.{aj_trio_aligner}.50x.-z/{chrom}.done',
-        NA24385_50x_vcfstats_genome = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.50x.-z/{chrom}.GQ{GQ}.vcf.stats',
-        NA24385_50x_vcfstats_outside_giab = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.50x.-z/{chrom}.outside_GIAB.GQ{GQ}.vcf.stats',
+        NA24385_50x_vcfstats_genome = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.50x.-z/{chrom}.GQ50.vcf.stats',
+        NA24385_50x_vcfstats_outside_giab = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.50x.-z/{chrom}.outside_GIAB.GQ50.vcf.stats',
         NA24385_50x_runtime = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.50x.-z/{chrom}.vcf.runtime',
         NA24385_69x_vcfeval = 'data/NA24385.{aj_trio_build}/vcfeval/reaper.pacbio.{aj_trio_aligner}.69x.-z/{chrom}.done',
-        NA24385_69x_vcfstats_genome = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.69x.-z/{chrom}.GQ{GQ}.vcf.stats',
-        NA24385_69x_vcfstats_outside_giab = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.69x.-z/{chrom}.outside_GIAB.GQ{GQ}.vcf.stats',
+        NA24385_69x_vcfstats_genome = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.69x.-z/{chrom}.GQ69.vcf.stats',
+        NA24385_69x_vcfstats_outside_giab = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.69x.-z/{chrom}.outside_GIAB.GQ69.vcf.stats',
         NA24385_69x_runtime = 'data/NA24385.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.69x.-z/{chrom}.vcf.runtime',
         NA24149_32x_vcfeval = 'data/NA24149.{aj_trio_build}/vcfeval/reaper.pacbio.{aj_trio_aligner}.32x.-z/{chrom}.done',
-        NA24149_32x_vcfstats_genome = 'data/NA24149.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.32x.-z/{chrom}.GQ{GQ}.vcf.stats',
-        NA24149_32x_vcfstats_outside_giab = 'data/NA24149.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.32x.-z/{chrom}.outside_GIAB.GQ{GQ}.vcf.stats',
+        NA24149_32x_vcfstats_genome = 'data/NA24149.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.32x.-z/{chrom}.GQ32.vcf.stats',
+        NA24149_32x_vcfstats_outside_giab = 'data/NA24149.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.32x.-z/{chrom}.outside_GIAB.GQ32.vcf.stats',
         NA24149_32x_runtime = 'data/NA24149.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.32x.-z/{chrom}.vcf.runtime',
         NA24143_30x_vcfeval = 'data/NA24143.{aj_trio_build}/vcfeval/reaper.pacbio.{aj_trio_aligner}.30x.-z/{chrom}.done',
-        NA24143_30x_vcfstats_genome = 'data/NA24143.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.30x.-z/{chrom}.GQ{GQ}.vcf.stats',
-        NA24143_30x_vcfstats_outside_giab = 'data/NA24143.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.30x.-z/{chrom}.outside_GIAB.GQ{GQ}.vcf.stats',
+        NA24143_30x_vcfstats_genome = 'data/NA24143.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.30x.-z/{chrom}.GQ30.vcf.stats',
+        NA24143_30x_vcfstats_outside_giab = 'data/NA24143.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.30x.-z/{chrom}.outside_GIAB.GQ30.vcf.stats',
         NA24143_30x_runtime = 'data/NA24143.{aj_trio_build}/variants/reaper.pacbio.{aj_trio_aligner}.30x.-z/{chrom}.vcf.runtime',
     output:
-        table = 'data/output/four_GIAB_genomes_table_extended.aj_trio_{aj_trio_build}_{aj_trio_aligner}.{chrom}.GQ{GQ}.tex'
+        table = 'data/output/four_GIAB_genomes_table_extended.aj_trio_{aj_trio_build}_{aj_trio_aligner}.{chrom}.tex'
     run:
         NA12878_30x_table_files = genomes_table_files(input.NA12878_30x_vcfeval[:-5],
                                                   input.NA12878_30x_vcfstats_genome,
@@ -230,7 +192,7 @@ rule make_four_genomes_table_extended:
                                  NA24385_69x_table_files,
                                  NA24149_32x_table_files,
                                  NA24143_30x_table_files,
-                                 float(wildcards.GQ), output.table)
+                                 [30,44,20,30,40,50,69,32,30], output.table)
 
 rule vcf_stats:
     params: job_name = lambda wildcards: 'vcf_stats.{}'.format(str(wildcards.x).replace("/", "."))
@@ -252,7 +214,7 @@ rule filter_vcf_GQ:
     params: job_name = 'filter_vcf_GQ.{dataset}.{calls_name}.{chrom}.GQ{GQ}'
     input:  vcfgz = 'data/{dataset}/variants/{calls_name}/{chrom}.vcf.gz'
     output: vcfgz = 'data/{dataset}/variants/{calls_name}/{chrom}.GQ{GQ,\d+}.vcf.gz',
-    shell: '{RTGTOOLS} RTG_MEM=12g vcffilter -g {wildcards.GQ} -i {input.vcfgz} -o {output.vcfgz}'
+    shell: '{RTGTOOLS} RTG_MEM=12g vcffilter --keep-filter="PASS","." -g {wildcards.GQ} -i {input.vcfgz} -o {output.vcfgz}'
 
 sim_covs = [20,30,40,60]
 rule plot_simulation_pr_bars:
@@ -307,16 +269,16 @@ rule plot_simulation_pr_bars_extended:
         )
 
 rule plot_depth_of_mapped_vs_breadth:
-    params: job_name = 'plot_depth_of_mapped_vs_breadth.NA12878.30x',
-    input: illumina_mapq0 = 'data/NA12878.1000g/aligned_reads/illumina/genomecov_histograms_mapq0/illumina.30x__all.txt',
-           illumina_mapq10 = 'data/NA12878.1000g/aligned_reads/illumina/genomecov_histograms_mapq10/illumina.30x__all.txt',
-           illumina_mapq20 = 'data/NA12878.1000g/aligned_reads/illumina/genomecov_histograms_mapq20/illumina.30x__all.txt',
-           illumina_mapq30 = 'data/NA12878.1000g/aligned_reads/illumina/genomecov_histograms_mapq30/illumina.30x__all.txt',
-           pacbio_mapq0 = 'data/NA12878.1000g/aligned_reads/pacbio/genomecov_histograms_mapq0/pacbio.blasr.all.30x__all.txt',
-           pacbio_mapq10 = 'data/NA12878.1000g/aligned_reads/pacbio/genomecov_histograms_mapq10/pacbio.blasr.all.30x__all.txt',
-           pacbio_mapq20 = 'data/NA12878.1000g/aligned_reads/pacbio/genomecov_histograms_mapq20/pacbio.blasr.all.30x__all.txt',
-           pacbio_mapq30 = 'data/NA12878.1000g/aligned_reads/pacbio/genomecov_histograms_mapq30/pacbio.blasr.all.30x__all.txt',
-    output: png = 'data/plots/depth_vs_breadth_mappability.NA12878.30x.png'
+    params: job_name = 'plot_depth_of_mapped_vs_breadth.simulation.30x',
+    input: illumina_mapq0 = 'data/simulation.1000g/aligned_reads/illumina/genomecov_histograms_mapq0/illumina.30x__all.txt',
+           illumina_mapq10 = 'data/simulation.1000g/aligned_reads/illumina/genomecov_histograms_mapq10/illumina.30x__all.txt',
+           illumina_mapq20 = 'data/simulation.1000g/aligned_reads/illumina/genomecov_histograms_mapq20/illumina.30x__all.txt',
+           illumina_mapq30 = 'data/simulation.1000g/aligned_reads/illumina/genomecov_histograms_mapq30/illumina.30x__all.txt',
+           pacbio_mapq0 = 'data/simulation.1000g/aligned_reads/pacbio/genomecov_histograms_mapq0/pacbio.blasr.all.30x__all.txt',
+           pacbio_mapq10 = 'data/simulation.1000g/aligned_reads/pacbio/genomecov_histograms_mapq10/pacbio.blasr.all.30x__all.txt',
+           pacbio_mapq20 = 'data/simulation.1000g/aligned_reads/pacbio/genomecov_histograms_mapq20/pacbio.blasr.all.30x__all.txt',
+           pacbio_mapq30 = 'data/simulation.1000g/aligned_reads/pacbio/genomecov_histograms_mapq30/pacbio.blasr.all.30x__all.txt',
+    output: png = 'data/plots/depth_vs_breadth_mappability.simulation.30x.png'
     run:
 
         inputs = [input.illumina_mapq0, input.illumina_mapq30, input.pacbio_mapq0, input.pacbio_mapq30]
@@ -352,14 +314,14 @@ rule plot_haplotyping_results:
     params: job_name = 'plot_haplotyping_results',
     input: reaper_NA12878_30x = 'data/NA12878.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.30x.-z.all.p',
            reaper_NA12878_44x = 'data/NA12878.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.44x.-z.all.p',
-           reaper_NA24385_69x = 'data/NA24385.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.69x.-z.all.p',
-           reaper_NA24149_32x = 'data/NA24149.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.32x.-z.all.p',
-           reaper_NA24143_30x = 'data/NA24143.1000g/reaper_haplotypes/hap_statistics/reaper.pacbio.bwamem.30x.-z.all.p',
+           reaper_NA24385_69x = 'data/NA24385.hg38/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.69x.-z.all.p',
+           reaper_NA24149_32x = 'data/NA24149.hg38/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.32x.-z.all.p',
+           reaper_NA24143_30x = 'data/NA24143.hg38/reaper_haplotypes/hap_statistics/reaper.pacbio.blasr.30x.-z.all.p',
            hapcut2_NA12878_30x = 'data/NA12878.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.30x.all.p',
            hapcut2_NA12878_44x = 'data/NA12878.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.44x.all.p',
-           hapcut2_NA24385_69x = 'data/NA24385.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.bwamem.69x.all.p',
-           hapcut2_NA24149_32x = 'data/NA24149.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.bwamem.32x.all.p',
-           hapcut2_NA24143_30x = 'data/NA24143.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.bwamem.30x.all.p',
+           hapcut2_NA24385_69x = 'data/NA24385.hg38/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.69x.all.p',
+           hapcut2_NA24149_32x = 'data/NA24149.hg38/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.32x.all.p',
+           hapcut2_NA24143_30x = 'data/NA24143.hg38/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.30x.all.p',
     output: png = 'data/plots/haplotyping_results_barplot.png'
     run:
         ptf.plot_haplotyping_results(reaper_errs=[input.reaper_NA12878_30x,
@@ -389,3 +351,16 @@ rule plot_precision_recall_bars_NA12878_NA24385_with_haplotypefree:
                                                        nohap_dirlist_NA12878=[x[:-5] for x in input.nohap_dirlist_NA12878],
                                                        gq_cutoffs_NA24385=[20,30,40,50,69],gq_cutoffs_NA12878=[30,44],
                                                        output_file=output.png)
+
+rule plot_fp_near_indel:
+    params: job_name = 'plot_fp_near_indel',
+    input: vcfevals = expand('data/NA24385.hg38/vcfeval/reaper.pacbio.blasr.{cov}x.-z/all.done',cov=[20,30,40,50,69]),
+           ground_truth_vcfgz = 'data/NA24385.hg38/variants/ground_truth/ground_truth.vcf.gz',
+           ground_truth_ix = 'data/NA24385.hg38/variants/ground_truth/ground_truth.vcf.gz.tbi',
+           fixed_gq_VCFstats = expand('data/NA24385.hg38/variants/reaper.pacbio.blasr.{cov}x.-z/all.GQ30.PASS.SNPs_ONLY.vcf.stats',cov=[20,30,40,50,69]),
+           scaled_gq_VCFstats = expand('data/NA24385.hg38/variants/reaper.pacbio.blasr.{cov}x.-z/all.GQ{cov}.PASS.SNPs_ONLY.vcf.stats',cov=[20,30,40,50,69]),
+    output: png = 'data/plots/plot_fp_near_indel.NA24385.hg38.png'
+    run:
+        fp_vcfs = [os.path.join(f[:-5], 'fp.vcf.gz') for f in input.vcfevals]
+        ptf.plot_fp_near_indel(fp_vcfs, input.fixed_gq_VCFstats, input.scaled_gq_VCFstats, input.ground_truth_vcfgz, output.png,
+                             cov=[20,30,40,50,69],fixed_gq=30, scaled_gqs=[20,30,40,50,69])

@@ -1,17 +1,22 @@
 import matplotlib as mpl
 mpl.use('Agg')
 from matplotlib import pyplot as plt
+import seaborn as sns
 import pickle
 import os
 import gzip
 import argparse
 import numpy as np
 import re
+import statistics
 from collections import namedtuple
 from collections import defaultdict
 import sys
+import pysam
+import pandas as pd
 sys.path.append('HapCUT2/utilities')
 import calculate_haplotype_statistics
+import random
 from analyze_variants import count_fp_near_true_indel
 
 mpl.rc('legend', fontsize=9)
@@ -545,12 +550,21 @@ def plot_precision_recall_bars_NA12878_NA24385(pacbio_dirlist_NA24385, illumina_
                     labelbottom=True, left=False, right=False, labelleft=True)
 
 
-    ind1 = [0,0.15,0.3,0.45,0.6]
-    ind2 = [0.75]
-    ind3 = [1.05,1.2]
-    ind4 = [1.35]
+    #ind1 = [0,0.15,0.3,0.45,0.6]
+    #ind2 = [0.75]
+    #ind3 = [1.05,1.2]
+    #ind4 = [1.35]
+
+    ind1 = [0,0.15,0.3,0.45]
+    ind2 = [0.6]
+    ind3 = [0.9,1.05]
+    ind4 = [1.2]
+
 
     pacbio_precisions_NA24385, pacbio_recalls_NA24385 = zip(*[get_precision_recall(d, g) for d,g in zip(pacbio_dirlist_NA24385, gq_cutoffs_NA24385)])
+    #truncate because we no longer want to plot 69x
+    pacbio_precisions_NA24385 = pacbio_precisions_NA24385[:-1]
+    pacbio_recalls_NA24385 = pacbio_recalls_NA24385[:-1]
     illumina_precisions_NA24385, illumina_recalls_NA24385 = zip(*[get_precision_recall(d, gq_cutoff_illumina) for d in illumina_dirlist_NA24385])
     pacbio_precisions_NA12878, pacbio_recalls_NA12878 = zip(*[get_precision_recall(d, g) for d,g in zip(pacbio_dirlist_NA12878, gq_cutoffs_NA12878)])
     illumina_precisions_NA12878, illumina_recalls_NA12878 = zip(*[get_precision_recall(d, gq_cutoff_illumina) for d in illumina_dirlist_NA12878])
@@ -563,7 +577,7 @@ def plot_precision_recall_bars_NA12878_NA24385(pacbio_dirlist_NA24385, illumina_
     ax.legend(loc='center left', bbox_to_anchor=(0.25,1.13),ncol=2)
 
     plt.ylabel("Precision")
-    plt.ylim(0.99,1.0)
+    plt.ylim(0.9,1.0)
     prettify_plot()
     ax.set_xticks([])
     ax.set_xticklabels([])
@@ -576,7 +590,7 @@ def plot_precision_recall_bars_NA12878_NA24385(pacbio_dirlist_NA24385, illumina_
     plot_bars(ax, np.array(ind4), illumina_recalls_NA12878,color='#ff1900')
     prettify_plot()
     ax.set_xticks(np.array(ind1+ind2+ind3+ind4)+1.0*width)
-    ax.set_xticklabels(['20','30','40','50','69','30','30','44','30'])
+    ax.set_xticklabels(['20','30','40','50','30','30','44','30'])
 
     #ax.set_yscale('log')NA12878_prec_recall_{chrom}
     #plt.xlim(())
@@ -1126,6 +1140,149 @@ def plot_fp_near_indel(fp_vcfs, fixed_gq_VCFstats, scaled_gq_VCFstats, ground_tr
     plt.tight_layout()
     ax1.set_axisbelow(True)
     plt.savefig(output_png)
+
+def actual_to_effective_read_coverage_scatterplot(vcfgz_file, output_file):
+
+    actual = []
+    effective = []
+    with pysam.VariantFile(vcfgz_file) as vcf:
+        for rec in vcf:
+            #if random.random() > 0.001:
+            #    continue
+            ac = sum(rec.info['AC']) + rec.info['AM'] #rec.info['DP']
+            ef = sum(rec.info['AC'])
+            actual.append(ac)
+            effective.append(ef)
+            if ef > ac:
+                import pdb; pdb.set_trace()
+
+    d = defaultdict(list)
+    for a,e in zip(actual, effective):
+        d[a].append(e)
+
+    #medians_x = []
+    #medians_y = []
+    #for a, lst in d.items():
+#        medians_x.append(a)
+#        medians_y.append(statistics.median(lst))
+
+    plt.figure();
+    data = pd.DataFrame(
+    {'Actual read coverage': actual,
+     'Effective read coverage': effective,
+    })
+    ax = sns.jointplot(data=data,x='Actual read coverage',y='Effective read coverage', color='k', kind='hex')
+    #ax1 = plt.subplot(111)
+
+    #plt.grid(True,color='grey',linestyle='--',alpha=0.5)
+
+    #plt.scatter(actual, effective, color='b',marker='.',s=1,alpha=0.75,label='Single variant site')
+    #plt.plot(medians_x, medians_y, color='k',alpha=0.75,linewidth=3,label='Median effective coverage')
+
+    #ax1.spines["top"].set_visible(False)
+    #ax1.spines["right"].set_visible(False)
+    #ax1.spines["bottom"].set_visible(False)
+    #ax1.spines["left"].set_visible(False)
+    #plt.tick_params(axis="both", which="both", bottom="off", top="off",
+    #            labelbottom="on", left="off", right="off", labelleft="on")
+
+    #plt.legend(loc='upper left')
+    #plt.xlabel('Actual Read Coverage')
+    #plt.ylabel('Effective Read Coverage')
+    plt.tight_layout()
+    plt.savefig(output_file)
+
+
+def plot_mappability_bars(pacbio_mf_0_0,
+                          pacbio_mf_0_5,
+                          pacbio_mf_0_75,
+                          pacbio_mf_0_9,
+                          pacbio_mf_1_0,
+                          illumina_mf_0_0,
+                          illumina_mf_0_5,
+                          illumina_mf_0_75,
+                          illumina_mf_0_9,
+                          illumina_mf_1_0,
+                          output_file,
+                          total_nonN_bases):
+
+    plt.figure(figsize=(8.5,4))
+    #mpl.rcParams['axes.titlepad'] = 50
+    ax = plt.subplot(111)
+
+    width = 0.005
+    alpha1 = 0.6
+
+    #ind = np.array([0,0.04,0.08,0.12,0.16])
+    ind = np.array([0,0.04,0.08])
+
+    def parse_datafile_lst(datafile_lst):
+        lst = []
+
+        for datafile in datafile_lst:
+            with open(datafile,'r') as inf:
+                num_positions = float(inf.readline().strip())
+                lst.append(num_positions / total_nonN_bases)
+
+        return lst
+
+    pacbio_mf_0_0_data = parse_datafile_lst(pacbio_mf_0_0)[2:]
+    pacbio_mf_0_5_data = parse_datafile_lst(pacbio_mf_0_5)[2:]
+    pacbio_mf_0_75_data = parse_datafile_lst(pacbio_mf_0_75)[2:]
+    pacbio_mf_0_9_data = parse_datafile_lst(pacbio_mf_0_9)[2:]
+    pacbio_mf_1_0_data = parse_datafile_lst(pacbio_mf_1_0)[2:]
+    illumina_mf_0_0_data = parse_datafile_lst(illumina_mf_0_0)[2:]
+    illumina_mf_0_5_data = parse_datafile_lst(illumina_mf_0_5)[2:]
+    illumina_mf_0_75_data = parse_datafile_lst(illumina_mf_0_75)[2:]
+    illumina_mf_0_9_data = parse_datafile_lst(illumina_mf_0_9)[2:]
+    illumina_mf_1_0_data = parse_datafile_lst(illumina_mf_1_0)[2:]
+
+    def plot_bars(vals,color,ix,lab):
+        plt.bar(ind+ix*width, vals, color=color,
+                ecolor='black', # black error bar color
+                alpha=alpha1,      # transparency
+                width=width,      # smaller bar width
+                align='center',
+                label=lab,
+                zorder=0)
+
+    #plot_bars(pacbio_mf_0_0_data,'#c3d6f4',0,'PacBio, all sites')
+    plot_bars(pacbio_mf_0_5_data,'#93bcff',1,'PacBio, at least 50% well-mapped')
+    plot_bars(pacbio_mf_0_75_data,'#609dff',2,'PacBio, at least 75% well-mapped')
+    plot_bars(pacbio_mf_0_9_data,'#3582ff',3,'PacBio, at least 90% well-mapped')
+    #plot_bars(pacbio_mf_1_0_data,'#0061ff',4,'PacBio, 100% well-mapped')
+
+    #plot_bars(illumina_mf_0_0_data,'#ffa0a0',5,'Illumina, all sites')
+    plot_bars(illumina_mf_0_5_data,'#ff7272',4,'Illumina, at least 50% well-mapped')
+    plot_bars(illumina_mf_0_75_data,'#ff4242',5,'Illumina, at least 75% well-mapped')
+    plot_bars(illumina_mf_0_9_data,'#ff2323',6,'Illumina, at least 90% well-mapped')
+    #plot_bars(illumina_mf_1_0_data,'#ff0000',9,'Illumina, 100% well-mapped')
+
+    ax.yaxis.grid(True,color='grey', alpha=0.5, linestyle='--',zorder=1.0)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+    plt.tick_params(axis="both", which="both", bottom=False, top=False,
+                labelbottom=True, left=False, right=False, labelleft=True)
+
+    ax.set_xticks(ind+3.5*width)
+    ax.set_xticklabels(['30','40','50'])
+
+    plt.xlabel('Minimum read coverage')
+    plt.ylabel('Fraction of genome covered (chr. 1-22)')
+    plt.ylim((0.8,1.0))
+    plt.legend(loc='upper right')
+    plt.tight_layout()
+
+    ax.set_axisbelow(True)
+
+    ticklabelpad = mpl.rcParams['xtick.major.pad']
+
+    #ax.annotate('coverage', xy=(-0.1,-0.03), xytext=(5, -ticklabelpad), ha='left', va='top',
+    #            xycoords='axes fraction', textcoords='offset points')
+
+    plt.savefig(output_file)
 
 if __name__ == '__main__':
     args = parseargs()

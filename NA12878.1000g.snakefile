@@ -43,6 +43,13 @@ rule download_GIAB_VCF_NA12878:
     shell: 'wget {NA12878_GIAB_VCF_URL} -O {output}'
 
 # SUBSAMPLE PACBIO BAM
+rule merge_subsampled_pacbio_NA12878_1000g:
+    params: job_name = 'merge_subsampled_pacbio_NA12878.1000g'
+    input: bam = expand('data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.{chrom}.{{cov}}x.bam',chrom=chroms),
+    output: bam = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.{cov,30}x.bam',
+    shell: '{SAMTOOLS} merge -O bam {output.bam} {input.bam}'
+
+# SUBSAMPLE PACBIO BAM
 rule subsample_pacbio_NA12878:
     params: job_name = 'subsample_pacbio_NA12878.1000g'
     input: bam = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.{chrom}.44x.bam',

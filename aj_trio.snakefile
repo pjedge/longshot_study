@@ -191,5 +191,7 @@ rule generate_coverage_bed:
         {SAMTOOLS} view -F 3844 -q 30 {input} -hb | \
         {BEDTOOLS} genomecov -bga -ibam - | \
         awk '$4 > 20 && $4 < {maxcov}' | \
-        {BEDTOOLS} merge -i - > {output}
+        {BEDTOOLS} sort -i - | \
+        {BEDTOOLS} merge -i - | \
+        {BEDTOOLS} sort -i - > {output}
         ''')

@@ -75,3 +75,9 @@ merge_bams:
 
 filter_SNVs_gt_20_trio_confident:
     ppn: 16
+
+merge_subsampled_pacbio_NA12878_1000g:
+    walltime: '150:00:00'
+
+merge_subsampled_pacbio_NA24385_hg38:
+    walltime: '150:00:00'

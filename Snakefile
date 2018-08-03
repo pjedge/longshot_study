@@ -8,6 +8,7 @@ import calculate_haplotype_statistics as chs
 import prune_haplotype as ph
 import pickle
 import datetime
+from calculate_median_coverage import calculate_median_coverage
 
 # DATA URLs
 HG19_URL     = 'http://hgdownload.cse.ucsc.edu/goldenpath/hg19/bigZips/hg19.2bit'
@@ -41,6 +42,7 @@ BEDTOOLS = 'bedtools' # v 2.27
 EXTRACTHAIRS = 'HapCUT2/build/extractHAIRS'
 HAPCUT2 = 'HapCUT2/build/HAPCUT2'
 PYTHON = 'python3'
+MAP_COUNTER = 'map_counter/target/release/map_counter'
 
 chroms = ['{}'.format(i) for i in range(1,23)]
 ref_file = {'1000g':'data/genomes/hs37d5.fa', 'hg38':'data/genomes/hg38.fa'}
@@ -62,7 +64,19 @@ include: "duplicated_gene_visualization.snakefile"
 # DEFAULT
 rule all:
     input:
-        'data/simulation.1000g/aligned_reads/pacbio/segdup95_stats/all.stats.bed'
+        'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.44x.bam.median_coverage',
+        #'data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.all.69x.bam.median_coverage',
+        expand('data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.all.{cov}x.bam.median_coverage',cov=[20,30,40,50,69]),
+        'data/NA24143.hg38/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.median_coverage',
+        'data/NA24149.hg38/aligned_reads/pacbio/pacbio.blasr.all.32x.bam.median_coverage',
+        #'data/plots/NA24149.hg38_prec_recall_all.png',
+        #'data/plots/NA24143.hg38_prec_recall_all.png',
+        #'data/plots/NA24385.hg38_prec_recall_all.png',
+        #'data/plots/NA12878.1000g_prec_recall_all.png',
+        #'data/plots/plot_mappability_bars.simulation.1000g.png'
+        #expand('data/simulation.1000g/aligned_reads/pacbio/map_counts/mapq30_mincov{cov}_mapfrac{mapfrac}/pacbio.blasr.60x__all.map_count.txt',cov=[10,20,30,40,50],mapfrac=[0.0,0.5,0.75,0.9,1.0]),
+        #expand('data/simulation.1000g/aligned_reads/illumina/map_counts/mapq30_mincov{cov}_mapfrac{mapfrac}/illumina.60x__all.map_count.txt',cov=[10,20,30,40,50],mapfrac=[0.0,0.5,0.75,0.9,1.0])
+        #'data/simulation.1000g/aligned_reads/pacbio/segdup95_stats/all.stats.bed'
         #'data/plots/plot_fp_near_indel.NA24385.hg38.png'
         #expand('data/output/variant_analysis_fp_fn__NA24385.hg38__GQ50__reaper.pacbio.blasr.{cov}x.-z__1.tex',cov=[20,30,40,50,69]),
         #'data/output/variant_analysis_fp_fn__NA12878.1000g__GQ44__reaper.pacbio.blasr.44x.-z__1.tex'
@@ -328,8 +342,8 @@ rule run_reaper:
             hg38 = 'data/genomes/hg38.fa',
             hg38_ix = 'data/genomes/hg38.fa.fai'
     output: vcf = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+)}.vcf',
-            debug = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug',
-            no_hap_vcf = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug/2.0.realigned_genotypes.vcf',
+            #debug = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug',
+            #no_hap_vcf = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug/2.0.realigned_genotypes.vcf',
             runtime = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+)}.vcf.runtime'
     run:
         options_str = wildcards.options.replace('_',' ')
@@ -379,7 +393,7 @@ rule call_variants_Illumina:
         with open(output.runtime,'w') as outf:
             print(seconds_to_formatted_time(t2-t1),file=outf)
 
-rule combine_coverages:
+rule generate_genomecov_bed:
     params: job_name = 'generate_genomecov_bed.{individual}.{build}.{tech}.{info}.MAPQ{mapq}'
     input:  expand('data/{{individual}}.{{build}}/aligned_reads/{{tech}}/genomecov_histograms_mapq{{mapq}}/{{info}}__{chrom}.txt', chrom=chroms)
     output: 'data/{individual}.{build}/aligned_reads/{tech}/genomecov_histograms_mapq{mapq}/{info}__all.txt'
@@ -489,6 +503,22 @@ rule convert_genome_track_to_1000g:
         {BEDTOOLS} sort -g {input.names} | \
         bgzip -c > {output.track}
         '''
+
+# count_bam_median_coverage
+rule calculate_median_coverage:
+    params: job_name = 'calculate_median_coverage.{individual}.{build}.{tech}.{info}'
+    input:  bam = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam',
+            bai = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam',
+            genome_file = 'genome_tracks/{build}.chrom.sizes.txt'
+    output: random_pos = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam.for_median_coverage.random_pos',
+            cov = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam.median_coverage'
+    run:
+        shell('{BEDTOOLS} random -l 1 -n 10000 -g {input.genome_file} > {output.random_pos}')
+        add_chr = (wildcards.individual == 'NA12878' and wildcards.build == '1000g' and wildcards.tech == 'pacbio')
+
+        med_cov = calculate_median_coverage(input.bam, output.random_pos, add_chr=add_chr)
+        with open(output.cov,'w') as outf:
+            print(med_cov,file=outf)
 
 # SUBSAMPLE ILLUMINA BAM
 rule subsample_illumina_60x:

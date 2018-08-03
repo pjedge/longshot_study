@@ -75,12 +75,12 @@ rule generate_nonconfident_bed:
     shell: '{BEDTOOLS} subtract -a {input.whole_genome_bed} -b {input.confident_bed} > {output.bed}'
 
 rule intersect_illumina_pacbio_VCFs:
-    params: job_name = 'intersect_VCFs.{individual}.{build}.{aligner}.{pcov}x.illumina_GQ{iGQ}.pacbio_GQ{pGQ}.',
+    params: job_name = 'intersect_VCFs.{individual}.{build}.{aligner}.{pcov}x.illumina_GQ{iGQ}.pacbio_GQ{pGQ}',
     input:  pacbio_vcfgz =   'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/all.GQ{pGQ}.PASS.SNPs_ONLY.vcf.gz',
             pacbio_tbi   =   'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/all.GQ{pGQ}.PASS.SNPs_ONLY.vcf.gz.tbi',
             illumina_vcfgz = 'data/{individual}.{build}/variants/illumina_30x.filtered/all.GQ{iGQ}.PASS.SNPs_ONLY.vcf.gz',
             illumina_tbi =   'data/{individual}.{build}/variants/illumina_30x.filtered/all.GQ{iGQ}.PASS.SNPs_ONLY.vcf.gz.tbi',
-            genome_file = 'genome_tracks/{build}.chrom.sizes.txt'
+            genome_file = 'genome_tracks/{build}.chrom.sizes.natural_order.txt'
     output: vcf = 'data/{individual}.{build}/variants/INTERSECT_illumina_30x.filtered_GQ{iGQ,\d+}_reaper.pacbio.{aligner,blasr}.{pcov,\d+}x.-z_GQ{pGQ}/intersected.all.GQ0.PASS.SNPs_ONLY.vcf',
             vcfgz = 'data/{individual}.{build}/variants/INTERSECT_illumina_30x.filtered_GQ{iGQ,\d+}_reaper.pacbio.{aligner,blasr}.{pcov,\d+}x.-z_GQ{pGQ}/intersected.all.GQ0.PASS.SNPs_ONLY.vcf.gz',
     shell:
@@ -91,12 +91,12 @@ rule intersect_illumina_pacbio_VCFs:
         '''
 
 rule setminus_pacbio_illumina_VCFs:
-    params: job_name = 'setminus_pacbio_illumina_VCFs.{individual}.{build}.{aligner}.{pcov}x.illumina_GQ50.pacbio_GQ{pGQ}.',
+    params: job_name = 'setminus_pacbio_illumina_VCFs.{individual}.{build}.{aligner}.{pcov}x.illumina_GQ50.pacbio_GQ{pGQ}',
     input:  pacbio_vcfgz =   'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/all.GQ{pGQ}.PASS.SNPs_ONLY.vcf.gz',
             pacbio_tbi   =   'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/all.GQ{pGQ}.PASS.SNPs_ONLY.vcf.gz.tbi',
             illumina_vcfgz = 'data/{individual}.{build}/variants/illumina_30x.filtered/all.GQ50.PASS.SNPs_ONLY.vcf.gz',
             illumina_tbi =   'data/{individual}.{build}/variants/illumina_30x.filtered/all.GQ50.PASS.SNPs_ONLY.vcf.gz.tbi',
-            genome_file = 'genome_tracks/{build}.chrom.sizes.txt'
+            genome_file = 'genome_tracks/{build}.chrom.sizes.natural_order.txt'
     output: vcf = 'data/{individual}.{build}/variants/MINUS_reaper.pacbio.{aligner,blasr}.{pcov,\d+}x.-z_GQ{pGQ,\d+}_illumina_30x.filtered_GQ50/minus.all.GQ0.PASS.SNPs_ONLY.vcf',
             vcfgz = 'data/{individual}.{build}/variants/MINUS_reaper.pacbio.{aligner,blasr}.{pcov,\d+}x.-z_GQ{pGQ,\d+}_illumina_30x.filtered_GQ50/minus.all.GQ0.PASS.SNPs_ONLY.vcf.gz',
     shell:
@@ -107,12 +107,12 @@ rule setminus_pacbio_illumina_VCFs:
         '''
 
 rule setminus_illumina_pacbio_VCFs:
-    params: job_name = 'setminus_illumina_pacbio_VCFs.{individual}.{build}.{aligner}.{pcov}x.illumina_GQ50.pacbio_GQ{pGQ}.',
+    params: job_name = 'setminus_illumina_pacbio_VCFs.{individual}.{build}.{aligner}.{pcov}x.illumina_GQ50.pacbio_GQ{pGQ}',
     input:  pacbio_vcfgz =   'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/all.GQ{pGQ}.PASS.SNPs_ONLY.vcf.gz',
             pacbio_tbi   =   'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/all.GQ{pGQ}.PASS.SNPs_ONLY.vcf.gz.tbi',
             illumina_vcfgz = 'data/{individual}.{build}/variants/illumina_30x.filtered/all.GQ50.PASS.SNPs_ONLY.vcf.gz',
             illumina_tbi =   'data/{individual}.{build}/variants/illumina_30x.filtered/all.GQ50.PASS.SNPs_ONLY.vcf.gz.tbi',
-            genome_file = 'genome_tracks/{build}.chrom.sizes.txt'
+            genome_file = 'genome_tracks/{build}.chrom.sizes.natural_order.txt'
     output: vcf = 'data/{individual}.{build}/variants/MINUS_illumina_30x.filtered_GQ50_reaper.pacbio.{aligner,blasr}.{pcov,\d+}x.-z_GQ{pGQ,\d+}/minus.all.GQ0.PASS.SNPs_ONLY.vcf',
             vcfgz = 'data/{individual}.{build}/variants/MINUS_illumina_30x.filtered_GQ50_reaper.pacbio.{aligner,blasr}.{pcov,\d+}x.-z_GQ{pGQ,\d+}/minus.all.GQ0.PASS.SNPs_ONLY.vcf.gz',
     shell:

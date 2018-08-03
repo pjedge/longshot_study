@@ -364,3 +364,93 @@ rule plot_fp_near_indel:
         fp_vcfs = [os.path.join(f[:-5], 'fp.vcf.gz') for f in input.vcfevals]
         ptf.plot_fp_near_indel(fp_vcfs, input.fixed_gq_VCFstats, input.scaled_gq_VCFstats, input.ground_truth_vcfgz, output.png,
                              cov=[20,30,40,50,69],fixed_gq=30, scaled_gqs=[20,30,40,50,69])
+
+
+rule plot_actual_vs_effective_coverage:
+    params: job_name = 'plot_actual_vs_effective_coverage.NA12878',
+    input: vcfgz = 'data/NA12878.1000g/variants/reaper.pacbio.blasr.44x.-z/1.vcf.gz'
+    output: png = 'data/plots/actual_vs_effective_coverage.chr1.NA12878.44x.png'
+    run:
+        ptf.actual_to_effective_read_coverage_scatterplot(input.vcfgz, output.png)
+
+map_covs = [10,20,30,40,50]
+TOTAL_BASES_HG19 = 2867437753 - (151100560 + 25653566 + 3675142) # ungapped genome length (non-N) minus (chrX+chrY+un) # https://www.ncbi.nlm.nih.gov/grc/human/data?asm=GRCh37
+rule plot_mappability_bars:
+    params: job_name = 'plot_mappability_bars',
+    input: pacbio_mf_0_0 = expand('data/simulation.1000g/aligned_reads/pacbio/map_counts/mapq30_mincov{cov}_mapfrac0.0/pacbio.blasr.60x__all.map_count.txt',cov=map_covs),
+           pacbio_mf_0_5 = expand('data/simulation.1000g/aligned_reads/pacbio/map_counts/mapq30_mincov{cov}_mapfrac0.5/pacbio.blasr.60x__all.map_count.txt',cov=map_covs),
+           pacbio_mf_0_75 = expand('data/simulation.1000g/aligned_reads/pacbio/map_counts/mapq30_mincov{cov}_mapfrac0.75/pacbio.blasr.60x__all.map_count.txt',cov=map_covs),
+           pacbio_mf_0_9 = expand('data/simulation.1000g/aligned_reads/pacbio/map_counts/mapq30_mincov{cov}_mapfrac0.9/pacbio.blasr.60x__all.map_count.txt',cov=map_covs),
+           pacbio_mf_1_0 = expand('data/simulation.1000g/aligned_reads/pacbio/map_counts/mapq30_mincov{cov}_mapfrac1.0/pacbio.blasr.60x__all.map_count.txt',cov=map_covs),
+           illumina_mf_0_0 = expand('data/simulation.1000g/aligned_reads/illumina/map_counts/mapq30_mincov{cov}_mapfrac0.0/illumina.60x__all.map_count.txt',cov=map_covs),
+           illumina_mf_0_5 = expand('data/simulation.1000g/aligned_reads/illumina/map_counts/mapq30_mincov{cov}_mapfrac0.5/illumina.60x__all.map_count.txt',cov=map_covs),
+           illumina_mf_0_75 = expand('data/simulation.1000g/aligned_reads/illumina/map_counts/mapq30_mincov{cov}_mapfrac0.75/illumina.60x__all.map_count.txt',cov=map_covs),
+           illumina_mf_0_9 = expand('data/simulation.1000g/aligned_reads/illumina/map_counts/mapq30_mincov{cov}_mapfrac0.9/illumina.60x__all.map_count.txt',cov=map_covs),
+           illumina_mf_1_0 = expand('data/simulation.1000g/aligned_reads/illumina/map_counts/mapq30_mincov{cov}_mapfrac1.0/illumina.60x__all.map_count.txt',cov=map_covs),
+    output: png = 'data/plots/plot_mappability_bars.simulation.1000g.png'
+    run:
+        ptf.plot_mappability_bars(pacbio_mf_0_0 = input.pacbio_mf_0_0,
+                                  pacbio_mf_0_5 = input.pacbio_mf_0_5,
+                                  pacbio_mf_0_75 = input.pacbio_mf_0_75,
+                                  pacbio_mf_0_9 = input.pacbio_mf_0_9,
+                                  pacbio_mf_1_0 = input.pacbio_mf_1_0,
+                                  illumina_mf_0_0 = input.illumina_mf_0_0,
+                                  illumina_mf_0_5 = input.illumina_mf_0_5,
+                                  illumina_mf_0_75 = input.illumina_mf_0_75,
+                                  illumina_mf_0_9 = input.illumina_mf_0_9,
+                                  illumina_mf_1_0 = input.illumina_mf_1_0,
+                                  output_file=output.png,
+                                  total_nonN_bases=TOTAL_BASES_HG19)
+
+rule combine_map_counts:
+    params: job_name = 'combine_map_counts.{individual}.{build}.{tech}.{info}.mapq{mapq}.mincov{cov}.mapfrac{mapfrac}'
+    input:  expand('data/{{individual}}.{{build}}/aligned_reads/{{tech}}/map_counts/mapq{{mapq}}_mincov{{cov}}_mapfrac{{mapfrac}}/{{info}}__{chrom}.map_count.txt', chrom=chroms)
+    output: 'data/{individual}.{build}/aligned_reads/{tech}/map_counts/mapq{mapq}_mincov{cov}_mapfrac{mapfrac}/{info}__all.map_count.txt'
+    run:
+        total = 0
+        for infile in input:
+            with open(infile,'r') as inf:
+                total += int(inf.readline().strip())
+
+        with open(output[0],'w') as outf:
+            print(total, file=outf)
+
+rule generate_map_counts_illumina:
+    params: job_name = 'generate_map_counts_illumina.{individual}.{build}.MAPQ{mapq}.mincov{cov}.mapfrac{mapfrac}.{chrom}'
+    input:  bam = 'data/{individual}.{build}/aligned_reads/illumina/illumina.60x.bam',
+            bai = 'data/{individual}.{build}/aligned_reads/illumina/illumina.60x.bam.bai',
+            hs37d5    = 'data/genomes/hs37d5.fa',
+            hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
+            hg38 = 'data/genomes/hg38.fa',
+            hg38_ix = 'data/genomes/hg38.fa.fai'
+    output: 'data/{individual}.{build}/aligned_reads/illumina/map_counts/mapq{mapq,\d+}_mincov{cov,\d+}_mapfrac{mapfrac}/illumina.60x__{chrom,(\d+)}.map_count.txt'
+    run:
+        w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
+        ref_fa = input.hs37d5 if wildcards.build == '1000g' else input.hg38
+        # NA12878 is an exception, actually has hg19 chrom names instead of 1000g chrom names
+        if wildcards.individual == 'NA12878' and wildcards.build == '1000g' and wildcards.tech=='pacbio':
+            w_chrom = 'chr' + w_chrom
+        shell('''
+        {MAP_COUNTER} --chrom {w_chrom} --bam {input.bam} --ref {ref_fa} --min_cov {wildcards.cov} \
+        --min_mapq {wildcards.mapq} --map_frac {wildcards.mapfrac} > {output}
+        ''')
+
+rule generate_map_counts_pacbio:
+    params: job_name = 'generate_map_counts_pacbio.{individual}.{build}.mapq{mapq}.mincov{cov}.mapfrac{mapfrac}.{chrom}'
+    input:  bam = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.blasr.{chrom}.60x.bam',
+            bai = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.blasr.{chrom}.60x.bam.bai',
+            hs37d5    = 'data/genomes/hs37d5.fa',
+            hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
+            hg38 = 'data/genomes/hg38.fa',
+            hg38_ix = 'data/genomes/hg38.fa.fai'
+    output: 'data/{individual}.{build}/aligned_reads/pacbio/map_counts/mapq{mapq,\d+}_mincov{cov,\d+}_mapfrac{mapfrac}/pacbio.blasr.60x__{chrom,(\d+)}.map_count.txt'
+    run:
+        w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
+        ref_fa = input.hs37d5 if wildcards.build == '1000g' else input.hg38
+        # NA12878 is an exception, actually has hg19 chrom names instead of 1000g chrom names
+        if wildcards.individual == 'NA12878' and wildcards.build == '1000g' and wildcards.tech=='pacbio':
+            w_chrom = 'chr' + w_chrom
+        shell('''
+        {MAP_COUNTER} --chrom {w_chrom} --bam {input.bam} --ref {ref_fa} --min_cov {wildcards.cov} \
+        --min_mapq {wildcards.mapq} --map_frac {wildcards.mapfrac} > {output}
+        ''')

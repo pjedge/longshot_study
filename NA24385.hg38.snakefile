@@ -9,21 +9,21 @@ rule plot_pr_curve_NA24385_hg38:
     params: job_name = 'plot_pr_curve_NA24385.hg38',
             title = 'Precision Recall Curve for Reaper on NA24385: PacBio Reads vs Standard Illumina'
     input:
-        reaper20_rtg = 'data/NA24385.hg38/vcfeval/reaper.filtered.pacbio.blasr.20x.-z/{chrom}.done',
-        reaper30_rtg = 'data/NA24385.hg38/vcfeval/reaper.filtered.pacbio.blasr.30x.-z/{chrom}.done',
-        reaper40_rtg = 'data/NA24385.hg38/vcfeval/reaper.filtered.pacbio.blasr.40x.-z/{chrom}.done',
-        reaper50_rtg = 'data/NA24385.hg38/vcfeval/reaper.filtered.pacbio.blasr.50x.-z/{chrom}.done',
-        reaper69_rtg = 'data/NA24385.hg38/vcfeval/reaper.filtered.pacbio.blasr.69x.-z/{chrom}.done',
+        reaper20_rtg = 'data/NA24385.hg38/vcfeval/reaper.pacbio.blasr.20x.-z/{chrom}.done',
+        reaper30_rtg = 'data/NA24385.hg38/vcfeval/reaper.pacbio.blasr.30x.-z/{chrom}.done',
+        reaper40_rtg = 'data/NA24385.hg38/vcfeval/reaper.pacbio.blasr.40x.-z/{chrom}.done',
+        reaper50_rtg = 'data/NA24385.hg38/vcfeval/reaper.pacbio.blasr.50x.-z/{chrom}.done',
+        reaper69_rtg = 'data/NA24385.hg38/vcfeval/reaper.pacbio.blasr.69x.-z/{chrom}.done',
         illumina_rtg = 'data/NA24385.hg38/vcfeval/illumina_30x.filtered/{chrom}.done'
     output:
         png = 'data/plots/NA24385.hg38_prec_recall_{chrom}.png'
     run:
         ptf.plot_vcfeval(['data/NA24385.hg38/vcfeval/illumina_30x.filtered/{}'.format(wildcards.chrom),
-                                   'data/NA24385.hg38/vcfeval/reaper.filtered.pacbio.blasr.20x.-z/{}'.format(wildcards.chrom),
-                                   'data/NA24385.hg38/vcfeval/reaper.filtered.pacbio.blasr.30x.-z/{}'.format(wildcards.chrom),
-                                   'data/NA24385.hg38/vcfeval/reaper.filtered.pacbio.blasr.40x.-z/{}'.format(wildcards.chrom),
-                                   'data/NA24385.hg38/vcfeval/reaper.filtered.pacbio.blasr.50x.-z/{}'.format(wildcards.chrom),
-                                   'data/NA24385.hg38/vcfeval/reaper.filtered.pacbio.blasr.69x.-z/{}'.format(wildcards.chrom)],
+                                   'data/NA24385.hg38/vcfeval/reaper.pacbio.blasr.20x.-z/{}'.format(wildcards.chrom),
+                                   'data/NA24385.hg38/vcfeval/reaper.pacbio.blasr.30x.-z/{}'.format(wildcards.chrom),
+                                   'data/NA24385.hg38/vcfeval/reaper.pacbio.blasr.40x.-z/{}'.format(wildcards.chrom),
+                                   'data/NA24385.hg38/vcfeval/reaper.pacbio.blasr.50x.-z/{}'.format(wildcards.chrom),
+                                   'data/NA24385.hg38/vcfeval/reaper.pacbio.blasr.69x.-z/{}'.format(wildcards.chrom)],
                                    ['Freebayes, Illumina 30x',
                                    'Reaper, PacBio 20x',
                                    'Reaper, PacBio 30x',
@@ -53,10 +53,17 @@ rule download_GIAB_VCF_NA24385_hg38:
     shell: 'wget {NA24385_HG38_GIAB_VCF_URL} -O {output}'
 
 # SUBSAMPLE PACBIO BAM
+rule merge_subsampled_pacbio_NA24385_hg38:
+    params: job_name = 'merge_subsampled_pacbio_NA24385.hg38'
+    input: bam = expand('data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.{chrom}.{{cov}}x.bam',chrom=chroms),
+    output: bam = 'data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.all.{cov,(20|30|40|50)}x.bam',
+    shell: '{SAMTOOLS} merge -O bam {output.bam} {input.bam}'
+
+# SUBSAMPLE PACBIO BAM
 rule subsample_pacbio_NA24385_hg38:
     params: job_name = 'subsample_pacbio_NA24385.hg38.{chrom}'
     input: bam = 'data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.{chrom}.69x.bam',
-    output: bam = 'data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.{chrom}.{cov,(20|30|40|50)}x.bam',
+    output: bam = 'data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.{chrom,\d+}.{cov,(20|30|40|50)}x.bam',
     run:
         subsample_frac = float(wildcards.cov) / 69.0
         shell('{SAMTOOLS} view -hb {input.bam} -s {subsample_frac} > {output.bam}')

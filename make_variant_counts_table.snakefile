@@ -74,6 +74,13 @@ rule generate_nonconfident_bed:
     output: bed = 'data/{individual}.{build}/variants/ground_truth/outside_region_filter.bed',
     shell: '{BEDTOOLS} subtract -a {input.whole_genome_bed} -b {input.confident_bed} > {output.bed}'
 
+##################################################################################################
+# IMPORTANT NOTE
+# the next 3 rules use the -sorted option for faster processing in bedtools
+# since we're operating on VCF files in natural 1..22 chromosome order,
+# we need to make sure to pass a genome file that is also in this order
+##################################################################################################
+
 rule intersect_illumina_pacbio_VCFs:
     params: job_name = 'intersect_VCFs.{individual}.{build}.{aligner}.{pcov}x.illumina_GQ{iGQ}.pacbio_GQ{pGQ}',
     input:  pacbio_vcfgz =   'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/all.GQ{pGQ}.PASS.SNPs_ONLY.vcf.gz',

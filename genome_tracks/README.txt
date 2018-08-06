@@ -1,5 +1,8 @@
 names.txt: list of names for 1000g format chromosomes, for sorting with bedtools
 
+sv_repeat_telomere_centromere.bed:
+this is the hg38 delly exclusion regions in BED format, accessed from https://gist.github.com/chapmanb/4c40f961b3ac0a4a22fd
+
 whole_genome_1000g.bed: this file simply describes the regions covering the whole
 genome from chroms 1-22, X and Y. It will be used as a dummy
 bed file when simulated read data is assessed for precision and recall and

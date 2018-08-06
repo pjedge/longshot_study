@@ -18,8 +18,15 @@ def filter_SNVs(infile, outfile, max_dp, density_count=10, density_len=500, dens
                     el = line.strip().split('\t')
                     chrom = el[0]
                     pos = int(el[1])
-                    qual = float(el[5])
-                    lines.append(((chrom,pos,qual),line.strip()))
+                    #qual = float(el[5])
+                    format = el[8].split(':')
+                    sample = el[9].split(':')
+                    gq = None
+                    for (tag,data) in zip(format,sample):
+                        if tag == 'GQ':
+                            gq = float(data)
+                    assert(gq != None)
+                    lines.append(((chrom,pos,gq),line.strip()))
 
         filt = [0] * len(lines)
         dp_count = 0
@@ -53,10 +60,18 @@ def filter_SNVs(infile, outfile, max_dp, density_count=10, density_len=500, dens
 
         print("{} variants filtered due to depth".format(dp_count))
         print("{} variants filtered due to density".format(sum(filt)-dp_count))
-        filtered_lines = [l for ((chrom,pos,qual),l),f in zip(lines,filt) if f == 0]
+        #filtered_lines = [l for ((chrom,pos,qual),l),f in zip(lines,filt) if f == 0]
 
-        for line in filtered_lines:
-            print(line,file=outf)
+        #for line in filtered_lines:
+        #    print(line,file=outf)
+        for ((chrom,pos,qual),l),f in zip(lines,filt):
+            if f: # filtered out
+                el = l.strip().split('\t')
+                el[6] = 'fail'
+                line = '\t'.join(el)
+                print(line,file=outf)
+            else:
+                print(l,file=outf)
 
 
 def addlogs(a,b):

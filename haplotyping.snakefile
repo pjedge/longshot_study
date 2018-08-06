@@ -92,6 +92,6 @@ rule haplotyping_filters:
             vcf   = 'data/{individual}.{build}/variants/illumina_{icov}x.filtered/{chrom}.haplotyping_filters.vcf',
     shell:
         '''
-        {RTGTOOLS} RTG_MEM=12g vcffilter -g 50 -i {input.vcfgz} -o {output.vcfgz};
+        {RTGTOOLS} RTG_MEM=12g vcffilter -k "PASS","." -g 50 -i {input.vcfgz} -o {output.vcfgz};
         gunzip -c {output.vcfgz} > {output.vcf}
         '''

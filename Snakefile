@@ -64,11 +64,13 @@ include: "duplicated_gene_visualization.snakefile"
 # DEFAULT
 rule all:
     input:
-        'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.44x.bam.median_coverage',
+        expand('data/aj_trio/{region}.m30.f30.s60/trio_shared_variant_sites/mendelian/illumina/all.report.txt',region=['whole_genome','confident','nonconfident','segdup95','segdup99']),
+        expand('data/aj_trio/{region}.m30.f32.s69/trio_shared_variant_sites/mendelian/pacbio/all.report.txt',region=['whole_genome','confident','nonconfident','segdup95','segdup99'])
+        #'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.44x.bam.median_coverage',
         #'data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.all.69x.bam.median_coverage',
-        expand('data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.all.{cov}x.bam.median_coverage',cov=[20,30,40,50,69]),
-        'data/NA24143.hg38/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.median_coverage',
-        'data/NA24149.hg38/aligned_reads/pacbio/pacbio.blasr.all.32x.bam.median_coverage',
+        #expand('data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.all.{cov}x.bam.median_coverage',cov=[20,30,40,50,69]),
+        #'data/NA24143.hg38/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.median_coverage',
+        #'data/NA24149.hg38/aligned_reads/pacbio/pacbio.blasr.all.32x.bam.median_coverage',
         #'data/plots/NA24149.hg38_prec_recall_all.png',
         #'data/plots/NA24143.hg38_prec_recall_all.png',
         #'data/plots/NA24385.hg38_prec_recall_all.png',
@@ -269,7 +271,6 @@ rule filter_random_positions:
 
 rule generate_random_positions:
     params: job_name = 'generate_random_positions.{chrom}.{build}'
-    input: sizes_file = 'genome_tracks/{build}.chrom.sizes.txt'
     output: vcf = 'data/{individual}.{build,(1000g|hg38)}/random_positions/{chrom}.whole_chrom.vcf',
             vcfgz = 'data/{individual}.{build,(1000g|hg38)}/random_positions/{chrom}.whole_chrom.vcf.gz',
     run:
@@ -483,7 +484,7 @@ rule download_hg38_sdf:
 rule sort_hg38_genome_track:
     params: job_name = 'sort_hg38_genome_track.{track}',
     input: track = 'genome_tracks/{track}_hg38.unsorted.bed.gz',
-           genome_file = 'genome_tracks/hg38.chrom.sizes.txt'
+           genome_file = 'genome_tracks/hg38.chrom.sizes.natural_order.txt'
     output: track = 'genome_tracks/{track}_hg38.bed.gz',
     shell:
         '''
@@ -508,7 +509,7 @@ rule convert_genome_track_to_1000g:
 rule calculate_median_coverage:
     params: job_name = 'calculate_median_coverage.{individual}.{build}.{tech}.{info}'
     input:  bam = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam',
-            bai = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam',
+            bai = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam.bai',
             genome_file = 'genome_tracks/{build}.chrom.sizes.txt'
     output: random_pos = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam.for_median_coverage.random_pos',
             cov = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam.median_coverage'

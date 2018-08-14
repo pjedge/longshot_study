@@ -43,6 +43,7 @@ EXTRACTHAIRS = 'HapCUT2/build/extractHAIRS'
 HAPCUT2 = 'HapCUT2/build/HAPCUT2'
 PYTHON = 'python3'
 MAP_COUNTER = 'map_counter/target/release/map_counter'
+SEQTK = 'seqtk'
 
 chroms = ['{}'.format(i) for i in range(1,23)]
 ref_file = {'1000g':'data/genomes/hs37d5.fa', 'hg38':'data/genomes/hg38.fa'}
@@ -60,12 +61,20 @@ include: "paper_tables_and_figures.snakefile"
 include: "haplotyping.snakefile"
 include: "make_variant_counts_table.snakefile"
 include: "duplicated_gene_visualization.snakefile"
+include: "make_duplicated_gene_table.snakefile"
 
 # DEFAULT
 rule all:
     input:
-        expand('data/aj_trio/{region}.m30.f30.s60/trio_shared_variant_sites/mendelian/illumina/all.report.txt',region=['whole_genome','confident','nonconfident','segdup95','segdup99']),
-        expand('data/aj_trio/{region}.m30.f32.s69/trio_shared_variant_sites/mendelian/pacbio/all.report.txt',region=['whole_genome','confident','nonconfident','segdup95','segdup99'])
+        #'data/output/duplicated_genes_table.NA12878.1000g.pb44x.tex'
+        'data/plots/simulation_pr_barplot_genome_vs_segdup_extended.all.GQ50.png'
+        #expand('data/output/variant_analysis_fp_fn__NA24385.hg38__GQ50__reaper.pacbio.blasr.{cov}x.-z__1.tex',cov=[20,30,40,50,69]),
+        #'data/output/variant_analysis_fp_fn__NA12878.1000g__GQ44__reaper.pacbio.blasr.44x.-z__1.tex'
+        #'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.median_coverage'
+        #'data/output/variant_counts_table.NA12878.1000g.blasr.44.GQ44.tex',
+        #'data/output/variant_counts_table_GIAB_VARIANTS.NA12878.1000g.blasr.44.GQ44.tex'
+        #'data/output/pacbio_illumina_mendelian_concordance_table.tex'
+        #expand('data/aj_trio/trio_shared_variant_sites/{tech}/mendelian/all.{region}.report.txt',tech=['illumina','pacbio'], region=['whole_genome','confident','nonconfident','segdup95','segdup99'])
         #'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.44x.bam.median_coverage',
         #'data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.all.69x.bam.median_coverage',
         #expand('data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.all.{cov}x.bam.median_coverage',cov=[20,30,40,50,69]),
@@ -80,8 +89,6 @@ rule all:
         #expand('data/simulation.1000g/aligned_reads/illumina/map_counts/mapq30_mincov{cov}_mapfrac{mapfrac}/illumina.60x__all.map_count.txt',cov=[10,20,30,40,50],mapfrac=[0.0,0.5,0.75,0.9,1.0])
         #'data/simulation.1000g/aligned_reads/pacbio/segdup95_stats/all.stats.bed'
         #'data/plots/plot_fp_near_indel.NA24385.hg38.png'
-        #expand('data/output/variant_analysis_fp_fn__NA24385.hg38__GQ50__reaper.pacbio.blasr.{cov}x.-z__1.tex',cov=[20,30,40,50,69]),
-        #'data/output/variant_analysis_fp_fn__NA12878.1000g__GQ44__reaper.pacbio.blasr.44x.-z__1.tex'
         #'data/output/variant_counts_table.NA12878.1000g.blasr.44.GQ44.tex'
         #'data/NA12878.1000g/duplicated_gene_vis/pacbio.44x.dup_genes.bam.bai',   # bam file for duplicated gene visualization
         #'data/NA12878.1000g/duplicated_gene_vis/illumina.30x.dup_genes.bam.bai'  # bam file for duplicated gene visualization
@@ -271,8 +278,9 @@ rule filter_random_positions:
 
 rule generate_random_positions:
     params: job_name = 'generate_random_positions.{chrom}.{build}'
+    input:  sizes_file = 'genome_tracks/{build}.chrom.sizes.txt'
     output: vcf = 'data/{individual}.{build,(1000g|hg38)}/random_positions/{chrom}.whole_chrom.vcf',
-            vcfgz = 'data/{individual}.{build,(1000g|hg38)}/random_positions/{chrom}.whole_chrom.vcf.gz',
+            vcfgz = 'data/{individual}.{build,(1000g|hg38)}/random_positions/{chrom}.whole_chrom.vcf.gz'
     run:
         chrom_name = chr_prefix(wildcards.chrom, wildcards.build)
         chrlen = get_chr_len(chrom_name, input.sizes_file)
@@ -535,6 +543,14 @@ rule tabix_index:
     input:  '{x}.{filetype}.gz'
     output: '{x}.{filetype,(bed|vcf)}.gz.tbi'
     shell:  '{TABIX} -f -p {wildcards.filetype} {input}'
+
+rule make_hs37d5_alias:
+    params: job_name = 'make_hs37d5_alias'
+    input:  fa = 'data/genomes/hs37d5.fa',
+            fai = 'data/genomes/hs37d5.fa.fai'
+    output: fa = 'data/genomes/1000g.fa',
+            fai = 'data/genomes/1000g.fa.fai'
+    shell:  'cd data/genomes; ln -s hs37d5.fa 1000g.fa; ln -s hs37d5.fa.fai 1000g.fa.fai'
 
 # bgzip vcf
 rule bgzip_vcf_calls:

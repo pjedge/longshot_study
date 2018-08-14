@@ -726,16 +726,24 @@ genomes_table_files = namedtuple('genomes_table_files', ['vcfeval_dir', 'vcfstat
 genomes_table_entry = namedtuple('genomes_table_entry', ['SNVs_called', 'precision', 'recall', 'outside_GIAB', 'runtime'])
 
 def get_snp_count(vcfstats_file):
-    snps_re = re.compile("\nSNPs\s+: (\d+)\n")
+    passed_re = re.compile("\nPassed Filters\s+: (\d+)\n")
+    snps_re = re.compile("\nSNPs\s+: (-|\d+)\n")
     with open(vcfstats_file,'r') as inf:
         fstr = inf.read()
-        return int(snps_re.findall(fstr)[0])
+        if int(passed_re.findall(fstr)[0]) == 0:
+            return 0
+        else:
+            return int(snps_re.findall(fstr)[0])
 
 def get_TsTv(vcfstats_file):
-    tstv_re = re.compile("\nSNP Transitions/Transversions: (\d+\.\d+)\s+")
+    tstv_re = re.compile("\nSNP Transitions/Transversions: (-|\d+\.\d+)\s+")
     with open(vcfstats_file,'r') as inf:
         fstr = inf.read()
-        return float(tstv_re.findall(fstr)[0])
+        res = tstv_re.findall(fstr)[0]
+        if res == '-':
+            return 0.0
+        else:
+            return float(res)
 
 def make_table_4_genomes(NA12878_table_files, NA24385_table_files,
                          NA24149_table_files, NA24143_table_files,
@@ -1283,6 +1291,93 @@ def plot_mappability_bars(pacbio_mf_0_0,
     #            xycoords='axes fraction', textcoords='offset points')
 
     plt.savefig(output_file)
+
+def mendelian_concordance_table(pacbio_row, illumina_row, outfile):
+
+    consistency_re = re.compile("\s+F\+M:\d+\/\d+\s+\((\d+\.\d+%)\)\n")
+    def parse_mendelian_output(mendelian_output):
+        with open(mendelian_output,'r') as inf:
+            file_contents = inf.read()
+            return consistency_re.findall(file_contents)[0]
+
+
+    pacbio_data = [parse_mendelian_output(f).replace('%','\%') for f in pacbio_row]
+    illumina_data = [parse_mendelian_output(f).replace('%','\%') for f in illumina_row]
+
+    # read in files containing bed file total lengths
+
+    s = '''
+\\begin{{table}}[htbp]
+\\centering
+\\small
+\\begin{{tabular}}{{llllll}}
+\\hline
+         & Genome  & Inside GIAB & Outside GIAB & Segmental Dup.       & Segmental Dup.       \\\\
+         & (1-22)  & Confident   & Confident    & ($\geq 95\%$ similar)& ($\geq 99\%$ similar)\\\\
+\\hline
+PacBio   & {}      & {}          & {}           & {}                   & {}                   \\tabularnewline
+Illumina & {}      & {}          & {}           & {}                   & {}                   \\tabularnewline
+\\hline
+\\end{{tabular}}
+\\caption{{{{\\bf Mendelian consistency for AJ Trio between variants called using PacBio reads
+($\\mathbf{{69\\times}}$ coverage son, $\\mathbf{{30\\times}}$ coverage mother, $\\mathbf{{32\\times}}$ coverage father),
+and variants called using Illumina reads ($\\mathbf{{60\\times}}$ coverage son, $\\mathbf{{30\\times}}$ coverage mother, $\\mathbf{{30\\times}}$ coverage father).
+Results are shown for genome-wide variants as well as variants within specific genomic regions.}}}}
+\\label{{tab:mendelian}}
+\\end{{table}}
+'''.format(*pacbio_data,
+           *illumina_data)
+
+    with open(outfile,'w') as outf:
+        print(s, file=outf)
+
+def make_dup_gene_table(gene_names, regions, pb_SNV_stats, il_SNV_stats, shared_SNV_stats, pb_frac_map, il_frac_map, output_file):
+
+    def parse_file(infile):
+        with open(infile,'r') as inf:
+            return inf.read().strip()
+
+    with open(output_file,'w') as outf:
+
+        head_part = '''\\begin{table}[htbp]
+\\centering
+\\small
+\\begin{tabular}{lllllll}
+\\hline
+Gene & Region & \# SNVs & \# SNVs   & \# SNVs & \% Mappable  & \% Mappable \\\\
+Name &        & PacBio  & Illumina  & Shared  & PacBio       &  Illumina   \\\\
+\\hline'''
+
+        print(head_part,file=outf)
+
+        for gene_name, region_file, pb_stats_file, il_stats_file, shared_stats_file, pb_frac_map_file, il_frac_map_file in zip(gene_names, regions, pb_SNV_stats, il_SNV_stats, shared_SNV_stats, pb_frac_map, il_frac_map):
+
+            region = parse_file(region_file)
+
+            pb_num_SNVs = get_snp_count(pb_stats_file)
+            il_num_SNVs = get_snp_count(il_stats_file)
+            shared_num_SNVs = get_snp_count(shared_stats_file)
+
+            pb_frac_map = float(parse_file(pb_frac_map_file))
+            il_frac_map = float(parse_file(il_frac_map_file))
+
+            line = '{} & {} & {} & {} & {} & {:.1f}\% & {:.1f}\% \\\\'.format(gene_name, region,
+                                                  pb_num_SNVs, il_num_SNVs, shared_num_SNVs,
+                                                  pb_frac_map*100, il_frac_map*100)
+            print(line,file=outf)
+
+        tail_part = '''\\hline
+\\end{tabular}
+\\caption{{\\bf Summary of read mappability and variants called for genes occuring
+inside segmental duplications.} Data shown is for NA12878, $30\\times$ coverage
+Illumina reads and $44\\times$ coverage PacBio reads. For the purposes of this
+figure ``Mappable" is defined as having at least $10\\times$ coverage of
+well-mapped reads (mapq $\\geq 30$).}
+\\label{tab:mendelian}
+\\end{table}'''
+
+        print(tail_part,file=outf)
+
 
 if __name__ == '__main__':
     args = parseargs()

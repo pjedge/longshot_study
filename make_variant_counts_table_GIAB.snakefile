@@ -7,32 +7,32 @@ rule make_variant_counts_table:
            segmental_duplications_99_region_size_file = 'genome_tracks/segmental_duplications_0.99_similar_{build}.bed.total_nonN__length',
            confident_region_size_file = 'data/{individual}.{build}/variants/ground_truth/region_filter.bed.total_nonN__length',
            nonconfident_region_size_file = 'data/{individual}.{build}/variants/ground_truth/outside_region_filter.bed.total_nonN__length',
-           illumina_genome_stats = 'data/{individual}.{build}/variants/illumina_30x.filtered/all.GQ50.PASS.SNPs_ONLY.vcf.stats',
-           illumina_segdup95_stats = 'data/{individual}.{build}/variants/illumina_30x.filtered/all.GQ50.PASS.SNPs_ONLY.segdup0.95_only.vcf.stats',
-           illumina_segdup99_stats = 'data/{individual}.{build}/variants/illumina_30x.filtered/all.GQ50.PASS.SNPs_ONLY.segdup0.99_only.vcf.stats',
-           illumina_GIAB_confident_stats = 'data/{individual}.{build}/variants/illumina_30x.filtered/all.GQ50.PASS.SNPs_ONLY.GIAB_confident_only.vcf.stats',
-           illumina_GIAB_nonconfident_stats = 'data/{individual}.{build}/variants/illumina_30x.filtered/all.GQ50.PASS.SNPs_ONLY.GIAB_nonconfident_only.vcf.stats',
+           giab_genome_stats = 'data/{individual}.{build}/variants/ground_truth/all.GQ0.PASS.SNPs_ONLY.vcf.stats',
+           giab_segdup95_stats = 'data/{individual}.{build}/variants/ground_truth/all.GQ0.PASS.SNPs_ONLY.segdup0.95_only.vcf.stats',
+           giab_segdup99_stats = 'data/{individual}.{build}/variants/ground_truth/all.GQ0.PASS.SNPs_ONLY.segdup0.99_only.vcf.stats',
+           giab_GIAB_confident_stats = 'data/{individual}.{build}/variants/ground_truth/all.GQ0.PASS.SNPs_ONLY.GIAB_confident_only.vcf.stats',
+           giab_GIAB_nonconfident_stats = 'data/{individual}.{build}/variants/ground_truth/all.GQ0.PASS.SNPs_ONLY.GIAB_nonconfident_only.vcf.stats',
            pacbio_genome_stats = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/all.GQ{pGQ}.PASS.SNPs_ONLY.vcf.stats',
            pacbio_segdup95_stats = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/all.GQ{pGQ}.PASS.SNPs_ONLY.segdup0.95_only.vcf.stats',
            pacbio_segdup99_stats = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/all.GQ{pGQ}.PASS.SNPs_ONLY.segdup0.99_only.vcf.stats',
            pacbio_GIAB_confident_stats = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/all.GQ{pGQ}.PASS.SNPs_ONLY.GIAB_confident_only.vcf.stats',
            pacbio_GIAB_nonconfident_stats = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/all.GQ{pGQ}.PASS.SNPs_ONLY.GIAB_nonconfident_only.vcf.stats',
-           pacbio_minus_illumina_genome_stats = 'data/{individual}.{build}/variants/MINUS_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}_illumina_30x.filtered_GQ50/minus.all.GQ0.PASS.SNPs_ONLY.vcf.stats',
-           pacbio_minus_illumina_segdup95_stats = 'data/{individual}.{build}/variants/MINUS_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}_illumina_30x.filtered_GQ50/minus.all.GQ0.PASS.SNPs_ONLY.segdup0.95_only.vcf.stats',
-           pacbio_minus_illumina_segdup99_stats = 'data/{individual}.{build}/variants/MINUS_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}_illumina_30x.filtered_GQ50/minus.all.GQ0.PASS.SNPs_ONLY.segdup0.99_only.vcf.stats',
-           pacbio_minus_illumina_GIAB_confident_stats = 'data/{individual}.{build}/variants/MINUS_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}_illumina_30x.filtered_GQ50/minus.all.GQ0.PASS.SNPs_ONLY.GIAB_confident_only.vcf.stats',
-           pacbio_minus_illumina_GIAB_nonconfident_stats = 'data/{individual}.{build}/variants/MINUS_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}_illumina_30x.filtered_GQ50/minus.all.GQ0.PASS.SNPs_ONLY.GIAB_nonconfident_only.vcf.stats',
-           illumina_minus_pacbio_genome_stats = 'data/{individual}.{build}/variants/MINUS_illumina_30x.filtered_GQ50_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}/minus.all.GQ0.PASS.SNPs_ONLY.vcf.stats',
-           illumina_minus_pacbio_segdup95_stats = 'data/{individual}.{build}/variants/MINUS_illumina_30x.filtered_GQ50_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}/minus.all.GQ0.PASS.SNPs_ONLY.segdup0.95_only.vcf.stats',
-           illumina_minus_pacbio_segdup99_stats = 'data/{individual}.{build}/variants/MINUS_illumina_30x.filtered_GQ50_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}/minus.all.GQ0.PASS.SNPs_ONLY.segdup0.99_only.vcf.stats',
-           illumina_minus_pacbio_GIAB_confident_stats = 'data/{individual}.{build}/variants/MINUS_illumina_30x.filtered_GQ50_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}/minus.all.GQ0.PASS.SNPs_ONLY.GIAB_confident_only.vcf.stats',
-           illumina_minus_pacbio_GIAB_nonconfident_stats = 'data/{individual}.{build}/variants/MINUS_illumina_30x.filtered_GQ50_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}/minus.all.GQ0.PASS.SNPs_ONLY.GIAB_nonconfident_only.vcf.stats',
-           intersect_illumina_pacbio_genome_stats = 'data/{individual}.{build}/variants/INTERSECT_illumina_30x.filtered_GQ50_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}/intersected.all.GQ0.PASS.SNPs_ONLY.vcf.stats',
-           intersect_illumina_pacbio_segdup95_stats = 'data/{individual}.{build}/variants/INTERSECT_illumina_30x.filtered_GQ50_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}/intersected.all.GQ0.PASS.SNPs_ONLY.segdup0.95_only.vcf.stats',
-           intersect_illumina_pacbio_segdup99_stats = 'data/{individual}.{build}/variants/INTERSECT_illumina_30x.filtered_GQ50_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}/intersected.all.GQ0.PASS.SNPs_ONLY.segdup0.99_only.vcf.stats',
-           intersect_illumina_pacbio_GIAB_confident_stats = 'data/{individual}.{build}/variants/INTERSECT_illumina_30x.filtered_GQ50_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}/intersected.all.GQ0.PASS.SNPs_ONLY.GIAB_confident_only.vcf.stats',
-           intersect_illumina_pacbio_GIAB_nonconfident_stats = 'data/{individual}.{build}/variants/INTERSECT_illumina_30x.filtered_GQ50_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}/intersected.all.GQ0.PASS.SNPs_ONLY.GIAB_nonconfident_only.vcf.stats',
-    output: tex = 'data/output/variant_counts_table.{individual,(NA\d+)}.{build,(hg38|1000g)}.{aligner,(blasr)}.{pcov,\d+}.GQ{pGQ,\d+}.tex',
+           pacbio_minus_giab_genome_stats = 'data/{individual}.{build}/variants/MINUS_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}_ground_truth/minus.all.GQ0.PASS.SNPs_ONLY.vcf.stats',
+           pacbio_minus_giab_segdup95_stats = 'data/{individual}.{build}/variants/MINUS_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}_ground_truth/minus.all.GQ0.PASS.SNPs_ONLY.segdup0.95_only.vcf.stats',
+           pacbio_minus_giab_segdup99_stats = 'data/{individual}.{build}/variants/MINUS_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}_ground_truth/minus.all.GQ0.PASS.SNPs_ONLY.segdup0.99_only.vcf.stats',
+           pacbio_minus_giab_GIAB_confident_stats = 'data/{individual}.{build}/variants/MINUS_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}_ground_truth/minus.all.GQ0.PASS.SNPs_ONLY.GIAB_confident_only.vcf.stats',
+           pacbio_minus_giab_GIAB_nonconfident_stats = 'data/{individual}.{build}/variants/MINUS_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}_ground_truth/minus.all.GQ0.PASS.SNPs_ONLY.GIAB_nonconfident_only.vcf.stats',
+           giab_minus_pacbio_genome_stats = 'data/{individual}.{build}/variants/MINUS_ground_truth_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}/minus.all.GQ0.PASS.SNPs_ONLY.vcf.stats',
+           giab_minus_pacbio_segdup95_stats = 'data/{individual}.{build}/variants/MINUS_ground_truth_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}/minus.all.GQ0.PASS.SNPs_ONLY.segdup0.95_only.vcf.stats',
+           giab_minus_pacbio_segdup99_stats = 'data/{individual}.{build}/variants/MINUS_ground_truth_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}/minus.all.GQ0.PASS.SNPs_ONLY.segdup0.99_only.vcf.stats',
+           giab_minus_pacbio_GIAB_confident_stats = 'data/{individual}.{build}/variants/MINUS_ground_truth_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}/minus.all.GQ0.PASS.SNPs_ONLY.GIAB_confident_only.vcf.stats',
+           giab_minus_pacbio_GIAB_nonconfident_stats = 'data/{individual}.{build}/variants/MINUS_ground_truth_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}/minus.all.GQ0.PASS.SNPs_ONLY.GIAB_nonconfident_only.vcf.stats',
+           intersect_giab_pacbio_genome_stats = 'data/{individual}.{build}/variants/INTERSECT_ground_truth_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}/intersected.all.GQ0.PASS.SNPs_ONLY.vcf.stats',
+           intersect_giab_pacbio_segdup95_stats = 'data/{individual}.{build}/variants/INTERSECT_ground_truth_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}/intersected.all.GQ0.PASS.SNPs_ONLY.segdup0.95_only.vcf.stats',
+           intersect_giab_pacbio_segdup99_stats = 'data/{individual}.{build}/variants/INTERSECT_ground_truth_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}/intersected.all.GQ0.PASS.SNPs_ONLY.segdup0.99_only.vcf.stats',
+           intersect_giab_pacbio_GIAB_confident_stats = 'data/{individual}.{build}/variants/INTERSECT_ground_truth_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}/intersected.all.GQ0.PASS.SNPs_ONLY.GIAB_confident_only.vcf.stats',
+           intersect_giab_pacbio_GIAB_nonconfident_stats = 'data/{individual}.{build}/variants/INTERSECT_ground_truth_reaper.pacbio.{aligner}.{pcov}x.-z_GQ{pGQ}/intersected.all.GQ0.PASS.SNPs_ONLY.GIAB_nonconfident_only.vcf.stats',
+    output: tex = 'data/output/variant_counts_table_GIAB_VARIANTS.{individual,(NA\d+)}.{build,(hg38|1000g)}.{aligner,(blasr)}.{pcov,\d+}.GQ{pGQ,\d+}.tex',
     run:
         ptf.make_variant_counts_table(
                chr1_22_region_size_file = input.chr1_22_region_size_file,
@@ -40,31 +40,31 @@ rule make_variant_counts_table:
                segmental_duplications_99_region_size_file = input.segmental_duplications_99_region_size_file,
                confident_region_size_file = input.confident_region_size_file,
                nonconfident_region_size_file = input.nonconfident_region_size_file,
-               illumina_genome_stats = input.illumina_genome_stats,
-               illumina_segdup95_stats = input.illumina_segdup95_stats,
-               illumina_segdup99_stats = input.illumina_segdup99_stats,
-               illumina_GIAB_confident_stats = input.illumina_GIAB_confident_stats,
-               illumina_GIAB_nonconfident_stats = input.illumina_GIAB_nonconfident_stats,
+               illumina_genome_stats = input.giab_genome_stats,
+               illumina_segdup95_stats = input.giab_segdup95_stats,
+               illumina_segdup99_stats = input.giab_segdup99_stats,
+               illumina_GIAB_confident_stats = input.giab_GIAB_confident_stats,
+               illumina_GIAB_nonconfident_stats = input.giab_GIAB_nonconfident_stats,
                pacbio_genome_stats = input.pacbio_genome_stats,
                pacbio_segdup95_stats = input.pacbio_segdup95_stats,
                pacbio_segdup99_stats = input.pacbio_segdup99_stats,
                pacbio_GIAB_confident_stats = input.pacbio_GIAB_confident_stats,
                pacbio_GIAB_nonconfident_stats = input.pacbio_GIAB_nonconfident_stats,
-               pacbio_minus_illumina_genome_stats = input.pacbio_minus_illumina_genome_stats,
-               pacbio_minus_illumina_segdup95_stats = input.pacbio_minus_illumina_segdup95_stats,
-               pacbio_minus_illumina_segdup99_stats = input.pacbio_minus_illumina_segdup99_stats,
-               pacbio_minus_illumina_GIAB_confident_stats = input.pacbio_minus_illumina_GIAB_confident_stats,
-               pacbio_minus_illumina_GIAB_nonconfident_stats = input.pacbio_minus_illumina_GIAB_nonconfident_stats,
-               illumina_minus_pacbio_genome_stats = input.illumina_minus_pacbio_genome_stats,
-               illumina_minus_pacbio_segdup95_stats = input.illumina_minus_pacbio_segdup95_stats,
-               illumina_minus_pacbio_segdup99_stats = input.illumina_minus_pacbio_segdup99_stats,
-               illumina_minus_pacbio_GIAB_confident_stats = input.illumina_minus_pacbio_GIAB_confident_stats,
-               illumina_minus_pacbio_GIAB_nonconfident_stats = input.illumina_minus_pacbio_GIAB_nonconfident_stats,
-               intersect_illumina_pacbio_genome_stats = input.intersect_illumina_pacbio_genome_stats,
-               intersect_illumina_pacbio_segdup95_stats = input.intersect_illumina_pacbio_segdup95_stats,
-               intersect_illumina_pacbio_segdup99_stats = input.intersect_illumina_pacbio_segdup99_stats,
-               intersect_illumina_pacbio_GIAB_confident_stats = input.intersect_illumina_pacbio_GIAB_confident_stats,
-               intersect_illumina_pacbio_GIAB_nonconfident_stats = input.intersect_illumina_pacbio_GIAB_nonconfident_stats,
+               pacbio_minus_illumina_genome_stats = input.pacbio_minus_giab_genome_stats,
+               pacbio_minus_illumina_segdup95_stats = input.pacbio_minus_giab_segdup95_stats,
+               pacbio_minus_illumina_segdup99_stats = input.pacbio_minus_giab_segdup99_stats,
+               pacbio_minus_illumina_GIAB_confident_stats = input.pacbio_minus_giab_GIAB_confident_stats,
+               pacbio_minus_illumina_GIAB_nonconfident_stats = input.pacbio_minus_giab_GIAB_nonconfident_stats,
+               illumina_minus_pacbio_genome_stats = input.giab_minus_pacbio_genome_stats,
+               illumina_minus_pacbio_segdup95_stats = input.giab_minus_pacbio_segdup95_stats,
+               illumina_minus_pacbio_segdup99_stats = input.giab_minus_pacbio_segdup99_stats,
+               illumina_minus_pacbio_GIAB_confident_stats = input.giab_minus_pacbio_GIAB_confident_stats,
+               illumina_minus_pacbio_GIAB_nonconfident_stats = input.giab_minus_pacbio_GIAB_nonconfident_stats,
+               intersect_illumina_pacbio_genome_stats = input.intersect_giab_pacbio_genome_stats,
+               intersect_illumina_pacbio_segdup95_stats = input.intersect_giab_pacbio_segdup95_stats,
+               intersect_illumina_pacbio_segdup99_stats = input.intersect_giab_pacbio_segdup99_stats,
+               intersect_illumina_pacbio_GIAB_confident_stats = input.intersect_giab_pacbio_GIAB_confident_stats,
+               intersect_illumina_pacbio_GIAB_nonconfident_stats = input.intersect_giab_pacbio_GIAB_nonconfident_stats,
                outfile=output.tex)
 
 rule generate_nonconfident_bed:
@@ -81,51 +81,51 @@ rule generate_nonconfident_bed:
 # we need to make sure to pass a genome file that is also in this order
 ##################################################################################################
 
-rule intersect_illumina_pacbio_VCFs:
-    params: job_name = 'intersect_VCFs.{individual}.{build}.{aligner}.{pcov}x.illumina_GQ{iGQ}.pacbio_GQ{pGQ}',
+rule intersect_giab_pacbio_VCFs:
+    params: job_name = 'intersect_VCFs.{individual}.{build}.{aligner}.{pcov}x.ground_truth.pacbio_GQ{pGQ}',
     input:  pacbio_vcfgz =   'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/all.GQ{pGQ}.PASS.SNPs_ONLY.vcf.gz',
             pacbio_tbi   =   'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/all.GQ{pGQ}.PASS.SNPs_ONLY.vcf.gz.tbi',
-            illumina_vcfgz = 'data/{individual}.{build}/variants/illumina_30x.filtered/all.GQ{iGQ}.PASS.SNPs_ONLY.vcf.gz',
-            illumina_tbi =   'data/{individual}.{build}/variants/illumina_30x.filtered/all.GQ{iGQ}.PASS.SNPs_ONLY.vcf.gz.tbi',
+            giab_vcfgz = 'data/{individual}.{build}/variants/ground_truth/all.GQ0.PASS.SNPs_ONLY.vcf.gz',
+            giab_tbi =   'data/{individual}.{build}/variants/ground_truth/all.GQ0.PASS.SNPs_ONLY.vcf.gz.tbi',
             genome_file = 'genome_tracks/{build}.chrom.sizes.natural_order.txt'
-    output: vcf = 'data/{individual}.{build}/variants/INTERSECT_illumina_30x.filtered_GQ{iGQ,\d+}_reaper.pacbio.{aligner,blasr}.{pcov,\d+}x.-z_GQ{pGQ}/intersected.all.GQ0.PASS.SNPs_ONLY.vcf',
-            vcfgz = 'data/{individual}.{build}/variants/INTERSECT_illumina_30x.filtered_GQ{iGQ,\d+}_reaper.pacbio.{aligner,blasr}.{pcov,\d+}x.-z_GQ{pGQ}/intersected.all.GQ0.PASS.SNPs_ONLY.vcf.gz',
+    output: vcf = 'data/{individual}.{build}/variants/INTERSECT_ground_truth_reaper.pacbio.{aligner,blasr}.{pcov,\d+}x.-z_GQ{pGQ}/intersected.all.GQ0.PASS.SNPs_ONLY.vcf',
+            vcfgz = 'data/{individual}.{build}/variants/INTERSECT_ground_truth_reaper.pacbio.{aligner,blasr}.{pcov,\d+}x.-z_GQ{pGQ}/intersected.all.GQ0.PASS.SNPs_ONLY.vcf.gz',
     shell:
         '''
         gunzip -c {input.pacbio_vcfgz} | grep -P '^#' > {output.vcf}
-        {BEDTOOLS} intersect -g {input.genome_file} -sorted -wa -a {input.pacbio_vcfgz} -b {input.illumina_vcfgz} >> {output.vcf}
+        {BEDTOOLS} intersect -g {input.genome_file} -sorted -wa -a {input.pacbio_vcfgz} -b {input.giab_vcfgz} >> {output.vcf}
         bgzip -c {output.vcf} > {output.vcfgz}
         '''
 
-rule setminus_pacbio_illumina_VCFs:
-    params: job_name = 'setminus_pacbio_illumina_VCFs.{individual}.{build}.{aligner}.{pcov}x.illumina_GQ50.pacbio_GQ{pGQ}',
+rule setminus_pacbio_giab_VCFs:
+    params: job_name = 'setminus_pacbio_giab_VCFs.{individual}.{build}.{aligner}.{pcov}x.ground_truth.pacbio_GQ{pGQ}',
     input:  pacbio_vcfgz =   'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/all.GQ{pGQ}.PASS.SNPs_ONLY.vcf.gz',
             pacbio_tbi   =   'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/all.GQ{pGQ}.PASS.SNPs_ONLY.vcf.gz.tbi',
-            illumina_vcfgz = 'data/{individual}.{build}/variants/illumina_30x.filtered/all.GQ50.PASS.SNPs_ONLY.vcf.gz',
-            illumina_tbi =   'data/{individual}.{build}/variants/illumina_30x.filtered/all.GQ50.PASS.SNPs_ONLY.vcf.gz.tbi',
+            giab_vcfgz = 'data/{individual}.{build}/variants/ground_truth/all.GQ0.PASS.SNPs_ONLY.vcf.gz',
+            giab_tbi =   'data/{individual}.{build}/variants/ground_truth/all.GQ0.PASS.SNPs_ONLY.vcf.gz.tbi',
             genome_file = 'genome_tracks/{build}.chrom.sizes.natural_order.txt'
-    output: vcf = 'data/{individual}.{build}/variants/MINUS_reaper.pacbio.{aligner,blasr}.{pcov,\d+}x.-z_GQ{pGQ,\d+}_illumina_30x.filtered_GQ50/minus.all.GQ0.PASS.SNPs_ONLY.vcf',
-            vcfgz = 'data/{individual}.{build}/variants/MINUS_reaper.pacbio.{aligner,blasr}.{pcov,\d+}x.-z_GQ{pGQ,\d+}_illumina_30x.filtered_GQ50/minus.all.GQ0.PASS.SNPs_ONLY.vcf.gz',
+    output: vcf = 'data/{individual}.{build}/variants/MINUS_reaper.pacbio.{aligner,blasr}.{pcov,\d+}x.-z_GQ{pGQ,\d+}_ground_truth/minus.all.GQ0.PASS.SNPs_ONLY.vcf',
+            vcfgz = 'data/{individual}.{build}/variants/MINUS_reaper.pacbio.{aligner,blasr}.{pcov,\d+}x.-z_GQ{pGQ,\d+}_ground_truth/minus.all.GQ0.PASS.SNPs_ONLY.vcf.gz',
     shell:
         '''
         gunzip -c {input.pacbio_vcfgz} | grep -P '^#' > {output.vcf}
-        {BEDTOOLS} subtract -g {input.genome_file} -sorted -a {input.pacbio_vcfgz} -b {input.illumina_vcfgz} >> {output.vcf}
+        {BEDTOOLS} subtract -g {input.genome_file} -sorted -a {input.pacbio_vcfgz} -b {input.giab_vcfgz} >> {output.vcf}
         bgzip -c {output.vcf} > {output.vcfgz}
         '''
 
-rule setminus_illumina_pacbio_VCFs:
-    params: job_name = 'setminus_illumina_pacbio_VCFs.{individual}.{build}.{aligner}.{pcov}x.illumina_GQ50.pacbio_GQ{pGQ}',
+rule setminus_giab_pacbio_VCFs:
+    params: job_name = 'setminus_giab_pacbio_VCFs.{individual}.{build}.{aligner}.{pcov}x.ground_truth.pacbio_GQ{pGQ}',
     input:  pacbio_vcfgz =   'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/all.GQ{pGQ}.PASS.SNPs_ONLY.vcf.gz',
             pacbio_tbi   =   'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/all.GQ{pGQ}.PASS.SNPs_ONLY.vcf.gz.tbi',
-            illumina_vcfgz = 'data/{individual}.{build}/variants/illumina_30x.filtered/all.GQ50.PASS.SNPs_ONLY.vcf.gz',
-            illumina_tbi =   'data/{individual}.{build}/variants/illumina_30x.filtered/all.GQ50.PASS.SNPs_ONLY.vcf.gz.tbi',
+            giab_vcfgz = 'data/{individual}.{build}/variants/ground_truth/all.GQ0.PASS.SNPs_ONLY.vcf.gz',
+            giab_tbi =   'data/{individual}.{build}/variants/ground_truth/all.GQ0.PASS.SNPs_ONLY.vcf.gz.tbi',
             genome_file = 'genome_tracks/{build}.chrom.sizes.natural_order.txt'
-    output: vcf = 'data/{individual}.{build}/variants/MINUS_illumina_30x.filtered_GQ50_reaper.pacbio.{aligner,blasr}.{pcov,\d+}x.-z_GQ{pGQ,\d+}/minus.all.GQ0.PASS.SNPs_ONLY.vcf',
-            vcfgz = 'data/{individual}.{build}/variants/MINUS_illumina_30x.filtered_GQ50_reaper.pacbio.{aligner,blasr}.{pcov,\d+}x.-z_GQ{pGQ,\d+}/minus.all.GQ0.PASS.SNPs_ONLY.vcf.gz',
+    output: vcf = 'data/{individual}.{build}/variants/MINUS_ground_truth_reaper.pacbio.{aligner,blasr}.{pcov,\d+}x.-z_GQ{pGQ,\d+}/minus.all.GQ0.PASS.SNPs_ONLY.vcf',
+            vcfgz = 'data/{individual}.{build}/variants/MINUS_ground_truth_reaper.pacbio.{aligner,blasr}.{pcov,\d+}x.-z_GQ{pGQ,\d+}/minus.all.GQ0.PASS.SNPs_ONLY.vcf.gz',
     shell:
         '''
-        gunzip -c {input.illumina_vcfgz} | grep -P '^#' > {output.vcf}
-        {BEDTOOLS} subtract -g {input.genome_file} -sorted -a {input.illumina_vcfgz} -b {input.pacbio_vcfgz} >> {output.vcf}
+        gunzip -c {input.giab_vcfgz} | grep -P '^#' > {output.vcf}
+        {BEDTOOLS} subtract -g {input.genome_file} -sorted -a {input.giab_vcfgz} -b {input.pacbio_vcfgz} >> {output.vcf}
         bgzip -c {output.vcf} > {output.vcfgz}
         '''
 
@@ -172,6 +172,7 @@ rule get_N_bedfile:
     output: 'genome_tracks/N_regions_{build}.bed'
     shell: '{SEQTK} cutN -gp10000000 -n1 {input} > {output}'
 
+
 rule filter_SNVs_GQ:
     params: job_name = 'filter_SNVs_GQ.{individual}.{build}.{info}.GQ{GQ}',
     input:  vcfgz = 'data/{individual}.{build}/variants/{info}/all.vcf.gz',
@@ -183,6 +184,13 @@ rule filter_SNVs_GQ:
         --keep-expr "FILTER.every(function(f) {{return f == 'PASS'}})" \
         --snps-only -g {wildcards.GQ} -i {input.vcfgz} -o {output.vcfgz}
         '''
+
+rule filter_SNVs_GQ_ground_truth:
+    params: job_name = 'filter_SNVs_GQ_ground_truth.{individual}.{build}',
+    input:  vcfgz = 'data/{individual}.{build}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
+            tbi   = 'data/{individual}.{build}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz.tbi',
+    output: vcfgz = 'data/{individual}.{build}/variants/ground_truth/all.GQ0.PASS.SNPs_ONLY.vcf.gz'
+    shell: 'cp {input.vcfgz} {output.vcfgz}'
 
 rule filter_SNVs_segmental_duplications:
     params: job_name = 'filter_SNVs_segmental_duplications.{individual}.{build}.{info}.GQ{GQ}',

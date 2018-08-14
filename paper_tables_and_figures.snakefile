@@ -454,3 +454,11 @@ rule generate_map_counts_pacbio:
         {MAP_COUNTER} --chrom {w_chrom} --bam {input.bam} --ref {ref_fa} --min_cov {wildcards.cov} \
         --min_mapq {wildcards.mapq} --map_frac {wildcards.mapfrac} > {output}
         ''')
+
+rule generate_aj_trio_table:
+    params: job_name = 'generate_aj_trio_table'
+    input: pacbio_row = expand('data/aj_trio/trio_shared_variant_sites/pacbio/mendelian/all.{region}.report.txt', region=['whole_genome','confident','nonconfident','segdup95','segdup99']),
+           illumina_row = expand('data/aj_trio/trio_shared_variant_sites/illumina/mendelian/all.{region}.report.txt', region=['whole_genome','confident','nonconfident','segdup95','segdup99']),
+    output: table = 'data/output/pacbio_illumina_mendelian_concordance_table.tex'
+    run:
+        ptf.mendelian_concordance_table(input.pacbio_row, input.illumina_row, output.table)

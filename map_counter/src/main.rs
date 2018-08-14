@@ -97,14 +97,42 @@ pub fn get_interval_lst(bam_file: &String, interval: &Option<GenomicInterval>) -
 }
 
 // this is really ugly. TODO a less verbose implementation
-pub fn parse_chrom_string(chrom_string: Option<&str>,
+pub fn parse_region_string(region_string: Option<&str>,
                            bamfile_name: &String)
                            -> Option<GenomicInterval> {
     let bam = bam::Reader::from_path(bamfile_name).unwrap();
 
-    match chrom_string {
+    match region_string {
         Some(r) if r.contains(":") && r.contains("-") => {
-            panic!("Invalid chromosome string");
+            let split1: Vec<&str> = r.split(":").collect();
+            if split1.len() != 2 {
+                panic!("Invalid format for region. Please use <chrom> or <chrom:start-stop>");
+            }
+            let split2: Vec<&str> = split1[1].split("-").collect();
+            if split2.len() != 2 {
+                panic!("Invalid format for region. Please use <chrom> or <chrom:start-stop>");
+            }
+            let iv_chrom = split1[0].to_string();
+            let iv_start = split2[0].parse::<u32>().expect("Invalid position value specified in region string.");
+            let iv_end = split2[1].parse::<u32>().expect("Invalid position value specified in region string.");
+
+            let mut tid: u32 = 0;
+            for name in bam.header().target_names() {
+                if u8_to_string(name) == iv_chrom {
+                    break;
+                }
+                tid += 1;
+            }
+            if tid as usize == bam.header().target_names().len() {
+                panic!("Chromosome name for region is not in BAM file.");
+            }
+
+            Some(GenomicInterval {
+                tid: tid,
+                chrom: iv_chrom,
+                start_pos: iv_start - 1,
+                end_pos: iv_end - 1,
+            })
         }
         Some(r) => {
             let r_str = r.to_string();
@@ -136,7 +164,8 @@ pub fn count_mapped_reads(bam_file: &String,
                            interval: &Option<GenomicInterval>,
                            min_coverage: u32,
                            min_mapq: u8,
-                           min_map_frac: f64) {
+                           min_map_frac: f64,
+                           mapped_count_mode: bool) {
 
     let target_names = parse_target_names(&bam_file);
 
@@ -165,6 +194,13 @@ pub fn count_mapped_reads(bam_file: &String,
 
             let tid: usize = pileup.tid() as usize;
             let chrom: String = target_names[tid].clone();
+            let pos0: usize = pileup.pos() as usize;
+
+            if chrom != iv.chrom ||
+                pos0 < iv.start_pos as usize ||
+                pos0 > iv.end_pos as usize {
+                continue;
+            }
 
             if tid != prev_tid {
                 let mut ref_seq_u8: Vec<u8> = vec![];
@@ -204,8 +240,14 @@ pub fn count_mapped_reads(bam_file: &String,
 
             let well_mapped_frac = well_mapped as f64 / depth as f64;
 
-            if depth >= min_coverage as usize && well_mapped_frac >= min_map_frac {
-                count += 1;
+            if mapped_count_mode {
+                if well_mapped >= min_coverage as usize {
+                    count += 1;
+                }
+            } else {
+                if depth >= min_coverage as usize && well_mapped_frac >= min_map_frac {
+                    count += 1;
+                }
             }
 
             prev_tid = tid;
@@ -267,12 +309,20 @@ fn main() {
          .help("Map quality cutoff (for calculating well-mapped fraction).")
          .display_order(60)
          .default_value("60"))
+     .arg(Arg::with_name("Mapped read count mode")
+         .short("m")
+         .long("mapped_count_mode")
+         .help("Ignore map fraction and use total mapped read count. \
+                Return the total number of positions with at least min_cov reads having mapq>=min_mapq. \
+                Default behavior is to return the number of positions with at least min_cov reads, where \
+                at least map_frac of them have mapq>=min_mapq")
+         .display_order(161))
     .get_matches();
 
     let bamfile_name = input_args.value_of("Input BAM").unwrap().to_string();
     let fastafile_name = input_args.value_of("Input FASTA").unwrap().to_string();
 
-    let interval: Option<GenomicInterval> = parse_chrom_string(input_args.value_of("Chrom"),
+    let interval: Option<GenomicInterval> = parse_region_string(input_args.value_of("Chrom"),
                                                                 &bamfile_name);
 
     let min_mapq = input_args.value_of("Min mapq")
@@ -290,11 +340,20 @@ fn main() {
         .parse::<f64>()
         .expect("Argument map_frac must be a positive float!");
 
+    let mapped_count_mode: bool = match input_args.occurrences_of("Mapped read count mode") {
+        0 => {false},
+        1 => {true},
+        _ => {
+            panic!("mapped_count_mode specified multiple times");
+        }
+    };
+
     count_mapped_reads(&bamfile_name,
                        &fastafile_name,
                        &interval,
                        min_cov,
                        min_mapq,
-                       min_map_frac);
+                       min_map_frac,
+                       mapped_count_mode);
 
 }

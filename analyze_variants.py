@@ -240,19 +240,19 @@ def analyze_variants(chrom_name, pacbio_calls_vcfgz, fp_calls_vcfgz, fn_calls_vc
     s = '''
 \\begin{{table}}[htbp]
 \\centering
-\\begin{{tabular}}{{lrrrrr}}
+\\begin{{tabular}}{{lllll}}
 \\hline
-Genome      & False          & False          & FP         & FN         \\\\
-            & Positives (FP) & Negatives (FN) & Enrichment & Enrichment \\\\
+Genome      & False          & FP         & False          & FN         \\\\
+            & Positives (FP) & Enrichment & Negatives (FN) & Enrichment \\\\
 \\hline
-Misgenotyped SNV & {:.3f} & {:.3f} & - & - \\\\
-  & {:.3f} & {:.3f} & {:.3f} \\\\
-In homopolymer & {:.3f} & {:.3f} & {:.3f} & {:.3f} \\\\
-In homopolymer & {:.3f} & {:.3f} & {:.3f} & {:.3f} \\\\
-(not near indel) &      &        &        &        \\\\
-In STR         & {:.3f} & {:.3f} & {:.3f} & {:.3f} \\\\
-In LINE        & {:.3f} & {:.3f} & {:.3f} & {:.3f} \\\\
-In SINE        & {:.3f} & {:.3f} & {:.3f} & {:.3f} \\\\
+Misgenotyped SNV & {:.3f} & - & {:.3f} & - \\\\
+Near Indel     & {:.3f} & {:.2f} & {:.3f} & {:.2f} \\\\
+In homopolymer & {:.3f} & {:.2f} & {:.3f} & {:.2f} \\\\
+In homopolymer but & {:.3f} & {:.2f} & {:.3f} & {:.2f} \\\\
+\\ \\ \\ \\ \\ not near indel &      &        &        &        \\\\
+In STR         & {:.3f} & {:.2f} & {:.3f} & {:.2f} \\\\
+In LINE        & {:.3f} & {:.2f} & {:.3f} & {:.2f} \\\\
+In SINE        & {:.3f} & {:.2f} & {:.3f} & {:.2f} \\\\
 \\hline
 \\end{{tabular}}
 \\caption{{{{\\bf Fractions of False Positive (FN) and False Negative (FN) variant calls that
@@ -262,12 +262,12 @@ last two columns show the fold enrichment compared to the random positions.}}}}
 \\label{{tab:stats}}
 \\end{{table}}
 '''.format(fp_fracs[0], fn_fracs[0],
-           fp_fracs[1], fn_fracs[1], fp_fracs[1]/random_fracs[1], fn_fracs[1]/random_fracs[1],
-           fp_fracs[2], fn_fracs[2], fp_fracs[2]/random_fracs[2], fn_fracs[2]/random_fracs[2],
-           fp_fracs[3], fn_fracs[3], fp_fracs[3]/random_fracs[3], fn_fracs[3]/random_fracs[3],
-           fp_fracs[4], fn_fracs[4], fp_fracs[4]/random_fracs[4], fn_fracs[4]/random_fracs[4],
-           fp_fracs[5], fn_fracs[5], fp_fracs[5]/random_fracs[5], fn_fracs[5]/random_fracs[5],
-           fp_fracs[6], fn_fracs[6], fp_fracs[6]/random_fracs[6], fn_fracs[6]/random_fracs[6])
+           fp_fracs[1], fp_fracs[1]/random_fracs[1], fn_fracs[1], fn_fracs[1]/random_fracs[1],
+           fp_fracs[2], fp_fracs[2]/random_fracs[2], fn_fracs[2], fn_fracs[2]/random_fracs[2],
+           fp_fracs[3], fp_fracs[3]/random_fracs[3], fn_fracs[3], fn_fracs[3]/random_fracs[3],
+           fp_fracs[4], fp_fracs[4]/random_fracs[4], fn_fracs[4], fn_fracs[4]/random_fracs[4],
+           fp_fracs[5], fp_fracs[5]/random_fracs[5], fn_fracs[5], fn_fracs[5]/random_fracs[5],
+           fp_fracs[6], fp_fracs[6]/random_fracs[6], fn_fracs[6], fn_fracs[6]/random_fracs[6])
 
     with open(output_file,'w') as outf:
         print(s, file=outf)

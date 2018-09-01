@@ -8,12 +8,12 @@ rule plot_pr_curve_NA24385_1000g:
     params: job_name = 'plot_pr_curve_NA24385.1000g',
             title = 'Precision Recall Curve for Reaper on NA24385: PacBio Reads vs Standard Illumina'
     input:
-        reaper20_rtg = 'data/NA24385.1000g/vcfeval/reaper.pacbio.bwamem.20x.-z/{chrom}.done',
-        reaper30_rtg = 'data/NA24385.1000g/vcfeval/reaper.pacbio.bwamem.30x.-z/{chrom}.done',
-        reaper40_rtg = 'data/NA24385.1000g/vcfeval/reaper.pacbio.bwamem.40x.-z/{chrom}.done',
-        reaper50_rtg = 'data/NA24385.1000g/vcfeval/reaper.pacbio.bwamem.50x.-z/{chrom}.done',
-        reaper69_rtg = 'data/NA24385.1000g/vcfeval/reaper.pacbio.bwamem.69x.-z/{chrom}.done',
-        illumina_rtg = 'data/NA24385.1000g/vcfeval/illumina_30x.filtered/{chrom}.done'
+        reaper20_rtg = 'data/NA24385.1000g/vcfeval/reaper.pacbio.bwamem.20x.-z/{chrom}',
+        reaper30_rtg = 'data/NA24385.1000g/vcfeval/reaper.pacbio.bwamem.30x.-z/{chrom}',
+        reaper40_rtg = 'data/NA24385.1000g/vcfeval/reaper.pacbio.bwamem.40x.-z/{chrom}',
+        reaper50_rtg = 'data/NA24385.1000g/vcfeval/reaper.pacbio.bwamem.50x.-z/{chrom}',
+        reaper69_rtg = 'data/NA24385.1000g/vcfeval/reaper.pacbio.bwamem.69x.-z/{chrom}',
+        illumina_rtg = 'data/NA24385.1000g/vcfeval/illumina_30x.filtered/{chrom}'
     output:
         png = 'data/plots/NA24385.1000g_prec_recall_{chrom}.png'
     run:

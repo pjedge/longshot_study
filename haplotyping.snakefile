@@ -13,7 +13,7 @@ rule combine_haplotype_stats:
 rule haplotype_accuracy_reaper:
     params: job_name = 'haplotype_accuracy_reaper.{individual}.{build}.pacbio{pcov}x.{aligner}.{chrom}',
     input: vcf = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{pcov}x.-z/{chrom}.filtered.vcf',
-           ground_truth = 'data/{individual}.{build}/variants/ground_truth/separate_chrom/ground_truth.DECOMPOSED.SNVs_ONLY.{chrom}.vcf',
+           ground_truth = 'data/{individual}.{build}/variants/ground_truth/separate_chrom/ground_truth.for_haplotyping.{chrom}.vcf',
            contig_size_file = 'genome_tracks/{build}.chrom.sizes.txt'
     output: pickle = 'data/{individual}.{build}/reaper_haplotypes/hap_statistics/reaper.pacbio.{aligner}.{pcov}x.-z.{chrom,(\d+)}.p'
     run:
@@ -24,12 +24,34 @@ rule haplotype_accuracy_HapCUT2:
     params: job_name = 'haplotype_accuracy_HapCUT2.{individual}.{build}.illumina30.pacbio{pcov}x.{aligner}.{chrom}',
     input: hap = 'data/{individual}.{build}/HapCUT2_haplotypes/illumina.{icov}x.pacbio.{aligner}.{pcov}x/haps/{chrom}.pruned',
            vcf = 'data/{individual}.{build}/variants/illumina_{icov}x.filtered/{chrom}.haplotyping_filters.vcf',
-           ground_truth = 'data/{individual}.{build}/variants/ground_truth/separate_chrom/ground_truth.DECOMPOSED.SNVs_ONLY.{chrom}.vcf',
+           ground_truth = 'data/{individual}.{build}/variants/ground_truth/separate_chrom/ground_truth.for_haplotyping.{chrom}.vcf',
            contig_size_file = 'genome_tracks/{build}.chrom.sizes.txt'
     output: pickle = 'data/{individual}.{build}/HapCUT2_haplotypes/hap_statistics/illumina.{icov,\d+}x.pacbio.{aligner}.{pcov,\d+}x.{chrom,(\d+)}.p'
     run:
         err = chs.hapblock_vcf_error_rate(input.hap, input.vcf, input.ground_truth, input.contig_size_file, False)
         pickle.dump(err, open(output.pickle, "wb"))
+
+NA12878_PLATINUM_GENOMES_URL = 'https://s3.eu-central-1.amazonaws.com/platinum-genomes/2017-1.0/hg19/small_variants/NA12878/NA12878.vcf.gz'
+rule get_haplotyping_ground_truth_NA12878:
+    params: job_name = "get_haplotyping_ground_truth_NA12878",
+    output: pg_vcfgz = 'data/NA12878.1000g/variants/platinum_genomes/all.vcf.gz',
+            pg_vcf = 'data/NA12878.1000g/variants/platinum_genomes/all.vcf',
+            pg_chroms = expand('data/NA12878.1000g/variants/ground_truth/separate_chrom/ground_truth.for_haplotyping.{chrom}.vcf', chrom=chroms)
+    shell:
+        '''
+        wget {NA12878_PLATINUM_GENOMES_URL} -O {output.pg_vcfgz}
+        gunzip -c {output.pg_vcfgz} > {output.pg_vcf}
+        for i in {{1..22}}; do
+            echo "splitting chr${{i}}"
+            grep -P "^chr${{i}}\\t" {output.pg_vcf} | awk '{{gsub(/^chr/,""); print}}' > data/NA12878.1000g/variants/ground_truth/separate_chrom/ground_truth.for_haplotyping.${{i}}.vcf
+        done
+        '''
+
+rule get_haplotyping_ground_truth_NA24385:
+    params: job_name = "get_haplotyping_ground_truth_NA24385.{chrom}",
+    input: 'data/NA24385.hg38/variants/ground_truth/separate_chrom/ground_truth.DECOMPOSED.SNVs_ONLY.{chrom}.vcf'
+    output:  'data/NA24385.hg38/variants/ground_truth/separate_chrom/ground_truth.for_haplotyping.{chrom}.vcf'
+    shell: 'cp {input} {output}'
 
 rule prune_reaper_vcf:
     params: job_name = "prune_reaper_haplotype.{individual}.{build}.reaper.pacbio.{aligner}.{pcov}x.-z.{chrom}",

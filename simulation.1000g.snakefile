@@ -4,37 +4,18 @@ import pysam
 import mapping_accuracy
 
 # VCFeval and plotting for segmental duplications as opposed to whole genome
-#rule plot_pr_curve_simulation_ngmlr:
-#    params: job_name = 'plot_pr_curve_simulation',
-#            title = 'Simulated Data: Simulated PacBio Reads Aligned with NGMLR'
-#    input:
-#        reaper20_rtg = 'data/simulation.1000g/vcfeval/reaper.pacbio.ngmlr.40x.-z_-q_30/1.done',
-#    output:
-#        png = 'data/plots/simulation_prec_recall_ngmlr_1.png'
-#    run:
-#        ptf.plot_vcfeval(['data/simulation.1000g/vcfeval/reaper.pacbio.ngmlr.40x.-z_-q_30/1'],
-#                                   ['Reaper, PacBio 40x'],
-#                                   output.png,params.title,
-#                                   colors=['k'],
-#                                   xlim=(0.9,1.0),
-#                                   ylim=(0.9975,1.0),
-#                                   legendloc='lower left')
-
-##################################################################################################################
-
-# VCFeval and plotting for segmental duplications as opposed to whole genome
 rule plot_pr_curve_simulation_segmental_duplications:
     params: job_name = 'plot_pr_curve_simulation_segmental_duplications',
             title = 'Simulated Data: PacBio Reads vs Short Reads in Segmental Duplications'
     input:
-        reaper20_rtg = 'data/simulation.1000g/vcfeval_segdup/reaper.pacbio.blasr.20x.-z/{chrom}.done',
-        reaper30_rtg = 'data/simulation.1000g/vcfeval_segdup/reaper.pacbio.blasr.30x.-z/{chrom}.done',
-        reaper40_rtg = 'data/simulation.1000g/vcfeval_segdup/reaper.pacbio.blasr.40x.-z/{chrom}.done',
-        reaper80_rtg = 'data/simulation.1000g/vcfeval_segdup/reaper.pacbio.blasr.60x.-z/{chrom}.done',
-        illumina20_rtg = 'data/simulation.1000g/vcfeval_segdup/illumina_20x.filtered/{chrom}.done',
-        illumina30_rtg = 'data/simulation.1000g/vcfeval_segdup/illumina_30x.filtered/{chrom}.done',
-        illumina40_rtg = 'data/simulation.1000g/vcfeval_segdup/illumina_40x.filtered/{chrom}.done',
-        illumina80_rtg = 'data/simulation.1000g/vcfeval_segdup/illumina_60x.filtered/{chrom}.done'
+        reaper20_rtg = 'data/simulation.1000g/vcfeval_segdup/reaper.pacbio.blasr.20x.-z/{chrom}',
+        reaper30_rtg = 'data/simulation.1000g/vcfeval_segdup/reaper.pacbio.blasr.30x.-z/{chrom}',
+        reaper40_rtg = 'data/simulation.1000g/vcfeval_segdup/reaper.pacbio.blasr.40x.-z/{chrom}',
+        reaper80_rtg = 'data/simulation.1000g/vcfeval_segdup/reaper.pacbio.blasr.60x.-z/{chrom}',
+        illumina20_rtg = 'data/simulation.1000g/vcfeval_segdup/illumina_20x.filtered/{chrom}',
+        illumina30_rtg = 'data/simulation.1000g/vcfeval_segdup/illumina_30x.filtered/{chrom}',
+        illumina40_rtg = 'data/simulation.1000g/vcfeval_segdup/illumina_40x.filtered/{chrom}',
+        illumina80_rtg = 'data/simulation.1000g/vcfeval_segdup/illumina_60x.filtered/{chrom}'
     output:
         png = 'data/plots/simulation_prec_recall_in_segdups_{chrom,(\d+|X|Y|all)}.png'
     run:
@@ -70,18 +51,16 @@ rule vcfeval_rtgtools_segmental_duplications:
             ground_truth_ix = 'data/{dataset}.1000g/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz.tbi',
             region_filter ='genome_tracks/segmental_duplications_0.95_similar_1000g.bed',
             tg_sdf = 'data/genomes/1000g.sdf'
-    output: done = 'data/{dataset}.1000g/vcfeval_segdup/{calls_name}/{chrom,(\d+|X|Y|all)}.done'
+    output: dir = directory('data/{dataset}.1000g/vcfeval_segdup/{calls_name}/{chrom,(\d+|X|Y|all)}')
     shell:
         '''
-        rm -rf data/{wildcards.dataset}.1000g/vcfeval_segdup/{wildcards.calls_name}/{wildcards.chrom}
         {RTGTOOLS} RTG_MEM=12g vcfeval \
         {params.region_arg} \
         -c {input.calls_vcf} \
         -b {input.ground_truth} \
         -e {input.region_filter} \
         -t {input.tg_sdf} \
-        -o data/{wildcards.dataset}.1000g/vcfeval_segdup/{wildcards.calls_name}/{wildcards.chrom};
-        cp data/{wildcards.dataset}.1000g/vcfeval_segdup/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
+        -o {output.dir}
         '''
 ##################################################################################################################
 
@@ -136,14 +115,14 @@ rule plot_pr_curve_simulation:
     params: job_name = 'plot_pr_curve_simulation',
             title = 'Precision Recall Curve for Reaper on Simulated Data: PacBio Reads vs Standard Illumina'
     input:
-        reaper20_rtg = 'data/simulation.1000g/vcfeval/reaper.pacbio.blasr.20x.-z/{chrom}.done',
-        reaper30_rtg = 'data/simulation.1000g/vcfeval/reaper.pacbio.blasr.30x.-z/{chrom}.done',
-        reaper40_rtg = 'data/simulation.1000g/vcfeval/reaper.pacbio.blasr.40x.-z/{chrom}.done',
-        reaper80_rtg = 'data/simulation.1000g/vcfeval/reaper.pacbio.blasr.60x.-z/{chrom}.done',
-        illumina20_rtg = 'data/simulation.1000g/vcfeval/illumina_20x.filtered/{chrom}.done',
-        illumina30_rtg = 'data/simulation.1000g/vcfeval/illumina_30x.filtered/{chrom}.done',
-        illumina40_rtg = 'data/simulation.1000g/vcfeval/illumina_40x.filtered/{chrom}.done',
-        illumina80_rtg = 'data/simulation.1000g/vcfeval/illumina_60x.filtered/{chrom}.done'
+        reaper20_rtg = 'data/simulation.1000g/vcfeval/reaper.pacbio.blasr.20x.-z/{chrom}',
+        reaper30_rtg = 'data/simulation.1000g/vcfeval/reaper.pacbio.blasr.30x.-z/{chrom}',
+        reaper40_rtg = 'data/simulation.1000g/vcfeval/reaper.pacbio.blasr.40x.-z/{chrom}',
+        reaper80_rtg = 'data/simulation.1000g/vcfeval/reaper.pacbio.blasr.60x.-z/{chrom}',
+        illumina20_rtg = 'data/simulation.1000g/vcfeval/illumina_20x.filtered/{chrom}',
+        illumina30_rtg = 'data/simulation.1000g/vcfeval/illumina_30x.filtered/{chrom}',
+        illumina40_rtg = 'data/simulation.1000g/vcfeval/illumina_40x.filtered/{chrom}',
+        illumina80_rtg = 'data/simulation.1000g/vcfeval/illumina_60x.filtered/{chrom}'
     output:
         png = 'data/plots/simulation_prec_recall_{chrom,(\d+|X|Y|all)}.png'
     run:
@@ -259,7 +238,7 @@ rule align_simulated_pacbio_bwa:
         hs37d5_bwt = 'data/genomes/hs37d5.fa.bwt'
     output:
         bam = temp('data/simulation.1000g/aligned_reads/pacbio/bwa_separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.60x.bam'),
-    shell: '{BWA} mem -x pacbio -t 4 -T 0 {input.hs37d5} {input.fastq} | {SAMTOOLS} sort -T {params.sort_prefix} -@ 4 > {output.bam}'
+    shell: '{BWA} mem -x pacbio -t 16 -T 0 {input.hs37d5} {input.fastq} | {SAMTOOLS} sort -T {params.sort_prefix} -@ 16 > {output.bam}'
 
 rule convert_simulated_fastqs_pacbio_format:
     params: job_name = 'convert_simulated_fastqs_pacbio_format.chr{chrom}.hap{hap}.60x'
@@ -280,14 +259,14 @@ rule align_simulated_pacbio_blasr:
         hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
         hs37d5_bwt = 'data/genomes/hs37d5.fa.bwt'
     output: bam = temp('data/simulation.1000g/aligned_reads/pacbio/blasr_separate_chrom_unsorted/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.60x.bam'),
-    shell: '{BLASR} {input.fastq} {input.hs37d5} --sa {input.hs37d5_sa} --nproc 8 --bam --out {output}'
+    shell: '{BLASR} {input.fastq} {input.hs37d5} --sa {input.hs37d5_sa} --nproc 16 --bestn 1 --bam --out {output}'
 
 rule sort_simulated_pacbio_blasr:
     params: job_name = 'sort_simulated_pacbio_blasr.{chrom}.{hap}.60x',
             sort_prefix = 'data/simulation.1000g/aligned_reads/pacbio/blasr_separate_chrom_unsorted/{chrom}.hap{hap}.pacbio.60x.tmp'
     input: 'data/simulation.1000g/aligned_reads/pacbio/blasr_separate_chrom_unsorted/{chrom}.hap{hap}.pacbio.60x.bam'
     output: temp('data/simulation.1000g/aligned_reads/pacbio/blasr_separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.60x.bam'),
-    shell: '{SAMTOOLS} sort -T {params.sort_prefix} -@ 8 {input} > {output}'
+    shell: '{SAMTOOLS} sort -T {params.sort_prefix} -@ 16 {input} > {output}'
 
 rule make_blasr_suffix_array:
     params: job_name = 'make_blasr_suffix_array.{genome}'
@@ -306,7 +285,7 @@ rule align_simulated_pacbio_minimap2:
         hs37d5_bwt = 'data/genomes/hs37d5.fa.bwt'
     output:
         bam = temp('data/simulation.1000g/aligned_reads/pacbio/minimap2_separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.60x.bam'),
-    shell: '{MINIMAP2} -ax map-pb {input.hs37d5_mmi} {input.fastq} | {SAMTOOLS} view -hb | {SAMTOOLS} sort -T {params.sort_prefix} -@ 4 > {output.bam}'
+    shell: '{MINIMAP2} -t 16 -ax map-pb {input.hs37d5_mmi} {input.fastq} | {SAMTOOLS} view -hb | {SAMTOOLS} sort -T {params.sort_prefix} -@ 16 > {output.bam}'
 
 rule align_simulated_pacbio_ngmlr:
     params: job_name = 'align_simulated_pacbio_ngmlr.{chrom}.{hap}.60x',
@@ -318,17 +297,7 @@ rule align_simulated_pacbio_ngmlr:
         hs37d5_bwt = 'data/genomes/hs37d5.fa.bwt'
     output:
         bam = temp('data/simulation.1000g/aligned_reads/pacbio/ngmlr_separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.60x.bam'),
-    shell: '{NGMLR} -t 4 -x pacbio -r {input.hs37d5} -q {input.fastq} | {SAMTOOLS} view -hb | {SAMTOOLS} sort -T {params.sort_prefix} -@ 4 > {output.bam}'
-
-################################################################################
-# IMPORTANT
-# we are currently simulating pacbio reads from a single chromosome, mapping those to
-# the genome, and then calling variants on that single chromosome
-
-# this saves time having to simulate and map the entire genome, but it makes
-# the results less valid because we are excluding the effect of reads generated
-# from other chromosomes that mismap into the chromosome we're calling variants in.
-################################################################################
+    shell: '{NGMLR} -t 16 -x pacbio -r {input.hs37d5} -q {input.fastq} | {SAMTOOLS} view -hb | {SAMTOOLS} sort -T {params.sort_prefix} -@ 16 > {output.bam}'
 
 rule rename_illumina_bam:
     params: job_name = 'rename_illumina_bam.illumina.60x.bwa',
@@ -373,7 +342,7 @@ rule simulate_illumina:
             output_prefix = 'data/simulation.1000g/fastq_reads/illumina/separate_chrom/{chrom}.hap{hap}.illumina.60x'
     input: diploid_fasta = 'data/simulation.1000g/variants/ground_truth/ground_truth_separate_chrom/{chrom}_hap{hap}.fa'
     output:
-        fastq = temp('data/simulation.1000g/fastq_reads/illumina/separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap,(1|2)}.illumina.60x.fastq.gz')
+        fastq = 'data/simulation.1000g/fastq_reads/illumina/separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap,(1|2)}.illumina.60x.fastq.gz'
     run:
         chrom_len = 0
         with pysam.FastaFile(input.diploid_fasta) as ff:
@@ -394,13 +363,13 @@ rule simulate_pacbio:
     params: job_name = 'simulate_pacbio.{chrom}.hap{hap}.60x',
             output_prefix = 'data/simulation.1000g/fastq_reads/pacbio/separate_chrom/{chrom}.hap{hap}.pacbio.60x'
     input: diploid_fasta = 'data/simulation.1000g/variants/ground_truth/ground_truth_separate_chrom/{chrom}_hap{hap}.fa'
-    output: fq = temp('data/simulation.1000g/fastq_reads/pacbio/separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.60x.fastq')
+    output: fq = 'data/simulation.1000g/fastq_reads/pacbio/separate_chrom/{chrom,(\d+|X|Y|all)}.hap{hap}.pacbio.60x.fastq'
     run:
         #this is the coverage you need to generate reads at for a diploid fasta,
         # in order to get 60x when you align to haploid reference
         diploid_cov = 30 #int(float(wildcards.cov) / 2.0)
         shell('''
-        {SIMLORD} -rr {input.diploid_fasta} \
+        {SIMLORD} -mp 1 -rr {input.diploid_fasta} \
         --coverage {diploid_cov} --no-sam {params.output_prefix}
         ''')
 

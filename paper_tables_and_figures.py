@@ -204,6 +204,7 @@ def plot_precision_recall_bars_simulation(pacbio_dirlist_genome, illumina_dirlis
 
     ax = plt.subplot(212)
     plt.ylabel("Recall\n")
+    plt.ylim(0.0-0.001,1.001)
     make_subplot(ax, np.array(ind1), pacbio_recalls_genome, illumina_recalls_genome,fc='#e0e1e2')
     make_subplot(ax, np.array(ind2), pacbio_recalls_segdup, illumina_recalls_segdup,fc='#dddddd')
     prettify_plot()
@@ -363,13 +364,14 @@ def plot_precision_recall_bars_simulation_extended(pacbio_ngmlr_dirlist_genome,
     ax1.legend(loc='center left', bbox_to_anchor=(0.1,1.25),ncol=2)
 
     plt.ylabel("Precision")
-    plt.ylim(0.996,1.0)
+    plt.ylim(0.96,1.0)
     ax1.set_xticks([])
     ax1.set_xticklabels([])
 
     prettify_plot(ax1)
     ax2 = plt.subplot(212)
     plt.ylabel("Recall\n")
+    plt.ylim(0.0-0.001,1.001)
 
     make_subplot(ax=ax2,
                 ind=np.array(ind1),
@@ -424,15 +426,15 @@ def plot_precision_recall_bars_simulation_extended(pacbio_ngmlr_dirlist_genome,
 
 
 def plot_haplotyping_results(reaper_errs, hapcut2_errs, output_file):
-    # errs should be in order: NA12878 30x, NA12878 44x, NA24385 69x, NA24149 32x NA24143, 30x
-    assert(len(reaper_errs) == 5)
-    assert(len(hapcut2_errs) == 5)
+    # errs should be in order: NA12878 44x, NA24385 69x
+    assert(len(reaper_errs) == 2)
+    assert(len(hapcut2_errs) == 2)
 
     #unpickle the error objects
     reaper_errs = [pickle.load(open(f,'rb')) for f in reaper_errs]
     hapcut2_errs = [pickle.load(open(f,'rb')) for f in hapcut2_errs]
 
-    plt.figure(figsize=(7,5))
+    plt.figure(figsize=(6,6))
     #mpl.rcParams['axes.titlepad'] = 50
 
     width = 0.15
@@ -470,13 +472,13 @@ def plot_haplotyping_results(reaper_errs, hapcut2_errs, output_file):
                     labelbottom=True, left=False, right=False, labelleft=True)
 
 
-    ind = [0,0.5,1,1.5,2]
+    ind = [0,0.4]
 
     ax = plt.subplot(211)
     reaper_switch_mismatch = [e.get_switch_mismatch_rate() for e in reaper_errs]
     hapcut2_switch_mismatch = [e.get_switch_mismatch_rate() for e in hapcut2_errs]
     make_subplot(ax,np.array(ind), reaper_switch_mismatch, hapcut2_switch_mismatch, lab_reaper='Reaper Haplotype', lab_hapcut2='30x Illumina + HapCUT2 Haplotype')
-    ax.legend(loc='center left', bbox_to_anchor=(0.25,1.13),ncol=2)
+    ax.legend(loc='center left', bbox_to_anchor=(0.0,1.13),ncol=2)
 
     plt.ylabel("Switch + Mismatch Error Rate")
     #plt.ylim(0.99,1.0)
@@ -491,7 +493,7 @@ def plot_haplotyping_results(reaper_errs, hapcut2_errs, output_file):
     make_subplot(ax,np.array(ind), reaper_N50, hapcut2_N50)
     prettify_plot()
     ax.set_xticks(np.array(ind)+1.5*width)
-    ax.set_xticklabels(['NA12878\n30x','NA12878\n44x','NA24385\n69x','NA24149\n32x','NA24143\n30x'])
+    ax.set_xticklabels(['NA12878\n44x','NA24385\n69x'])
 
     #ax.set_yscale('log')NA12878_prec_recall_{chrom}
     #plt.xlim(())
@@ -1149,54 +1151,54 @@ def plot_fp_near_indel(fp_vcfs, fixed_gq_VCFstats, scaled_gq_VCFstats, ground_tr
     ax1.set_axisbelow(True)
     plt.savefig(output_png)
 
-def actual_to_effective_read_coverage_scatterplot(vcfgz_file, output_file):
+def actual_to_effective_read_coverage_plot(vcfgz_file, output_file):
 
     actual = []
     effective = []
     with pysam.VariantFile(vcfgz_file) as vcf:
         for rec in vcf:
-            #if random.random() > 0.001:
-            #    continue
+
             ac = sum(rec.info['AC']) + rec.info['AM'] #rec.info['DP']
             ef = sum(rec.info['AC'])
             actual.append(ac)
             effective.append(ef)
-            if ef > ac:
-                import pdb; pdb.set_trace()
 
     d = defaultdict(list)
     for a,e in zip(actual, effective):
         d[a].append(e)
 
-    #medians_x = []
-    #medians_y = []
-    #for a, lst in d.items():
-#        medians_x.append(a)
-#        medians_y.append(statistics.median(lst))
+    medians_x = []
+    medians_y = []
+    for a, lst in sorted(list(d.items())):
+        medians_x.append(a)
+        medians_y.append(statistics.median(lst))
 
-    plt.figure();
-    data = pd.DataFrame(
-    {'Actual read coverage': actual,
-     'Effective read coverage': effective,
-    })
-    ax = sns.jointplot(data=data,x='Actual read coverage',y='Effective read coverage', color='k', kind='hex')
-    #ax1 = plt.subplot(111)
+    plt.figure()
+    #import pdb; pdb.set_trace()
+    #data = pd.DataFrame(
+    #{'Actual read coverage': actual,
+    # 'Effective read coverage': effective,
+    #})
+    #ax = sns.jointplot(data=data,x='Actual read coverage',y='Effective read coverage', color='k', kind='hex')
+    ax1 = plt.subplot(111)
 
-    #plt.grid(True,color='grey',linestyle='--',alpha=0.5)
+    plt.grid(True,color='grey',linestyle='--',alpha=0.5)
 
     #plt.scatter(actual, effective, color='b',marker='.',s=1,alpha=0.75,label='Single variant site')
-    #plt.plot(medians_x, medians_y, color='k',alpha=0.75,linewidth=3,label='Median effective coverage')
 
-    #ax1.spines["top"].set_visible(False)
-    #ax1.spines["right"].set_visible(False)
-    #ax1.spines["bottom"].set_visible(False)
-    #ax1.spines["left"].set_visible(False)
-    #plt.tick_params(axis="both", which="both", bottom="off", top="off",
-    #            labelbottom="on", left="off", right="off", labelleft="on")
+    plt.plot([min(medians_x),max(medians_x)], [min(medians_x),max(medians_x)], color='k',linestyle=':',alpha=0.75,linewidth=3,label='Optimal effective coverage (diagonal)')
+    plt.plot(medians_x, medians_y, color='r',alpha=0.75,linewidth=3,label='Median effective coverage')
 
-    #plt.legend(loc='upper left')
-    #plt.xlabel('Actual Read Coverage')
-    #plt.ylabel('Effective Read Coverage')
+    ax1.spines["top"].set_visible(False)
+    ax1.spines["right"].set_visible(False)
+    ax1.spines["bottom"].set_visible(False)
+    ax1.spines["left"].set_visible(False)
+    plt.tick_params(axis="both", which="both", bottom="off", top="off",
+                labelbottom="on", left="off", right="off", labelleft="on")
+
+    plt.legend(loc='upper left')
+    plt.xlabel('Actual Read Coverage')
+    plt.ylabel('Effective Read Coverage')
     plt.tight_layout()
     plt.savefig(output_file)
 

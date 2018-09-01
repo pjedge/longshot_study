@@ -8,9 +8,9 @@ rule plot_pr_curve_NA12878:
     params: job_name = 'plot_pr_curve_NA12878.1000g',
             title = 'Precision Recall Curve for Reaper on NA12878: PacBio Reads vs Standard Illumina'
     input:
-        reaper30_rtg = 'data/NA12878.1000g/vcfeval/reaper.pacbio.blasr.30x.-z/{chrom}.done',
-        reaper44_rtg = 'data/NA12878.1000g/vcfeval/reaper.pacbio.blasr.44x.-z/{chrom}.done',
-        illumina_rtg = 'data/NA12878.1000g/vcfeval/illumina_30x.filtered/{chrom}.done'
+        reaper30_rtg = 'data/NA12878.1000g/vcfeval/reaper.pacbio.blasr.30x.-z/{chrom}',
+        reaper44_rtg = 'data/NA12878.1000g/vcfeval/reaper.pacbio.blasr.44x.-z/{chrom}',
+        illumina_rtg = 'data/NA12878.1000g/vcfeval/illumina_30x.filtered/{chrom}'
     output:
         png = 'data/plots/NA12878.1000g_prec_recall_{chrom}.png'
     run:

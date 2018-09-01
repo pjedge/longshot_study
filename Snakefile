@@ -36,8 +36,8 @@ BAX2BAM = 'bax2bam'
 SAWRITER = 'sawriter'
 NGMLR = 'ngmlr'
 MINIMAP2 = 'minimap2'
-BCFTOOLS = '/opt/biotools/bcftools/bin/bcftools'
-PYFAIDX = '/home/pedge/installed/opt/python/bin/faidx'
+BCFTOOLS = 'bcftools'
+PYFAIDX = 'faidx'
 BEDTOOLS = 'bedtools' # v 2.27
 EXTRACTHAIRS = 'HapCUT2/build/extractHAIRS'
 HAPCUT2 = 'HapCUT2/build/HAPCUT2'
@@ -66,12 +66,41 @@ include: "make_duplicated_gene_table.snakefile"
 # DEFAULT
 rule all:
     input:
+        'data/plots/plot_mappability_bars.simulation.1000g.png',
+        #'data/plots/simulation_pr_barplot_genome_vs_segdup.all.GQ50.png',
+        #'data/plots/simulation_pr_barplot_genome_vs_segdup_extended.all.GQ50.png'
+        #'data/output/variant_counts_table.NA12878.1000g.blasr.44.GQ44.tex',
+        #'data/plots/haplotyping_results_barplot.png',
+        #'data/output/variant_counts_table.NA24385.hg38.blasr.69.GQ69.tex',
+        #'data/NA12878.1000g/aligned_reads/illumina/illumina.30x.bam.median_coverage',
+        #'data/NA24385.hg38/aligned_reads/illumina/illumina.30x.bam.median_coverage',
+        #'data/NA24385.hg38/aligned_reads/illumina/illumina.60x.bam.median_coverage',
+        #'data/NA24143.hg38/aligned_reads/illumina/illumina.30x.bam.median_coverage',
+        #'data/NA24149.hg38/aligned_reads/illumina/illumina.30x.bam.median_coverage',
+        #expand('data/simulation.1000g/aligned_reads/pacbio/pacbio.minimap2.all.60x.bam'),
+        #expand('data/simulation.1000g/aligned_reads/pacbio/pacbio.minimap2.all.60x.bam.bai')
+        #'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.median_coverage',
+        #'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.44x.bam.median_coverage',
+        #expand('data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.all.{cov}x.bam.median_coverage',cov=[20,30,40,50,69]),
+        #'data/NA24143.hg38/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.median_coverage',
+        #'data/NA24149.hg38/aligned_reads/pacbio/pacbio.blasr.all.32x.bam.median_coverage',
+        #expand('data/NA12878.1000g/variants/reaper.pacbio.blasr.44x._/{chrom}.vcf',chrom=chroms),
+        #'data/plots/simulation_pr_barplot_genome_vs_segdup.all.GQ50.png',
+        #'data/plots/simulation_pr_barplot_genome_vs_segdup_extended.all.GQ50.png',
+        #'data/plots/fig3_precision_recall_bars_NA24385_NA12878.blasr.hg38.png',
+        #'data/plots/NA24149.hg38_prec_recall_all.png',
+        #'data/plots/NA24143.hg38_prec_recall_all.png',
+        #'data/plots/NA24385.hg38_prec_recall_all.png',
+        #'data/plots/NA12878.1000g_prec_recall_all.png',
+        #'data/output/four_GIAB_genomes_table_extended.aj_trio_hg38_blasr.all.tex'
+
+        #,
+        #'data/plots/simulation_pr_barplot_genome_vs_segdup.all.GQ50.png',
+        #'data/plots/simulation_pr_barplot_genome_vs_segdup_extended.all.GQ50.png'
         #'data/output/duplicated_genes_table.NA12878.1000g.pb44x.tex'
-        'data/plots/simulation_pr_barplot_genome_vs_segdup_extended.all.GQ50.png'
         #expand('data/output/variant_analysis_fp_fn__NA24385.hg38__GQ50__reaper.pacbio.blasr.{cov}x.-z__1.tex',cov=[20,30,40,50,69]),
         #'data/output/variant_analysis_fp_fn__NA12878.1000g__GQ44__reaper.pacbio.blasr.44x.-z__1.tex'
         #'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.median_coverage'
-        #'data/output/variant_counts_table.NA12878.1000g.blasr.44.GQ44.tex',
         #'data/output/variant_counts_table_GIAB_VARIANTS.NA12878.1000g.blasr.44.GQ44.tex'
         #'data/output/pacbio_illumina_mendelian_concordance_table.tex'
         #expand('data/aj_trio/trio_shared_variant_sites/{tech}/mendelian/all.{region}.report.txt',tech=['illumina','pacbio'], region=['whole_genome','confident','nonconfident','segdup95','segdup99'])
@@ -89,13 +118,10 @@ rule all:
         #expand('data/simulation.1000g/aligned_reads/illumina/map_counts/mapq30_mincov{cov}_mapfrac{mapfrac}/illumina.60x__all.map_count.txt',cov=[10,20,30,40,50],mapfrac=[0.0,0.5,0.75,0.9,1.0])
         #'data/simulation.1000g/aligned_reads/pacbio/segdup95_stats/all.stats.bed'
         #'data/plots/plot_fp_near_indel.NA24385.hg38.png'
-        #'data/output/variant_counts_table.NA12878.1000g.blasr.44.GQ44.tex'
         #'data/NA12878.1000g/duplicated_gene_vis/pacbio.44x.dup_genes.bam.bai',   # bam file for duplicated gene visualization
         #'data/NA12878.1000g/duplicated_gene_vis/illumina.30x.dup_genes.bam.bai'  # bam file for duplicated gene visualization
         #'data/output/four_GIAB_genomes_table.aj_trio_hg38_blasr.all.tex',
-        #'data/output/four_GIAB_genomes_table_extended.aj_trio_hg38_blasr.all.tex',
         #'data/plots/haplotyping_results_barplot.png'
-        #'data/plots/fig3_precision_recall_bars_NA24385_NA12878.blasr.hg38.png'
         #'data/plots/depth_vs_breadth_mappability.simulation.30x.png',
         #'data/aj_trio/duplicated_regions/trio_shared_variant_sites/mendelian/NA24143.30x.pileup_over_mendelian_positions.txt',
         #'data/aj_trio/duplicated_regions/trio_shared_variant_sites/mendelian/NA24149.32x.pileup_over_mendelian_positions.txt',
@@ -140,13 +166,6 @@ rule all:
         #'data/output/variant_analysis_fp_fn__NA24149__reaper.pacbio.ngmlr.32x.-z__1.tex',
         #'data/output/variant_analysis_fp_fn__NA24143__reaper.pacbio.ngmlr.30x.-z__1.tex',
         #'data/plots/NA12878_prec_recall_all.png',
-        #'data/NA12878.1000g/vcfeval/illumina_30x.filtered/all.done',
-        #'data/NA24385.1000g/vcfeval/illumina_30x.filtered/all.done',
-        #'data/NA24143.1000g/vcfeval/illumina_30x.filtered/all.done',
-        #'data/NA24149.1000g/vcfeval/illumina_30x.filtered/all.done',
-        #'data/NA24385.hg38/vcfeval/illumina_30x.filtered/all.done',
-        #'data/NA24143.hg38/vcfeval/illumina_30x.filtered/all.done',
-        #'data/NA24149.hg38/vcfeval/illumina_30x.filtered/all.done',
 
 
 rule run_pileups:
@@ -191,6 +210,12 @@ rule rtg_filter_reaper_MEC_AQ:
         gunzip {output.vcf}.gz
         '''
 
+rule remove_x_y_region_filter:
+    params: job_name = 'remove_x_y_region_filter'
+    input:  'data/{individual}.{build}/variants/ground_truth/region_filter.bed'
+    output: 'data/{individual}.{build}/variants/ground_truth/region_filter.1_22_only.bed'
+    shell:  'cat {input} | python3 filter_bed_chroms.py > {output}'
+
 rule vcfeval_rtgtools:
     params: job_name = 'vcfeval_rtgtools.{individual}.{build}.{calls_name}.{chrom}',
             region_arg = lambda wildcards: '--region={}'.format(chr_prefix(wildcards.chrom,wildcards.build)) if wildcards.chrom != 'all' else ''
@@ -198,20 +223,18 @@ rule vcfeval_rtgtools:
             calls_ix = 'data/{individual}.{build}/variants/{calls_name}/{chrom}.vcf.gz.tbi',
             ground_truth = 'data/{individual}.{build}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
             ground_truth_ix = 'data/{individual}.{build}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz.tbi',
-            region_filter ='data/{individual}.{build}/variants/ground_truth/region_filter.bed',
+            region_filter ='data/{individual}.{build}/variants/ground_truth/region_filter.1_22_only.bed',
             sdf = 'data/genomes/{build}.sdf'
-    output: done = 'data/{individual}.{build}/vcfeval/{calls_name}/{chrom}.done'
+    output: dir = directory('data/{individual}.{build}/vcfeval/{calls_name}/{chrom}')
     shell:
         '''
-        rm -rf data/{wildcards.individual}.{wildcards.build}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}
         {RTGTOOLS} RTG_MEM=12g vcfeval \
         {params.region_arg} \
         -c {input.calls_vcf} \
         -b {input.ground_truth} \
         -e {input.region_filter} \
         -t {input.sdf} \
-        -o data/{wildcards.individual}.{wildcards.build}/vcfeval/{wildcards.calls_name}/{wildcards.chrom};
-        cp data/{wildcards.individual}.{wildcards.build}/vcfeval/{wildcards.calls_name}/{wildcards.chrom}/done {output.done};
+        -o {output.dir}
         '''
 
 rule rtg_decompose_variants_ground_truth:
@@ -223,7 +246,7 @@ rule rtg_decompose_variants_ground_truth:
 
 rule analyze_variants:
     params: job_name = 'analyze_variants.{individual}.{build}.{chrom}.{calls_name}.GQ{GQ}',
-    input:  vcfeval = 'data/{individual}.{build}/vcfeval/{calls_name}/{chrom}.done',
+    input:  vcfeval = 'data/{individual}.{build}/vcfeval/{calls_name}/{chrom}',
             pacbio_calls_vcfgz = 'data/{individual}.{build}/variants/{calls_name}/{chrom}.GQ{GQ}.vcf.gz',
             pacbio_calls_ix = 'data/{individual}.{build}/variants/{calls_name}/{chrom}.GQ{GQ}.vcf.gz.tbi',
             ground_truth_vcfgz = 'data/{individual}.{build}/variants/ground_truth/ground_truth.vcf.gz',
@@ -246,8 +269,8 @@ rule analyze_variants:
     run:
         analyze_variants(chrom_name = chr_prefix(wildcards.chrom, wildcards.build),
                          pacbio_calls_vcfgz = input.pacbio_calls_vcfgz,
-                         fp_calls_vcfgz = os.path.join(input.vcfeval[:-5],'fp.vcf.gz'),
-                         fn_calls_vcfgz =  os.path.join(input.vcfeval[:-5],'fn.vcf.gz'),
+                         fp_calls_vcfgz = os.path.join(input.vcfeval,'fp.vcf.gz'),
+                         fn_calls_vcfgz =  os.path.join(input.vcfeval,'fn.vcf.gz'),
                          ground_truth_vcfgz = input.ground_truth_vcfgz,
                          ground_truth_bed_file = input.ground_truth_bed,
                          random_positions_vcfgz = input.random_positions_vcfgz,
@@ -342,8 +365,8 @@ rule add_runtimes:
 
 rule run_reaper:
     params: job_name = 'reaper.pacbio.{aligner}.{individual}.{build}.cov{cov}.{options}.chr{chrom}',
-    input:  bam = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.{chrom}.{cov}x.bam',
-            bai = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.{chrom}.{cov}x.bam.bai',
+    input:  bam = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.all.{cov}x.bam',
+            bai = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.all.{cov}x.bam.bai',
             hg19    = 'data/genomes/hg19.fa',
             hg19_ix = 'data/genomes/hg19.fa.fai',
             hs37d5    = 'data/genomes/hs37d5.fa',
@@ -351,8 +374,7 @@ rule run_reaper:
             hg38 = 'data/genomes/hg38.fa',
             hg38_ix = 'data/genomes/hg38.fa.fai'
     output: vcf = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+)}.vcf',
-            #debug = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug',
-            #no_hap_vcf = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug/2.0.realigned_genotypes.vcf',
+            debug = directory('data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug'),
             runtime = 'data/{individual}.{build}/variants/reaper.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+)}.vcf.runtime'
     run:
         options_str = wildcards.options.replace('_',' ')
@@ -363,8 +385,6 @@ rule run_reaper:
             # remove 'chr' from reference name in vcf
             remove_chr_from_vcf(output.vcf+'.tmp',output.vcf)
             # remove 'chr' from no-haplotype version of vcf
-            remove_chr_from_vcf(output.no_hap_vcf, output.no_hap_vcf+'.tmp')
-            shell('mv {output.no_hap_vcf}.tmp {output.no_hap_vcf}')
         else:
             w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
             w_ref = ref_file[wildcards.build]
@@ -522,7 +542,7 @@ rule calculate_median_coverage:
     output: random_pos = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam.for_median_coverage.random_pos',
             cov = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam.median_coverage'
     run:
-        shell('{BEDTOOLS} random -l 1 -n 10000 -g {input.genome_file} > {output.random_pos}')
+        shell('{BEDTOOLS} random -l 1 -n 100000 -g {input.genome_file} > {output.random_pos}')
         add_chr = (wildcards.individual == 'NA12878' and wildcards.build == '1000g' and wildcards.tech == 'pacbio')
 
         med_cov = calculate_median_coverage(input.bam, output.random_pos, add_chr=add_chr)
@@ -560,11 +580,11 @@ rule bgzip_vcf_calls:
     shell:  '{BGZIP} -c {input} > {output}'
 
 # bgzip vcf
-rule bgzip_debug_vcf_calls:
-    params: job_name = 'bgzip_no_hap_vcf_calls.{x}.{individual}.{build}.{calls_name}.{chrom}'
-    input:  'data/{individual}.{build}/variants/{calls_name}/{chrom}.debug/{x}.vcf'
-    output: 'data/{individual}.{build}/variants/{calls_name}/{chrom,(all|\d+)}.debug/{x}.vcf.gz'
-    shell:  '{BGZIP} -c {input} > {output}'
+#rule bgzip_debug_vcf_calls:
+#    params: job_name = 'bgzip_no_hap_vcf_calls.{x}.{individual}.{build}.{calls_name}.{chrom}'
+#    input:  'data/{individual}.{build}/variants/{calls_name}/{chrom}.debug/{x}.vcf'
+#    output: 'data/{individual}.{build}/variants/{calls_name}/{chrom,(all|\d+)}.debug/{x}.vcf.gz'
+#    shell:  '{BGZIP} -c {input} > {output}'
 
 # bgzip vcf
 rule bgzip_ground_truth:

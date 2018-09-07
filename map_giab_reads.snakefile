@@ -15,16 +15,31 @@ DWGSIM = '/home/pedge/git/DWGSIM/dwgsim'
 BWA = '/home/pedge/installed/bwa'
 BLASR = 'blasr'
 BAX2BAM = 'bax2bam'
+BAM2FASTQ = 'bam2fastq'
 SAWRITER = 'sawriter'
 NGMLR = 'ngmlr'
 MINIMAP2 = 'minimap2'
 BCFTOOLS = '/opt/biotools/bcftools/bin/bcftools'
 PYFAIDX = '/home/pedge/installed/opt/python/bin/faidx'
-chroms = ['{}'.format(i) for i in range(1,23)] + ['X']
+chroms = ['{}'.format(i) for i in range(1,23)]
 BEDTOOLS = 'bedtools' # v 2.27
 
 rule all:
-    input: expand('data/{individual}.hg38/aligned_reads/pacbio/pacbio.blasr.all.giab_full_coverage.bam',individual=['NA24143','NA24149'])
+    input: expand('data/{individual}.hg38/aligned_reads/pacbio/pacbio.minimap2.all.giab_full_coverage.bam',individual=['NA24143','NA24149','NA24385'])
+
+# index fasta for minimap2
+rule index_minimap2:
+    params: job_name = lambda wildcards: 'index_minimap2.{}'.format(str(wildcards.x).replace("/", "."))
+    input:  fa  = '{x}.fa'
+    output: mmi = '{x}.fa.mmi'
+    shell:  '{MINIMAP2} -d {output.mmi} {input.fa}'
+
+# BWA index
+rule bwa_index_fasta:
+    params: job_name = lambda wildcards: 'bwa_index_fasta.{}'.format(str(wildcards.x).replace("/", "."))
+    input:  '{x}.fa'
+    output: '{x}.fa.bwt'
+    shell: '{BWA} index {input}'
 
 # file with 3 columns:
 # 1. URL of compressed pacbio hdf5 data
@@ -54,27 +69,31 @@ rule make_blasr_suffix_array:
     shell: '{SAWRITER} {output} {input}'
 
 # for a single individual, merge all of their sorted, mapped pacbio bams into one big one.
-rule merge_giab_pacbio_blasr:
-    params: job_name = 'merge_giab_pacbio_blasr.{individual}.hg38',
-    input: lambda wildcards: expand('data/{individual}.hg38/raw_pacbio/sorted_primary_bam/archive{archive_number}.bam',individual=wildcards.individual, archive_number=list(range(num_hdf5_archives[wildcards.individual])))
-    output: 'data/{individual}.hg38/aligned_reads/pacbio/pacbio.blasr.all.giab_full_coverage.bam'
-    shell: '{SAMTOOLS} merge -@ 8 -O bam {output} {input}'
+rule merge_giab_pacbio:
+    params: job_name = 'merge_giab_pacbio.{individual}.hg38.{aligner}',
+    input: lambda wildcards: expand('data/{individual}.hg38/raw_pacbio/sorted_bam_{aligner}/archive{archive_number}.bam',individual=wildcards.individual, aligner=wildcards.aligner, archive_number=list(range(num_hdf5_archives[wildcards.individual])))
+    output: 'data/{individual}.hg38/aligned_reads/pacbio/pacbio.{aligner}.all.giab_full_coverage.bam'
+    shell: '{SAMTOOLS} merge -@ 16 -O bam {output} {input}'
 
-# BLASR was run with the default -bestn 10,
-# so we have 10x as many alignments as we actually need.
-# so in this step we'll filter the BAM file for only primary alignments
-rule filter_primary_giab_pacbio_blasr:
-    params: job_name = 'filter_primary_giab_pacbio_blasr.{individual}.hg38.archive{archive_number}',
-    input: 'data/{individual}.hg38/raw_pacbio/sorted_bam/archive{archive_number}.bam'
-    output: temp('data/{individual}.hg38/raw_pacbio/sorted_primary_bam/archive{archive_number}.bam'),
-    shell: '{SAMTOOLS} view -F 256 -hb {input} > {output}'
+rule align_giab_pacbio_minimap2:
+    params: job_name = 'align_giab_pacbio_minimap2.{individual}.hg38.archive{archive_number}',
+            sort_prefix = 'data/{individual}.hg38/raw_pacbio/aligned_bam_minimap2/archive{archive_number}.tmp'
+    input:
+        fastq    = 'data/{individual}.hg38/raw_pacbio/fastq/archive{archive_number}.fastq.gz',
+        hg38     = 'data/genomes/hg38.fa',
+        hg38_ix  = 'data/genomes/hg38.fa.fai',
+        hg38_mmi = 'data/genomes/hg38.fa.mmi',
+        hg38_bwt = 'data/genomes/hg38.fa.bwt'
+    output:
+        bam = temp('data/{individual}.hg38/raw_pacbio/sorted_bam_minimap2/archive{archive_number}.bam'),
+    shell: '{MINIMAP2} -t 16 -ax map-pb {input.hg38_mmi} {input.fastq} | {SAMTOOLS} view -hb | {SAMTOOLS} sort -T {params.sort_prefix} -@ 16 > {output.bam}'
 
 # sort a single pacbio bam
 rule sort_giab_pacbio_blasr:
     params: job_name = 'sort_giab_pacbio_blasr.{individual}.hg38.archive{archive_number}',
-    input: 'data/{individual}.hg38/raw_pacbio/aligned_bam/archive{archive_number}.bam'
-    output: temp('data/{individual}.hg38/raw_pacbio/sorted_bam/archive{archive_number}.bam'),
-    shell: '{SAMTOOLS} sort -T {output}.TMP -@ 8 -m 1G {input} > {output}'
+    input: 'data/{individual}.hg38/raw_pacbio/aligned_bam_blasr/archive{archive_number}.bam'
+    output: temp('data/{individual}.hg38/raw_pacbio/sorted_bam_blasr/archive{archive_number}.bam'),
+    shell: '{SAMTOOLS} sort -T {output}.TMP -@ 16 -m 1G {input} > {output}'
 
 # align the converted subread bam file to the reference genome
 rule align_giab_pacbio_blasr:
@@ -84,8 +103,16 @@ rule align_giab_pacbio_blasr:
         hg38  = 'data/genomes/hg38.fa',
         hg38_sa = 'data/genomes/hg38.fa.sawriter.sa',
         hg38_ix = 'data/genomes/hg38.fa.fai',
-    output: bam = temp('data/{individual}.hg38/raw_pacbio/aligned_bam/archive{archive_number}.bam')
-    shell: '{BLASR} {input.bam} {input.hg38} --sa {input.hg38_sa} --nproc 8 --bam --out {output}'
+    output: bam = temp('data/{individual}.hg38/raw_pacbio/aligned_bam_blasr/archive{archive_number}.bam')
+    shell: '{BLASR} {input.bam} {input.hg38} -bestn 1 --sa {input.hg38_sa} --nproc 16 --bam --out {output}'
+
+# convert the pb bam format to fastq for use with minimap2 and other tools
+rule bam_to_fastq:
+    params: job_name = 'bam_to_fastq.{individual}.hg38.archive{archive_number}'
+    input: bam = 'data/{individual}.hg38/raw_pacbio/unaligned_bam/archive{archive_number}.subreads.bam',
+           pbi = 'data/{individual}.hg38/raw_pacbio/unaligned_bam/archive{archive_number}.subreads.bam.pbi',
+    output: fqgz = temp('data/{individual}.hg38/raw_pacbio/fastq/archive{archive_number}.fastq.gz')
+    shell: '{BAM2FASTQ} -o data/{wildcards.individual}.hg38/raw_pacbio/fastq/archive{wildcards.archive_number} {input.bam}'
 
 # convert the old hdf5 file format for pacbio reads to the new one compatible with
 rule bax2bam:

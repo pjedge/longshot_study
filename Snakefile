@@ -33,6 +33,7 @@ DWGSIM = '/home/pedge/git/DWGSIM/dwgsim'
 BWA = '/home/pedge/installed/bwa'
 BLASR = 'blasr'
 BAX2BAM = 'bax2bam'
+BAM2FASTQ = 'bam2fastq'
 SAWRITER = 'sawriter'
 NGMLR = 'ngmlr'
 MINIMAP2 = 'minimap2'
@@ -67,8 +68,8 @@ include: "make_duplicated_gene_table.snakefile"
 rule all:
     input:
         'data/plots/plot_mappability_bars.simulation.1000g.png',
-        #'data/plots/simulation_pr_barplot_genome_vs_segdup.all.GQ50.png',
-        #'data/plots/simulation_pr_barplot_genome_vs_segdup_extended.all.GQ50.png'
+        'data/plots/simulation_pr_barplot_genome_vs_segdup.all.GQ50.png',
+        'data/plots/simulation_pr_barplot_genome_vs_segdup_extended.all.GQ50.png'
         #'data/output/variant_counts_table.NA12878.1000g.blasr.44.GQ44.tex',
         #'data/plots/haplotyping_results_barplot.png',
         #'data/output/variant_counts_table.NA24385.hg38.blasr.69.GQ69.tex',
@@ -175,6 +176,13 @@ rule run_pileups:
     output: txt = 'data/aj_trio/duplicated_regions/trio_shared_variant_sites/mendelian/{individual}.{cov}x.pileup_over_mendelian_positions.txt',
     shell: 'python3 run_pileups.py {input.bam} {input.pos} > {output.txt}'
 
+# this function reads in a file containing a single integer, and returns that integerself.
+# this is designed for bam.median_coverage files that accompany a bam file and
+# tell us the median coverage we've measured for that bam.
+def parse_int_file(filename):
+    with open(filename,'r') as inf:
+        return int(inf.read().strip())
+
 # this function takes in a chromosome name in 1..22,X and a "genome build" name
 # and appends a 'chr' prefix to the chrom name if the genome build is hg38
 def chr_prefix(chrom, build):
@@ -236,6 +244,13 @@ rule vcfeval_rtgtools:
         -t {input.sdf} \
         -o {output.dir}
         '''
+
+rule rtg_filter_SNVs_ground_truth:
+    params: job_name = 'rtg_filter_SNVs_ground_truth.{individual}.{build}',
+    input:  vcfgz = 'data/{individual}.{build}/variants/ground_truth/ground_truth.DECOMPOSED.vcf.gz',
+            tbi   = 'data/{individual}.{build}/variants/ground_truth/ground_truth.DECOMPOSED.vcf.gz.tbi'
+    output: vcfgz = 'data/{individual}.{build}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
+    shell: '{RTGTOOLS} RTG_MEM=12g vcffilter --snps-only -i {input.vcfgz} -o {output.vcfgz}'
 
 rule rtg_decompose_variants_ground_truth:
     params: job_name = 'rtg_decompose_variants_ground_truth.{individual}.{build}',
@@ -310,21 +325,17 @@ rule generate_random_positions:
         generate_random_calls(chrom_name, chrlen, 100000, output.vcf)
         shell('bgzip -c {output.vcf} > {output.vcfgz}')
 
-rule rtg_filter_SNVs_ground_truth:
-    params: job_name = 'rtg_filter_SNVs_ground_truth.{individual}.{build}',
-    input:  vcfgz = 'data/{individual}.{build}/variants/ground_truth/ground_truth.DECOMPOSED.vcf.gz',
-            tbi   = 'data/{individual}.{build}/variants/ground_truth/ground_truth.DECOMPOSED.vcf.gz.tbi'
-    output: vcfgz = 'data/{individual}.{build}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
-    shell: '{RTGTOOLS} RTG_MEM=12g vcffilter --snps-only -i {input.vcfgz} -o {output.vcfgz}'
-
 from filter_SNVs import filter_SNVs
 rule filter_illumina_SNVs:
     params: job_name = 'filter_SNVs_illumina.{individual}.{build}.chr{chrom}',
-    input:  vcf = 'data/{individual}.{build}/variants/illumina_{cov}x/{chrom}.vcf'
-    output: vcf = 'data/{individual}.{build}/variants/illumina_{cov}x.filtered/{chrom,(\d+)}.vcf'
+    input:  vcf = 'data/{individual}.{build}/variants/freebayes.illumina.aligned.{cov}x.unfiltered/{chrom}.vcf',
+            runtime = 'data/{individual}.{build}/variants/freebayes.illumina.aligned.{cov}x.unfiltered/{chrom}.vcf.runtime'
+    output: vcf = 'data/{individual}.{build}/variants/freebayes.illumina.aligned.{cov,\d+}x/{chrom,(\d+)}.vcf',
+            runtime = 'data/{individual}.{build}/variants/freebayes.illumina.aligned.{cov,\d+}x/{chrom,(\d+)}.vcf.runtime'
     run:
         cov_filter = int(float(wildcards.cov)*2)
         filter_SNVs(input.vcf, output.vcf, cov_filter, density_count=10, density_len=500, density_qual=50)
+        shell('cp {input.runtime} {output.runtime}')
 
 rule combine_chrom:
     params: job_name = 'combine_chroms.{individual}.{build}.{calls_name}',
@@ -398,14 +409,14 @@ rule run_reaper:
 # Call 30x Illumina variants
 rule call_variants_Illumina:
     params: job_name = 'call_illumina.{individual}.{build}.{cov}x.chr{chrom}',
-    input: bam = 'data/{individual}.{build}/aligned_reads/illumina/illumina.{cov}x.bam',
-            bai = 'data/{individual}.{build}/aligned_reads/illumina/illumina.{cov}x.bam.bai',
+    input: bam = 'data/{individual}.{build}/aligned_reads/illumina/illumina.aligned.all.{cov}x.bam',
+            bai = 'data/{individual}.{build}/aligned_reads/illumina/illumina.aligned.all.{cov}x.bam.bai',
             ref_1000g_fa = 'data/genomes/hs37d5.fa',
             ref_1000g_fai = 'data/genomes/hs37d5.fa.fai',
             ref_hg38_fa = 'data/genomes/hg38.fa',
             ref_hg38_fai = 'data/genomes/hg38.fa.fai'
-    output: vcf = 'data/{individual}.{build}/variants/illumina_{cov}x/{chrom,(\d+)}.vcf',
-            runtime = 'data/{individual}.{build}/variants/illumina_{cov}x/{chrom,(\d+)}.vcf.runtime'
+    output: vcf = 'data/{individual}.{build}/variants/freebayes.illumina.aligned.{cov}x.unfiltered/{chrom,(\d+)}.vcf',
+            runtime = 'data/{individual}.{build}/variants/freebayes.illumina.aligned.{cov}x.unfiltered/{chrom,(\d+)}.vcf.runtime'
     run:
         w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
         w_ref = ref_file[wildcards.build]
@@ -424,28 +435,15 @@ rule call_variants_Illumina:
 
 rule generate_genomecov_bed:
     params: job_name = 'generate_genomecov_bed.{individual}.{build}.{tech}.{info}.MAPQ{mapq}'
-    input:  expand('data/{{individual}}.{{build}}/aligned_reads/{{tech}}/genomecov_histograms_mapq{{mapq}}/{{info}}__{chrom}.txt', chrom=chroms)
-    output: 'data/{individual}.{build}/aligned_reads/{tech}/genomecov_histograms_mapq{mapq}/{info}__all.txt'
+    input:  expand('data/{{individual}}.{{build}}/aligned_reads/{{tech}}/genomecov_histograms_mapq{{mapq}}/{{tech}}.{{aligner}}.30x.{{chrom,(\d+)}}.txt', chrom=chroms)
+    output: 'data/{individual}.{build}/aligned_reads/{tech}/genomecov_histograms_mapq{mapq}/{tech}.{aligner}.30x.all.txt'
     shell: 'cat {input} > {output}'
 
-rule generate_coverage_histogram_illumina:
-    params: job_name = 'generate_coverage_histogram_illumina.{individual}.{build}.MAPQ{mapq}.{chrom}'
-    input:  bam = 'data/{individual}.{build}/aligned_reads/illumina/illumina.30x.bam',
-            bai = 'data/{individual}.{build}/aligned_reads/illumina/illumina.30x.bam.bai'
-    output: 'data/{individual}.{build}/aligned_reads/illumina/genomecov_histograms_mapq{mapq}/illumina.30x__{chrom,(\d+)}.txt'
-    run:
-        w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
-        shell('''
-        {SAMTOOLS} view -F 3844 -q {wildcards.mapq} {input.bam} -hb {w_chrom} | \
-        {BEDTOOLS} genomecov -ibam - | \
-        grep -P '^{w_chrom}\\t' > {output}
-        ''')
-
-rule generate_coverage_histogram_pacbio:
-    params: job_name = 'generate_coverage_histogram_pacbio.{individual}.{build}.MAPQ{mapq}.{chrom}'
-    input:  bam = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.blasr.{chrom}.30x.bam',
-            bai = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.blasr.{chrom}.30x.bam.bai'
-    output: 'data/{individual}.{build}/aligned_reads/pacbio/genomecov_histograms_mapq{mapq}/pacbio.blasr.all.30x__{chrom,(\d+)}.txt'
+rule generate_coverage_histogram:
+    params: job_name = 'generate_coverage_histogram.{tech}.{individual}.{build}.MAPQ{mapq}.{chrom}'
+    input:  bam = 'data/{individual}.{build}/aligned_reads/{tech}/{tech}.{aligner}.{chrom}.30x.bam',
+            bai = 'data/{individual}.{build}/aligned_reads/{tech}/{tech}.{aligner}.{chrom}.30x.bam.bai'
+    output: 'data/{individual}.{build}/aligned_reads/{tech}/genomecov_histograms_mapq{mapq}/{tech}.{aligner}.30x.{chrom,(\d+)}.txt'
     run:
         w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
         # NA12878 is an exception, actually has hg19 chrom names instead of 1000g chrom names
@@ -473,7 +471,7 @@ rule download_hg38:
     output: 'data/genomes/hg38.fa'
     shell: 'wget {HG38_URL} -O {output}.gz; gunzip {output}.gz'
 
-rule download_HS37D5:
+rule download_hs37d5:
     params: job_name = 'download_hs37d5',
     output: 'data/genomes/hs37d5.fa'
     shell: 'wget {HS37D5_URL} -O {output}.gz; gunzip {output}.gz'
@@ -481,7 +479,7 @@ rule download_HS37D5:
 # download hg19 reference, for the aligned pacbio reads
 rule download_hg19_sdf:
     params: job_name = 'download_hg19_sdf',
-    output: 'data/genomes/hg19.sdf'
+    output: directory('data/genomes/hg19.sdf')
     shell:
         '''
         wget {HG19_SDF_URL} -O {output}.zip;
@@ -491,7 +489,7 @@ rule download_hg19_sdf:
 # download 1000g_v37_phase2 sdf, for the aligned pacbio reads
 rule download_1000g_sdf:
     params: job_name = 'download_1000g_sdf',
-    output: 'data/genomes/1000g.sdf'
+    output: directory('data/genomes/1000g.sdf')
     shell:
         '''
         wget {TG_v37_SDF_URL} -O data/genomes/1000g_v37_phase2.sdf.zip;
@@ -501,7 +499,7 @@ rule download_1000g_sdf:
 
 rule download_hg38_sdf:
     params: job_name = 'download_GRCh38_sdf',
-    output: 'data/genomes/hg38.sdf'
+    output: directory('data/genomes/hg38.sdf')
     shell:
         '''
         wget {GRCh38_SDF_URL} -O data/genomes/GRCh38.sdf.zip;
@@ -552,8 +550,8 @@ rule calculate_median_coverage:
 # SUBSAMPLE ILLUMINA BAM
 rule subsample_illumina_60x:
     params: job_name = 'subsample_illumina_{individual}.{build}.{cov}x'
-    input:  'data/{individual}.{build}/aligned_reads/illumina/illumina.60x.bam'
-    output: 'data/{individual,NA\d+}.{build}/aligned_reads/illumina/illumina.{cov,(1|2|3|4|5)0}x.bam'
+    input:  'data/{individual}.{build}/aligned_reads/illumina/illumina.aligned.all.60x.bam'
+    output: 'data/{individual,NA\d+}.{build}/aligned_reads/illumina/illumina.aligned.all.{cov,(1|2|3|4|5)0}x.bam'
     run:
         subsample_frac = float(wildcards.cov) / 60.0
         shell('{SAMTOOLS} view -hb {input} -s {subsample_frac} > {output}')
@@ -564,13 +562,14 @@ rule tabix_index:
     output: '{x}.{filetype,(bed|vcf)}.gz.tbi'
     shell:  '{TABIX} -f -p {wildcards.filetype} {input}'
 
+# simlinks weren't working here for some reason... changed to a copy
 rule make_hs37d5_alias:
     params: job_name = 'make_hs37d5_alias'
     input:  fa = 'data/genomes/hs37d5.fa',
             fai = 'data/genomes/hs37d5.fa.fai'
     output: fa = 'data/genomes/1000g.fa',
             fai = 'data/genomes/1000g.fa.fai'
-    shell:  'cd data/genomes; ln -s hs37d5.fa 1000g.fa; ln -s hs37d5.fa.fai 1000g.fa.fai'
+    shell:  'cp {input.fa} {output.fa}; cp {input.fai} {output.fai}'
 
 # bgzip vcf
 rule bgzip_vcf_calls:
@@ -578,13 +577,6 @@ rule bgzip_vcf_calls:
     input:  'data/{individual}.{build}/variants/{calls_name}/{chrom}.vcf'
     output: 'data/{individual}.{build}/variants/{calls_name}/{chrom,(all|\d+)}.vcf.gz'
     shell:  '{BGZIP} -c {input} > {output}'
-
-# bgzip vcf
-#rule bgzip_debug_vcf_calls:
-#    params: job_name = 'bgzip_no_hap_vcf_calls.{x}.{individual}.{build}.{calls_name}.{chrom}'
-#    input:  'data/{individual}.{build}/variants/{calls_name}/{chrom}.debug/{x}.vcf'
-#    output: 'data/{individual}.{build}/variants/{calls_name}/{chrom,(all|\d+)}.debug/{x}.vcf.gz'
-#    shell:  '{BGZIP} -c {input} > {output}'
 
 # bgzip vcf
 rule bgzip_ground_truth:

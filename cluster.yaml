@@ -51,20 +51,21 @@ subsample_simulated_pacbio_reads:
 merge_simulated_bams:
     walltime: '100:00:00'
 
-merge_giab_pacbio_blasr:
+merge_giab_pacbio:
     walltime: '150:00:00'
-    ppn: 8
+    ppn: 16
 
 sort_giab_pacbio_blasr:
     walltime: '50:00:00'
-    ppn: 4
+    ppn: 16
+
+align_giab_pacbio_minimap2:
+    walltime: '20:00:00'
+    ppn: 16
 
 align_giab_pacbio_blasr:
     walltime: '20:00:00'
-    ppn: 8
-
-bax2bam:
-    walltime: '50:00:00'
+    ppn: 16
 
 merge_bams:
     walltime: '100:00:00'

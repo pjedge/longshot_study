@@ -18,6 +18,7 @@ sys.path.append('HapCUT2/utilities')
 import calculate_haplotype_statistics
 import random
 from analyze_variants import count_fp_near_true_indel
+from matplotlib_venn import venn3
 
 mpl.rc('legend', fontsize=9)
 mpl.rc('xtick', labelsize=9)
@@ -192,7 +193,7 @@ def plot_precision_recall_bars_simulation(pacbio_dirlist_genome, illumina_dirlis
     illumina_precisions_segdup, illumina_recalls_segdup = zip(*[get_precision_recall(d, gq_cutoff) for d in illumina_dirlist_segdup])
 
     ax = plt.subplot(211)
-    make_subplot(ax,np.array(ind1), pacbio_precisions_genome, illumina_precisions_genome, lab_pacbio='PacBio + Reaper', lab_illumina='Illumina + Freebayes',fc='#e0e1e2')
+    make_subplot(ax,np.array(ind1), pacbio_precisions_genome, illumina_precisions_genome, lab_pacbio='PacBio + Longshot', lab_illumina='Illumina + Freebayes',fc='#e0e1e2')
     make_subplot(ax, np.array(ind2), pacbio_precisions_segdup, illumina_precisions_segdup,fc='#dddddd')
     ax.legend(loc='center left', bbox_to_anchor=(0.25,1.13),ncol=2)
 
@@ -347,10 +348,10 @@ def plot_precision_recall_bars_simulation_extended(pacbio_ngmlr_dirlist_genome,
                 pacbio_bwamem_vals=pacbio_bwamem_precisions_genome,
                 pacbio_blasr_vals=pacbio_blasr_precisions_genome,
                 illumina_vals=illumina_precisions_genome,
-                lab_pacbio_ngmlr='PacBio + NGMLR + Reaper',
-                lab_pacbio_minimap2='PacBio + Minimap2 + Reaper',
-                lab_pacbio_bwamem='PacBio + BWA-MEM + Reaper',
-                lab_pacbio_blasr='PacBio + BLASR + Reaper',
+                lab_pacbio_ngmlr='PacBio + NGMLR + Longshot',
+                lab_pacbio_minimap2='PacBio + Minimap2 + Longshot',
+                lab_pacbio_bwamem='PacBio + BWA-MEM + Longshot',
+                lab_pacbio_blasr='PacBio + BLASR + Longshot',
                 lab_illumina='Illumina + Freebayes')
 
     make_subplot(ax=ax1,
@@ -364,7 +365,7 @@ def plot_precision_recall_bars_simulation_extended(pacbio_ngmlr_dirlist_genome,
     ax1.legend(loc='center left', bbox_to_anchor=(0.1,1.25),ncol=2)
 
     plt.ylabel("Precision")
-    plt.ylim(0.96,1.0)
+    plt.ylim(0.9,1.0)
     ax1.set_xticks([])
     ax1.set_xticklabels([])
 
@@ -425,13 +426,14 @@ def plot_precision_recall_bars_simulation_extended(pacbio_ngmlr_dirlist_genome,
     plt.savefig(output_file)
 
 
-def plot_haplotyping_results(reaper_errs, hapcut2_errs, output_file):
+def plot_haplotyping_results(longshot_errs, hapcut2_errs, median_covs, output_file):
     # errs should be in order: NA12878 44x, NA24385 69x
-    assert(len(reaper_errs) == 2)
+    assert(len(longshot_errs) == 2)
     assert(len(hapcut2_errs) == 2)
+    assert(len(median_covs) == 2)
 
     #unpickle the error objects
-    reaper_errs = [pickle.load(open(f,'rb')) for f in reaper_errs]
+    longshot_errs = [pickle.load(open(f,'rb')) for f in longshot_errs]
     hapcut2_errs = [pickle.load(open(f,'rb')) for f in hapcut2_errs]
 
     plt.figure(figsize=(6,6))
@@ -441,14 +443,14 @@ def plot_haplotyping_results(reaper_errs, hapcut2_errs, output_file):
     alpha1 = 0.6
 
 
-    def make_subplot(ax, ind, reaper_vals, hapcut2_vals, lab_reaper=None, lab_hapcut2=None):
+    def make_subplot(ax, ind, longshot_vals, hapcut2_vals, lab_longshot=None, lab_hapcut2=None):
 
-        plt.bar(ind+width, reaper_vals, color='#2200ff',
+        plt.bar(ind+width, longshot_vals, color='#2200ff',
                 ecolor='black', # black error bar color
                 alpha=alpha1,      # transparency
                 width=width,      # smaller bar width
                 align='center',
-                label=lab_reaper,
+                label=lab_longshot,
                 zorder=0)
         plt.bar(ind+2*width, hapcut2_vals, color='k',
                 ecolor='black', # black error bar color
@@ -475,9 +477,9 @@ def plot_haplotyping_results(reaper_errs, hapcut2_errs, output_file):
     ind = [0,0.4]
 
     ax = plt.subplot(211)
-    reaper_switch_mismatch = [e.get_switch_mismatch_rate() for e in reaper_errs]
+    longshot_switch_mismatch = [e.get_switch_mismatch_rate() for e in longshot_errs]
     hapcut2_switch_mismatch = [e.get_switch_mismatch_rate() for e in hapcut2_errs]
-    make_subplot(ax,np.array(ind), reaper_switch_mismatch, hapcut2_switch_mismatch, lab_reaper='Reaper Haplotype', lab_hapcut2='30x Illumina + HapCUT2 Haplotype')
+    make_subplot(ax,np.array(ind), longshot_switch_mismatch, hapcut2_switch_mismatch, lab_longshot='Longshot Haplotype', lab_hapcut2='~30x Illumina + HapCUT2 Haplotype')
     ax.legend(loc='center left', bbox_to_anchor=(0.0,1.13),ncol=2)
 
     plt.ylabel("Switch + Mismatch Error Rate")
@@ -488,12 +490,12 @@ def plot_haplotyping_results(reaper_errs, hapcut2_errs, output_file):
 
     ax = plt.subplot(212)
     plt.ylabel("N50\n")
-    reaper_N50 = [e.get_N50() for e in reaper_errs]
+    longshot_N50 = [e.get_N50() for e in longshot_errs]
     hapcut2_N50 = [e.get_N50() for e in hapcut2_errs]
-    make_subplot(ax,np.array(ind), reaper_N50, hapcut2_N50)
+    make_subplot(ax,np.array(ind), longshot_N50, hapcut2_N50)
     prettify_plot()
     ax.set_xticks(np.array(ind)+1.5*width)
-    ax.set_xticklabels(['NA12878\n44x','NA24385\n69x'])
+    ax.set_xticklabels(['NA12878\n{}x'.format(median_covs[0]),'NA24385\n{}x'.format(median_covs[1])])
 
     #ax.set_yscale('log')NA12878_prec_recall_{chrom}
     #plt.xlim(())
@@ -523,7 +525,8 @@ def plot_haplotyping_results(reaper_errs, hapcut2_errs, output_file):
 def plot_precision_recall_bars_NA12878_NA24385(pacbio_dirlist_NA24385, illumina_dirlist_NA24385,
                                                pacbio_dirlist_NA12878, illumina_dirlist_NA12878,
                                                gq_cutoffs_NA24385, gq_cutoffs_NA12878,
-                                               gq_cutoff_illumina, output_file):
+                                               gq_cutoff_illumina, labels,
+                                               output_file):
 
     plt.figure(figsize=(7,5))
     #mpl.rcParams['axes.titlepad'] = 50
@@ -564,9 +567,8 @@ def plot_precision_recall_bars_NA12878_NA24385(pacbio_dirlist_NA24385, illumina_
 
 
     pacbio_precisions_NA24385, pacbio_recalls_NA24385 = zip(*[get_precision_recall(d, g) for d,g in zip(pacbio_dirlist_NA24385, gq_cutoffs_NA24385)])
-    #truncate because we no longer want to plot 69x
-    pacbio_precisions_NA24385 = pacbio_precisions_NA24385[:-1]
-    pacbio_recalls_NA24385 = pacbio_recalls_NA24385[:-1]
+    pacbio_precisions_NA24385 = pacbio_precisions_NA24385
+    pacbio_recalls_NA24385 = pacbio_recalls_NA24385
     illumina_precisions_NA24385, illumina_recalls_NA24385 = zip(*[get_precision_recall(d, gq_cutoff_illumina) for d in illumina_dirlist_NA24385])
     pacbio_precisions_NA12878, pacbio_recalls_NA12878 = zip(*[get_precision_recall(d, g) for d,g in zip(pacbio_dirlist_NA12878, gq_cutoffs_NA12878)])
     illumina_precisions_NA12878, illumina_recalls_NA12878 = zip(*[get_precision_recall(d, gq_cutoff_illumina) for d in illumina_dirlist_NA12878])
@@ -592,7 +594,7 @@ def plot_precision_recall_bars_NA12878_NA24385(pacbio_dirlist_NA24385, illumina_
     plot_bars(ax, np.array(ind4), illumina_recalls_NA12878,color='#ff1900')
     prettify_plot()
     ax.set_xticks(np.array(ind1+ind2+ind3+ind4)+1.0*width)
-    ax.set_xticklabels(['20','30','40','50','30','30','44','30'])
+    ax.set_xticklabels(labels)
 
     #ax.set_yscale('log')NA12878_prec_recall_{chrom}
     #plt.xlim(())
@@ -747,60 +749,14 @@ def get_TsTv(vcfstats_file):
         else:
             return float(res)
 
-def make_table_4_genomes(NA12878_table_files, NA24385_table_files,
-                         NA24149_table_files, NA24143_table_files,
-                         gq_cutoffs, outfile):
-
-    def generate_table_line(table_files, gq_cutoff):
-
-        precision, recall = get_precision_recall(table_files.vcfeval_dir, gq_cutoff)
-        with open(table_files.runtime,'r') as inf:
-            hh, mm, ss = inf.readline().strip().split(':')
-        runtime = hh + ':' + mm
-
-        snvs_total = get_snp_count(table_files.vcfstats_genome)
-        snvs_outside_giab = get_snp_count(table_files.vcfstats_outside_GIAB)
-
-        return genomes_table_entry(SNVs_called=snvs_total, precision=precision, recall=recall,
-                                   outside_GIAB=snvs_outside_giab, runtime=runtime)
-
-    NA12878 = generate_table_line(NA12878_table_files, gq_cutoffs[0])
-    NA24385 = generate_table_line(NA24385_table_files, gq_cutoffs[1])
-    NA24149 = generate_table_line(NA24149_table_files, gq_cutoffs[2])
-    NA24143 = generate_table_line(NA24143_table_files, gq_cutoffs[3])
-
-    s = '''
-\\begin{{table}}[htbp]
-\\centering
-\\begin{{tabular}}{{lllllll}}
-\\hline
-Genome      & Read & SNVs    & Precision     & Recall    & Outside GIAB  & Run time  \\\\
-            & Coverage & called    &    &  & high-confidence       & (hours)          \\\\
-\\hline
-NA12878   & $44\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-NA24385 (AJ son) & $69\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-NA24149 (AJ father) & $32\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-NA24143 (AJ mother) & $30\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-# \\hline
-\\end{{tabular}}
-\\caption{{{{\\bf Summary of variants called on GIAB genomes.}}}}
-\\label{{tab:stats}}
-\\end{{table}}
-'''.format(NA12878.SNVs_called, NA12878.precision, NA12878.recall, NA12878.outside_GIAB, NA12878.runtime,
-           NA24385.SNVs_called, NA24385.precision, NA24385.recall, NA24385.outside_GIAB, NA24385.runtime,
-           NA24149.SNVs_called, NA24149.precision, NA24149.recall, NA24149.outside_GIAB, NA24149.runtime,
-           NA24143.SNVs_called, NA24143.precision, NA24143.recall, NA24143.outside_GIAB, NA24143.runtime)
-
-    with open(outfile,'w') as outf:
-        print(s, file=outf)
-
 def make_table_4_genomes_extended(NA12878_30x_table_files, NA12878_44x_table_files,
-                                  NA24385_20x_table_files, NA24385_30x_table_files,
+                                  NA24385_30x_table_files,
                                   NA24385_40x_table_files, NA24385_50x_table_files,
                                   NA24385_69x_table_files,
                                   NA24149_32x_table_files,
                                   NA24143_30x_table_files,
-                                  gq_cutoffs, outfile):
+                                  gq_cutoffs, coverages,
+                                  outfile):
 
     def generate_table_line(table_files, gq_cutoff):
 
@@ -818,14 +774,13 @@ def make_table_4_genomes_extended(NA12878_30x_table_files, NA12878_44x_table_fil
     NA12878_30x = generate_table_line(NA12878_30x_table_files, gq_cutoffs[0])
     NA12878_44x = generate_table_line(NA12878_44x_table_files, gq_cutoffs[1])
 
-    NA24385_20x = generate_table_line(NA24385_20x_table_files, gq_cutoffs[2])
-    NA24385_30x = generate_table_line(NA24385_30x_table_files, gq_cutoffs[3])
-    NA24385_40x = generate_table_line(NA24385_40x_table_files, gq_cutoffs[4])
-    NA24385_50x = generate_table_line(NA24385_50x_table_files, gq_cutoffs[5])
-    NA24385_69x = generate_table_line(NA24385_69x_table_files, gq_cutoffs[6])
+    NA24385_30x = generate_table_line(NA24385_30x_table_files, gq_cutoffs[2])
+    NA24385_40x = generate_table_line(NA24385_40x_table_files, gq_cutoffs[3])
+    NA24385_50x = generate_table_line(NA24385_50x_table_files, gq_cutoffs[4])
+    NA24385_69x = generate_table_line(NA24385_69x_table_files, gq_cutoffs[5])
 
-    NA24149_32x = generate_table_line(NA24149_32x_table_files, gq_cutoffs[7])
-    NA24143_30x = generate_table_line(NA24143_30x_table_files, gq_cutoffs[8])
+    NA24149_32x = generate_table_line(NA24149_32x_table_files, gq_cutoffs[6])
+    NA24143_30x = generate_table_line(NA24143_30x_table_files, gq_cutoffs[7])
 
     s = '''
 \\begin{{table}}[htbp]
@@ -835,29 +790,27 @@ def make_table_4_genomes_extended(NA12878_30x_table_files, NA12878_44x_table_fil
 Genome      & Read & SNVs    & Precision     & Recall    & Outside GIAB  & Run time  \\\\
             & Coverage & called    &    &  & high-confidence       & (hours)          \\\\
 \\hline
-NA12878   & $30\\times$ & {} & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-NA12878   & $44\\times$ & {} & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-NA24385 (AJ son) & $20\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-NA24385 (AJ son) & $30\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-NA24385 (AJ son) & $40\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-NA24385 (AJ son) & $50\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-NA24385 (AJ son) & $69\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-NA24149 (AJ father) & $32\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
-NA24143 (AJ mother) & $30\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA12878   & ${}\\times$ & {} & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA12878   & ${}\\times$ & {} & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA24385 (AJ son) & ${}\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA24385 (AJ son) & ${}\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA24385 (AJ son) & ${}\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA24385 (AJ son) & ${}\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA24149 (AJ father) & ${}\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA24143 (AJ mother) & ${}\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
 \\hline
 \\end{{tabular}}
 \\caption{{{{\\bf Summary of variants called on GIAB genomes.}}}}
 \\label{{tab:stats}}
 \\end{{table}}
-'''.format(NA12878_30x.SNVs_called, NA12878_30x.precision, NA12878_30x.recall, NA12878_30x.outside_GIAB, NA12878_30x.runtime,
-           NA12878_44x.SNVs_called, NA12878_44x.precision, NA12878_44x.recall, NA12878_44x.outside_GIAB, NA12878_44x.runtime,
-           NA24385_20x.SNVs_called, NA24385_20x.precision, NA24385_20x.recall, NA24385_20x.outside_GIAB, NA24385_20x.runtime,
-           NA24385_30x.SNVs_called, NA24385_30x.precision, NA24385_30x.recall, NA24385_30x.outside_GIAB, NA24385_30x.runtime,
-           NA24385_40x.SNVs_called, NA24385_40x.precision, NA24385_40x.recall, NA24385_40x.outside_GIAB, NA24385_40x.runtime,
-           NA24385_50x.SNVs_called, NA24385_50x.precision, NA24385_50x.recall, NA24385_50x.outside_GIAB, NA24385_50x.runtime,
-           NA24385_69x.SNVs_called, NA24385_69x.precision, NA24385_69x.recall, NA24385_69x.outside_GIAB, NA24385_69x.runtime,
-           NA24149_32x.SNVs_called, NA24149_32x.precision, NA24149_32x.recall, NA24149_32x.outside_GIAB, NA24149_32x.runtime,
-           NA24143_30x.SNVs_called, NA24143_30x.precision, NA24143_30x.recall, NA24143_30x.outside_GIAB, NA24143_30x.runtime)
+'''.format(coverages[0], NA12878_30x.SNVs_called, NA12878_30x.precision, NA12878_30x.recall, NA12878_30x.outside_GIAB, NA12878_30x.runtime,
+           coverages[1], NA12878_44x.SNVs_called, NA12878_44x.precision, NA12878_44x.recall, NA12878_44x.outside_GIAB, NA12878_44x.runtime,
+           coverages[2], NA24385_30x.SNVs_called, NA24385_30x.precision, NA24385_30x.recall, NA24385_30x.outside_GIAB, NA24385_30x.runtime,
+           coverages[3], NA24385_40x.SNVs_called, NA24385_40x.precision, NA24385_40x.recall, NA24385_40x.outside_GIAB, NA24385_40x.runtime,
+           coverages[4], NA24385_50x.SNVs_called, NA24385_50x.precision, NA24385_50x.recall, NA24385_50x.outside_GIAB, NA24385_50x.runtime,
+           coverages[5], NA24385_69x.SNVs_called, NA24385_69x.precision, NA24385_69x.recall, NA24385_69x.outside_GIAB, NA24385_69x.runtime,
+           coverages[6], NA24149_32x.SNVs_called, NA24149_32x.precision, NA24149_32x.recall, NA24149_32x.outside_GIAB, NA24149_32x.runtime,
+           coverages[7], NA24143_30x.SNVs_called, NA24143_30x.precision, NA24143_30x.recall, NA24143_30x.outside_GIAB, NA24143_30x.runtime)
 
     with open(outfile,'w') as outf:
         print(s, file=outf)
@@ -1169,9 +1122,14 @@ def actual_to_effective_read_coverage_plot(vcfgz_file, output_file):
 
     medians_x = []
     medians_y = []
+    Q1 = []
+    Q3 = []
+
     for a, lst in sorted(list(d.items())):
         medians_x.append(a)
         medians_y.append(statistics.median(lst))
+        Q1.append(np.percentile(lst, 25))
+        Q3.append(np.percentile(lst, 75))
 
     plt.figure()
     #import pdb; pdb.set_trace()
@@ -1186,8 +1144,9 @@ def actual_to_effective_read_coverage_plot(vcfgz_file, output_file):
 
     #plt.scatter(actual, effective, color='b',marker='.',s=1,alpha=0.75,label='Single variant site')
 
-    plt.plot([min(medians_x),max(medians_x)], [min(medians_x),max(medians_x)], color='k',linestyle=':',alpha=0.75,linewidth=3,label='Optimal effective coverage (diagonal)')
-    plt.plot(medians_x, medians_y, color='r',alpha=0.75,linewidth=3,label='Median effective coverage')
+    plt.plot([min(medians_x),max(medians_x)], [min(medians_x),max(medians_x)], color='k',linestyle=':',alpha=0.75,linewidth=3,label=None)
+    plt.fill_between(medians_x, Q1, Q3, color='r',alpha=0.3)#,label='1st-3rd Quartiles')
+    plt.plot(medians_x, medians_y, color='r',alpha=0.75,linewidth=3)#,label='Median effective coverage')
 
     ax1.spines["top"].set_visible(False)
     ax1.spines["right"].set_visible(False)
@@ -1196,7 +1155,7 @@ def actual_to_effective_read_coverage_plot(vcfgz_file, output_file):
     plt.tick_params(axis="both", which="both", bottom="off", top="off",
                 labelbottom="on", left="off", right="off", labelleft="on")
 
-    plt.legend(loc='upper left')
+    #plt.legend(loc='upper left')
     plt.xlabel('Actual Read Coverage')
     plt.ylabel('Effective Read Coverage')
     plt.tight_layout()
@@ -1281,7 +1240,7 @@ def plot_mappability_bars(pacbio_mf_0_0,
 
     plt.xlabel('Minimum read coverage')
     plt.ylabel('Fraction of genome covered (chr. 1-22)')
-    plt.ylim((0.8,1.0))
+    plt.ylim((0.7,1.0))
     plt.legend(loc='upper right')
     plt.tight_layout()
 
@@ -1294,14 +1253,18 @@ def plot_mappability_bars(pacbio_mf_0_0,
 
     plt.savefig(output_file)
 
-def mendelian_concordance_table(pacbio_row, illumina_row, outfile):
+def mendelian_concordance_table(pacbio_row, illumina_row, outfile, include_count=False):
 
     consistency_re = re.compile("\s+F\+M:\d+\/\d+\s+\((\d+\.\d+%)\)\n")
+    count_re = re.compile("\s+F\+M:(\d+)\/\d+\s+\(\d+\.\d+%\)\n")
+
     def parse_mendelian_output(mendelian_output):
         with open(mendelian_output,'r') as inf:
             file_contents = inf.read()
-            return consistency_re.findall(file_contents)[0]
-
+            if include_count:
+                return count_re.findall(file_contents)[0] + ', ' + consistency_re.findall(file_contents)[0]
+            else:
+                return consistency_re.findall(file_contents)[0]
 
     pacbio_data = [parse_mendelian_output(f).replace('%','\%') for f in pacbio_row]
     illumina_data = [parse_mendelian_output(f).replace('%','\%') for f in illumina_row]
@@ -1328,6 +1291,52 @@ Results are shown for genome-wide variants as well as variants within specific g
 \\label{{tab:mendelian}}
 \\end{{table}}
 '''.format(*pacbio_data,
+           *illumina_data)
+
+    with open(outfile,'w') as outf:
+        print(s, file=outf)
+
+def mendelian_concordance_table_blasr_minimap2(blasr_row, minimap2_row, illumina_row, outfile, include_count=False):
+
+    consistency_re = re.compile("\s+F\+M:\d+\/\d+\s+\((\d+\.\d+%)\)\n")
+    count_re = re.compile("\s+F\+M:(\d+)\/\d+\s+\(\d+\.\d+%\)\n")
+
+    def parse_mendelian_output(mendelian_output):
+        with open(mendelian_output,'r') as inf:
+            file_contents = inf.read()
+            if include_count:
+                return count_re.findall(file_contents)[0] + ', ' + consistency_re.findall(file_contents)[0]
+            else:
+                return consistency_re.findall(file_contents)[0]
+
+    blasr_data = [parse_mendelian_output(f).replace('%','\%') for f in blasr_row]
+    minimap2_data = [parse_mendelian_output(f).replace('%','\%') for f in minimap2_row]
+    illumina_data = [parse_mendelian_output(f).replace('%','\%') for f in illumina_row]
+
+    # read in files containing bed file total lengths
+
+    s = '''
+\\begin{{table}}[htbp]
+\\centering
+\\small
+\\begin{{tabular}}{{llllll}}
+\\hline
+         & Genome  & Inside GIAB & Outside GIAB & Segmental Dup.       & Segmental Dup.       \\\\
+         & (1-22)  & Confident   & Confident    & ($\geq 95\%$ similar)& ($\geq 99\%$ similar)\\\\
+\\hline
+PacBio (BLASR) & {}      & {}          & {}           & {}                   & {}                   \\tabularnewline
+PacBio (minimap2) & {}      & {}          & {}           & {}                   & {}                   \\tabularnewline
+Illumina & {}      & {}          & {}           & {}                   & {}                   \\tabularnewline
+\\hline
+\\end{{tabular}}
+\\caption{{{{\\bf Mendelian consistency for AJ Trio between variants called using PacBio reads
+($\\mathbf{{69\\times}}$ coverage son, $\\mathbf{{30\\times}}$ coverage mother, $\\mathbf{{32\\times}}$ coverage father),
+and variants called using Illumina reads ($\\mathbf{{60\\times}}$ coverage son, $\\mathbf{{30\\times}}$ coverage mother, $\\mathbf{{30\\times}}$ coverage father).
+Results are shown for genome-wide variants as well as variants within specific genomic regions.}}}}
+\\label{{tab:mendelian}}
+\\end{{table}}
+'''.format(*blasr_data,
+           *minimap2_data,
            *illumina_data)
 
     with open(outfile,'w') as outf:
@@ -1380,7 +1389,68 @@ well-mapped reads (mapq $\\geq 30$).}
 
         print(tail_part,file=outf)
 
+def make_venn_diagram_variants_outside_GIAB(longshot_vcf, giab_vcf, plat_vcf, output_png):
+
+    def vcf2set(vcf_file):
+        vcfset = set()
+        with pysam.VariantFile(vcf_file) as vcf:
+
+            for record in vcf:
+                vcfset.add((record.chrom, record.pos))# tuple(record.alleles), tuple(sorted(record.samples[0]['GT']))))
+
+        return vcfset
+
+    plt.figure()
+    venn3([vcf2set(longshot_vcf),vcf2set(giab_vcf),vcf2set(plat_vcf)],
+          set_labels=['Longshot', 'GIAB', 'Platinum Genomes'])
+    plt.savefig(output_png)
+
 
 if __name__ == '__main__':
     args = parseargs()
     plot_vcfeval(args.input_dirs, args.labels, args.output_file, args.title)
+
+def make_table_filtered_indels(median_covs,
+                         NA12878_vcfeval_nofilter, NA12878_vcfeval_filter,
+                         NA24385_vcfeval_nofilter, NA24385_vcfeval_filter,
+                         NA24149_vcfeval_nofilter, NA24149_vcfeval_filter,
+                         NA24143_vcfeval_nofilter, NA24143_vcfeval_filter,
+                         gq_cutoffs, outfile):
+
+    NA12878_nofilter_prec, NA12878_nofilter_recall = get_precision_recall(NA12878_vcfeval_nofilter, gq_cutoffs[0])
+    NA12878_filter_prec, NA12878_filter_recall = get_precision_recall(NA12878_vcfeval_filter, gq_cutoffs[0])
+
+    NA24385_nofilter_prec, NA24385_nofilter_recall = get_precision_recall(NA24385_vcfeval_nofilter, gq_cutoffs[1])
+    NA24385_filter_prec, NA24385_filter_recall = get_precision_recall(NA24385_vcfeval_filter, gq_cutoffs[1])
+
+    NA24149_nofilter_prec, NA24149_nofilter_recall = get_precision_recall(NA24149_vcfeval_nofilter, gq_cutoffs[2])
+    NA24149_filter_prec, NA24149_filter_recall = get_precision_recall(NA24149_vcfeval_filter, gq_cutoffs[2])
+
+    NA24143_nofilter_prec, NA24143_nofilter_recall = get_precision_recall(NA24143_vcfeval_nofilter, gq_cutoffs[3])
+    NA24143_filter_prec, NA24143_filter_recall = get_precision_recall(NA24143_vcfeval_filter, gq_cutoffs[3])
+    s = '''
+\\begin{{table}}[htbp]
+\\centering
+\\begin{{tabular}}{{llllll}}
+\\hline
+Genome      & Read     & Precision      & Precision      & Recall         & Recall         \\\\
+            & Coverage & (known indels  & (known indels  & (known indels  & (known indels  \\\\
+            &          &  not filtered) &  filtered out) &  not filtered) &  filtered out) \\\\
+
+\\hline
+NA12878   & ${}\\times$ & ${:.3f}$ & ${:.3f}$  & ${:.3f}$ & ${:.3f}$ \\\\
+NA24385 (AJ son) & ${}\\times$ & ${:.3f}$ & ${:.3f}$ & ${:.3f}$ & ${:.3f}$ \\\\
+NA24149 (AJ father) & ${}\\times$ & ${:.3f}$ & ${:.3f}$ & ${:.3f}$ & ${:.3f}$ \\\\
+NA24143 (AJ mother) & ${}\\times$ & ${:.3f}$ & ${:.3f}$ & ${:.3f}$ & ${:.3f}$ \\\\
+# \\hline
+\\end{{tabular}}
+\\caption{{{{\\bf Improvement in variant precision by filtering out SNVs within 5 bp of common indel variants (Mills + 1000g Indel variant set from the GATK bundle.}}}}
+\\label{{tab:stats}}
+\\end{{table}}
+'''.format(median_covs[0], NA12878_nofilter_prec, NA12878_filter_prec, NA12878_nofilter_recall, NA12878_filter_recall,
+           median_covs[1], NA24385_nofilter_prec, NA24385_filter_prec, NA24385_nofilter_recall, NA24385_filter_recall,
+           median_covs[2], NA24149_nofilter_prec, NA24149_filter_prec, NA24149_nofilter_recall, NA24149_filter_recall,
+           median_covs[3], NA24143_nofilter_prec, NA24143_filter_prec, NA24143_nofilter_recall, NA24143_filter_recall)
+
+    with open(outfile,'w') as outf:
+        print(s, file=outf)

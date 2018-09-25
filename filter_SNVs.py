@@ -80,7 +80,7 @@ def addlogs(a,b):
     else:
         return b + log10(1.0 + pow(10.0, a - b))
 
-def filter_reaper_VCF_for_haplotype_assessment(infile, outfile, min_phase_qual=30):
+def filter_longshot_VCF_for_haplotype_assessment(infile, outfile, min_phase_qual=30):
     ph_pat = re.compile("PH=(\d+\.\d+),(\d+\.\d+),(\d+\.\d+),(\d+\.\d+);")
 
     with open(outfile,'w') as outf:

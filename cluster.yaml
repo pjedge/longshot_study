@@ -1,13 +1,13 @@
 __default__:
     email:           pedge@eng.ucsd.edu
-    working_dir:     /home/pedge/git/reaper/study
+    working_dir:     /home/pedge/git/longshot/study
     queue:           hotel
     group:           bansal-group
-    qsub_stdout_dir: /oasis/tscc/scratch/pedge/reaper/stdout
+    qsub_stdout_dir: /oasis/tscc/scratch/pedge/longshot/stdout
     ppn:             1
     walltime:        '30:00:00'
 
-run_reaper:
+run_longshot:
     walltime: '40:00:00'
     ppn: 4
 
@@ -65,6 +65,9 @@ align_giab_pacbio_minimap2:
 
 align_giab_pacbio_blasr:
     walltime: '20:00:00'
+    ppn: 16
+
+make_blasr_suffix_array:
     ppn: 16
 
 merge_bams:

@@ -124,7 +124,7 @@ def plot_precision_recall_bars_simulation(pacbio_dirlist_genome, illumina_dirlis
     illumina_precisions_segdup, illumina_recalls_segdup = zip(*[get_precision_recall(d, gq_cutoff) for d in illumina_dirlist_segdup])
 
     ax = plt.subplot(211)
-    make_subplot(ax,np.array(ind1), pacbio_precisions_genome, illumina_precisions_genome, lab_pacbio='PacBio + Reaper', lab_illumina='Illumina + Freebayes',fc='#e0e1e2')
+    make_subplot(ax,np.array(ind1), pacbio_precisions_genome, illumina_precisions_genome, lab_pacbio='PacBio + Longshot', lab_illumina='Illumina + Freebayes',fc='#e0e1e2')
     make_subplot(ax, np.array(ind2), pacbio_precisions_segdup, illumina_precisions_segdup,fc='#dddddd')
     ax.legend(loc='center left', bbox_to_anchor=(0.25,1.13),ncol=2)
 

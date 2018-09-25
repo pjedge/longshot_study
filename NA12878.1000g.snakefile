@@ -6,11 +6,11 @@ NA12878_Illumina_30x_BAM_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/N
 
 rule plot_pr_curve_NA12878:
     params: job_name = 'plot_pr_curve_NA12878.1000g.{aligner}.{chrom}',
-            title = None #'Precision Recall Curve for Reaper on NA12878: PacBio Reads vs Standard Illumina'
+            title = None
     input:
-        il30 = 'data/NA12878.1000g/vcfeval/illumina_30x.filtered/{chrom}',
-        pb30 = 'data/NA12878.1000g/vcfeval/reaper.pacbio.blasr.30x._/{chrom}',
-        pb44 = 'data/NA12878.1000g/vcfeval/reaper.pacbio.blasr.44x._/{chrom}',
+        il30 = 'data/NA12878.1000g/vcfeval/freebayes.illumina.aligned.30x.filtered/{chrom}',
+        pb30 = 'data/NA12878.1000g/vcfeval/longshot.pacbio.blasr.30x._/{chrom}',
+        pb44 = 'data/NA12878.1000g/vcfeval/longshot.pacbio.blasr.44x._/{chrom}',
         il30_cov = 'data/NA12878.1000g/aligned_reads/illumina/illumina.aligned.all.30x.bam.median_coverage',
         pb30_cov = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.{aligner}.all.30x.bam.median_coverage',
         pb44_cov = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.{aligner}.all.44x.bam.median_coverage'
@@ -19,8 +19,8 @@ rule plot_pr_curve_NA12878:
     run:
         ptf.plot_vcfeval([input.il30, input.pb30, input.pb44],
                          ['Freebayes, Illumina {}x'.format(parse_int_file(input.il30_cov)),
-                          'Reaper, PacBio {}x'.format(parse_int_file(input.pb30_cov)),
-                          'Reaper, PacBio {}x'.format(parse_int_file(input.pb44_cov))],
+                          'Longshot, PacBio {}x'.format(parse_int_file(input.pb30_cov)),
+                          'Longshot, PacBio {}x'.format(parse_int_file(input.pb44_cov))],
                           output.png,params.title,
                           colors=['r','#8080ff','#3333ff'],
                           xlim=(0.8,1.0),
@@ -44,11 +44,18 @@ rule download_GIAB_VCF_NA12878:
     output: 'data/NA12878.1000g/variants/ground_truth/ground_truth.vcf.gz'
     shell: 'wget {NA12878_GIAB_VCF_URL} -O {output}'
 
+# SPLIT PACBIO BAM
+rule split_bam_pacbio_NA12878:
+    params: job_name = 'split_bam_pacbio_NA12878.1000g.{chrom}'
+    input: bam = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.44x.bam',
+    output: bam = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.44x.split_chroms/{chrom}.bam',
+    shell: '{SAMTOOLS} view -hb {input.bam} chr{wildcards.chrom} > {output.bam}'
+
 # SUBSAMPLE PACBIO BAM
 rule subsample_pacbio_NA12878:
     params: job_name = 'subsample_pacbio_NA12878.1000g'
     input: bam = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.{chrom}.44x.bam',
-    output: bam = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.{chrom}.{cov}x.bam',
+    output: bam = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.{chrom}.{cov,30}x.bam',
     run:
         subsample_frac = float(wildcards.cov) / 44.0
         shell('{SAMTOOLS} view -hb {input.bam} -s {subsample_frac} > {output.bam}')

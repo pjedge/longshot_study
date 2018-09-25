@@ -1,45 +1,46 @@
 
 from collections import defaultdict
 
-FASTQUTILS = '/home/pedge/installed/ngsutils/bin/fastqutils'
-TWOBITTOFASTA = 'twoBitToFa' # can be downloaded from 'http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/twoBitToFa'
-SAMTOOLS       = 'samtools' # v1.3
-FASTQ_DUMP     = 'fastq-dump' # v2.5.2
-REAPER         = '../target/release/reaper' # v0.1
-RTGTOOLS       = 'rtg' #'/home/pedge/installed/rtg-tools-3.8.4/rtg' # v3.8.4, https://www.realtimegenomics.com/products/rtg-tools
-BGZIP = 'bgzip'
-TABIX = 'tabix'
-FREEBAYES      = '/home/pedge/git/freebayes/bin/freebayes'
-SIMLORD = 'simlord'
-DWGSIM = '/home/pedge/git/DWGSIM/dwgsim'
-BWA = '/home/pedge/installed/bwa'
-BLASR = 'blasr'
-BAX2BAM = 'bax2bam'
-BAM2FASTQ = 'bam2fastq'
-SAWRITER = 'sawriter'
-NGMLR = 'ngmlr'
-MINIMAP2 = 'minimap2'
-BCFTOOLS = '/opt/biotools/bcftools/bin/bcftools'
-PYFAIDX = '/home/pedge/installed/opt/python/bin/faidx'
-chroms = ['{}'.format(i) for i in range(1,23)]
-BEDTOOLS = 'bedtools' # v 2.27
+#FASTQUTILS = '/home/pedge/installed/ngsutils/bin/fastqutils'
+#TWOBITTOFASTA = 'twoBitToFa' # can be downloaded from 'http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/twoBitToFa'
+#SAMTOOLS       = 'samtools' # v1.3
+#FASTQ_DUMP     = 'fastq-dump' # v2.5.2
+#LONGSHOT         = '../target/release/longshot' # v0.1
+#RTGTOOLS       = 'rtg' #'/home/pedge/installed/rtg-tools-3.8.4/rtg' # v3.8.4, https://www.realtimegenomics.com/products/rtg-tools
+#BGZIP = 'bgzip'
+#TABIX = 'tabix'
+#FREEBAYES      = '/home/pedge/git/freebayes/bin/freebayes'
+#SIMLORD = 'simlord'
+#DWGSIM = '/home/pedge/git/DWGSIM/dwgsim'
+#BWA = '/home/pedge/installed/bwa'
+#BLASR = 'blasr'
+#BAX2BAM = 'bax2bam'
+#BAM2FASTQ = 'bam2fastq'
+#SAWRITER = 'sawriter'
+#NGMLR = 'ngmlr'
+#MINIMAP2 = 'minimap2'
+#BCFTOOLS = '/opt/biotools/bcftools/bin/bcftools'
+#PYFAIDX = '/home/pedge/installed/opt/python/bin/faidx'
+#chroms = ['{}'.format(i) for i in range(1,23)]
+#BEDTOOLS = 'bedtools' # v 2.27
 
-rule all:
-    input: expand('data/{individual}.hg38/aligned_reads/pacbio/pacbio.minimap2.all.giab_full_coverage.bam',individual=['NA24143','NA24149','NA24385'])
+#rule all:
+#    input: 'data/NA24143.hg38/aligned_reads/pacbio/pacbio.blasr.all.giab_full_coverage.bam'
+           #expand('data/{individual}.hg38/aligned_reads/pacbio/pacbio.minimap2.all.giab_full_coverage.bam',individual=['NA24143','NA24149','NA24385'])
 
 # index fasta for minimap2
-rule index_minimap2:
-    params: job_name = lambda wildcards: 'index_minimap2.{}'.format(str(wildcards.x).replace("/", "."))
-    input:  fa  = '{x}.fa'
-    output: mmi = '{x}.fa.mmi'
-    shell:  '{MINIMAP2} -d {output.mmi} {input.fa}'
+#rule index_minimap2:
+#    params: job_name = lambda wildcards: 'index_minimap2.{}'.format(str(wildcards.x).replace("/", "."))
+#    input:  fa  = '{x}.fa'
+#    output: mmi = '{x}.fa.mmi'
+#    shell:  '{MINIMAP2} -d {output.mmi} {input.fa}'
 
 # BWA index
-rule bwa_index_fasta:
-    params: job_name = lambda wildcards: 'bwa_index_fasta.{}'.format(str(wildcards.x).replace("/", "."))
-    input:  '{x}.fa'
-    output: '{x}.fa.bwt'
-    shell: '{BWA} index {input}'
+#rule bwa_index_fasta:
+#    params: job_name = lambda wildcards: 'bwa_index_fasta.{}'.format(str(wildcards.x).replace("/", "."))
+#    input:  '{x}.fa'
+#    output: '{x}.fa.bwt'
+#    shell: '{BWA} index {input}'
 
 # file with 3 columns:
 # 1. URL of compressed pacbio hdf5 data
@@ -62,11 +63,11 @@ with open(GIAB_AJTRIO_PACBIO_HDF5_INDEX,'r') as infile:
 
 #assert(len(hdf5_file_list[]) == num_hdf5_archives)
 
-rule make_blasr_suffix_array:
-    params: job_name = 'make_blasr_suffix_array.{genome}'
-    input: 'data/genomes/{genome}.fa'
-    output: 'data/genomes/{genome}.fa.sawriter.sa'
-    shell: '{SAWRITER} {output} {input}'
+#rule make_blasr_suffix_array:
+#    params: job_name = 'make_blasr_suffix_array.{genome}'
+#    input: 'data/genomes/{genome}.fa'
+#    output: 'data/genomes/{genome}.fa.sawriter.sa'
+#    shell: '{SAWRITER} {output} {input}'
 
 # for a single individual, merge all of their sorted, mapped pacbio bams into one big one.
 rule merge_giab_pacbio:
@@ -104,7 +105,7 @@ rule align_giab_pacbio_blasr:
         hg38_sa = 'data/genomes/hg38.fa.sawriter.sa',
         hg38_ix = 'data/genomes/hg38.fa.fai',
     output: bam = temp('data/{individual}.hg38/raw_pacbio/aligned_bam_blasr/archive{archive_number}.bam')
-    shell: '{BLASR} {input.bam} {input.hg38} -bestn 1 --sa {input.hg38_sa} --nproc 16 --bam --out {output}'
+    shell: '{BLASR} {input.bam} {input.hg38} --bestn 1 --sa {input.hg38_sa} --nproc 16 --bam --out {output}'
 
 # convert the pb bam format to fastq for use with minimap2 and other tools
 rule bam_to_fastq:

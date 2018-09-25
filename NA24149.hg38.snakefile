@@ -5,16 +5,16 @@ NA24149_HG38_GIAB_HIGH_CONF_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/rel
 
 rule plot_pr_curve_NA24149_hg38:
     params: job_name = 'plot_pr_curve_NA24149.hg38.{aligner}.{chrom}',
-            title = None #'Precision Recall Curve for Reaper on NA24149: PacBio Reads vs Standard Illumina'
+            title = None
     input: il30 = 'data/NA24149.hg38/vcfeval/freebayes.illumina.aligned.30x.filtered/{chrom}',
-           pb32 = 'data/NA24149.hg38/vcfeval/reaper.pacbio.{aligner}.32x._/{chrom}',
+           pb32 = 'data/NA24149.hg38/vcfeval/longshot.pacbio.{aligner}.32x._/{chrom}',
            il30_cov = 'data/NA24149.hg38/aligned_reads/illumina/illumina.aligned.all.30x.bam.median_coverage',
            pb32_cov = 'data/NA24149.hg38/aligned_reads/pacbio/pacbio.{aligner}.all.32x.bam.median_coverage'
     output: png = 'data/plots/NA24149.hg38.{aligner}.prec_recall_{chrom}.png'
     run:
         ptf.plot_vcfeval([input.il30, input.pb32],
                          ['Freebayes, Illumina {}x'.format(parse_int_file(input.il30_cov)),
-                         'Reaper, PacBio {}x'.format(parse_int_file(input.pb32_cov))],
+                         'Longshot, PacBio {}x'.format(parse_int_file(input.pb32_cov))],
                           output.png,params.title,
                           xlim=(0.6,1.0),
                           ylim=(0.975,1.0))
@@ -39,7 +39,7 @@ rule download_GIAB_VCF_NA24149_hg38:
 
 # RENAME PACBIO BAM
 rule rename_pacbio_NA24149_hg38:
-    params: job_name = 'rename_pacbio_NA24149.hg38'
-    input: bam = 'data/NA24149.hg38/aligned_reads/pacbio/pacbio.blasr.all.giab_full_coverage.bam'
-    output: bam = 'data/NA24149.hg38/aligned_reads/pacbio/pacbio.blasr.all.32x.bam',
+    params: job_name = 'rename_pacbio_NA24149.hg38.{aligner}'
+    input: bam = 'data/NA24149.hg38/aligned_reads/pacbio/pacbio.{aligner}.all.giab_full_coverage.bam'
+    output: bam = 'data/NA24149.hg38/aligned_reads/pacbio/pacbio.{aligner}.all.32x.bam',
     shell: 'mv {input.bam} {output.bam}'

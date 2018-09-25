@@ -114,7 +114,7 @@ rule make_gene_table:
 rule filter_SNVs:
     params: job_name = 'filter_SNVs.{id}.{build}.{gene_name}.pb{pcov}x'
     input:  region = 'data/{id}.{build}/gene_mappability_pb{pcov}x/{gene_name}/region.txt',
-            pb_SNVs = 'data/{id}.{build}/variants/reaper.pacbio.blasr.{pcov}x.-z/all.GQ{pcov}.PASS.SNPs_ONLY.vcf.gz',
+            pb_SNVs = 'data/{id}.{build}/variants/longshot.pacbio.blasr.{pcov}x.-z/all.GQ{pcov}.PASS.SNPs_ONLY.vcf.gz',
             il_SNVs = 'data/{id}.{build}/variants/illumina_30x.filtered/all.GQ50.PASS.SNPs_ONLY.vcf.gz',
             genome_file = 'genome_tracks/{build}.chrom.sizes.natural_order.txt'
     output: pb_SNVs = 'data/{id}.{build}/gene_mappability_pb{pcov}x/{gene_name}/pacbio_SNVs.vcf.gz',

@@ -249,7 +249,12 @@ rule simulate_illumina:
         chrom_len = 0
         with pysam.FastaFile(input.diploid_fasta) as ff:
             for ref in ff.references:
-                chrom_len += ff.get_reference_length(ref)
+                seq = ff.fetch(ref)
+                chrom_len = 0
+                for char in seq:
+                    if char != 'N' and char != 'n':
+                        chrom_len += 1
+                #chrom_len += ff.get_reference_length(ref)
 
         short_read_len = 100
         haploid_cov = 30 #float(wildcards.cov) / 2.0 # the haploid coverage

@@ -26,6 +26,23 @@ rule plot_pr_curve_NA12878:
                           xlim=(0.8,1.0),
                           ylim=(0.985,1.0))
 
+rule get_tlens_haplotype_bams:
+    params: job_name = 'get_tlens_haplotype_bams'
+    input:  'data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.{group}.bam'
+    output: 'data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.{group,(hap1|hap2|unassigned)}.tlens.txt'
+    shell: '{SAMTOOLS} view {input} | cut -f 10 > {output}'
+
+rule haplotype_separation_chr1:
+    params: job_name = 'haplotype_separation_chr1'
+    input: bam = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.44x.bam',
+           ref = 'data/genomes/hg19.fa'
+    output: vcf = 'data/NA12878.1000g/variants/reaper.pacbio.blasr.44x.for_haplotype_separation/1.vcf',
+            h1_bam = 'data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.hap1.bam',
+            h2_bam = 'data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.hap2.bam',
+            una_bam = 'data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.unassigned.bam'
+    shell:
+        '{LONGSHOT} -r chr1 -F -s NA12878 --bam {input.bam} --ref {input.ref} --out {output.vcf} -p data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x'
+
 # DOWNLOAD 30x Illumina reads
 rule download_Illumina_reads_NA12878:
     params: job_name = 'download_Illumina_30x_NA12878.1000g',

@@ -28,6 +28,69 @@ rule plot_pr_curve_NA24385_impact_of_haplotyping:
                                    '#0400fc','#514efc'], # blue
                            xlim=(0.70,1.0),ylim=(0.975,1.0))
 
+rule plot_pr_curve_4panel:
+    params: job_name = 'plot_pr_curve_4panel.{aligner}.{chrom}'
+    input:
+        NA12878_il30 = 'data/NA12878.1000g/vcfeval/freebayes.illumina.aligned.30x.filtered/{chrom}',
+        NA12878_pb30 = 'data/NA12878.1000g/vcfeval/longshot.pacbio.blasr.30x._/{chrom}',
+        NA12878_pb44 = 'data/NA12878.1000g/vcfeval/longshot.pacbio.blasr.44x._/{chrom}',
+        NA12878_il30_cov = 'data/NA12878.1000g/aligned_reads/illumina/illumina.aligned.all.30x.bam.median_coverage',
+        NA12878_pb30_cov = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.{aligner}.all.30x.bam.median_coverage',
+        NA12878_pb44_cov = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.{aligner}.all.44x.bam.median_coverage',
+        NA24385_il30 = 'data/NA24385.hg38/vcfeval/freebayes.illumina.aligned.30x.filtered/{chrom}',
+        NA24385_pb30 = 'data/NA24385.hg38/vcfeval/longshot.pacbio.{aligner}.30x._/{chrom}',
+        NA24385_pb40 = 'data/NA24385.hg38/vcfeval/longshot.pacbio.{aligner}.40x._/{chrom}',
+        NA24385_pb50 = 'data/NA24385.hg38/vcfeval/longshot.pacbio.{aligner}.50x._/{chrom}',
+        NA24385_pb69 = 'data/NA24385.hg38/vcfeval/longshot.pacbio.{aligner}.69x._/{chrom}',
+        NA24385_il30_cov = 'data/NA24385.hg38/aligned_reads/illumina/illumina.aligned.all.30x.bam.median_coverage',
+        NA24385_pb30_cov = 'data/NA24385.hg38/aligned_reads/pacbio/pacbio.{aligner}.all.30x.bam.median_coverage',
+        NA24385_pb40_cov = 'data/NA24385.hg38/aligned_reads/pacbio/pacbio.{aligner}.all.40x.bam.median_coverage',
+        NA24385_pb50_cov = 'data/NA24385.hg38/aligned_reads/pacbio/pacbio.{aligner}.all.50x.bam.median_coverage',
+        NA24385_pb69_cov = 'data/NA24385.hg38/aligned_reads/pacbio/pacbio.{aligner}.all.69x.bam.median_coverage',
+        NA24149_il30 = 'data/NA24149.hg38/vcfeval/freebayes.illumina.aligned.30x.filtered/{chrom}',
+        NA24149_pb32 = 'data/NA24149.hg38/vcfeval/longshot.pacbio.{aligner}.32x._/{chrom}',
+        NA24149_il30_cov = 'data/NA24149.hg38/aligned_reads/illumina/illumina.aligned.all.30x.bam.median_coverage',
+        NA24149_pb32_cov = 'data/NA24149.hg38/aligned_reads/pacbio/pacbio.{aligner}.all.32x.bam.median_coverage',
+        NA24143_il30 = 'data/NA24143.hg38/vcfeval/freebayes.illumina.aligned.30x.filtered/{chrom}',
+        NA24143_pb30 = 'data/NA24143.hg38/vcfeval/longshot.pacbio.{aligner}.30x._/{chrom}',
+        NA24143_il30_cov = 'data/NA24143.hg38/aligned_reads/illumina/illumina.aligned.all.30x.bam.median_coverage',
+        NA24143_pb30_cov = 'data/NA24143.hg38/aligned_reads/pacbio/pacbio.{aligner}.all.30x.bam.median_coverage'
+    output:
+        png = 'data/plots/prec_recall_4panel_{aligner}.{chrom}.png'
+    run:
+        ptf.plot_vcfeval_4panel(dirlist1=[input.NA12878_il30, input.NA12878_pb30, input.NA12878_pb44],
+                          labels1=['Freebayes, Illumina {}x'.format(parse_int_file(input.NA12878_il30_cov)),
+                          'Longshot, PacBio {}x'.format(parse_int_file(input.NA12878_pb30_cov)),
+                          'Longshot, PacBio {}x'.format(parse_int_file(input.NA12878_pb44_cov))],
+                          colors1=['r','#8080ff','#3333ff'],
+                          legendloc1='lower left',
+                          title1='NA12878',
+                          dirlist2=[input.NA24385_il30, input.NA24385_pb30, input.NA24385_pb40, input.NA24385_pb50, input.NA24385_pb69],
+                          labels2=['Freebayes, Illumina {}x'.format(parse_int_file(input.NA24385_il30_cov)),
+                          'Longshot, PacBio {}x'.format(parse_int_file(input.NA24385_pb30_cov)),
+                          'Longshot, PacBio {}x'.format(parse_int_file(input.NA24385_pb40_cov)),
+                          'Longshot, PacBio {}x'.format(parse_int_file(input.NA24385_pb50_cov)),
+                          'Longshot, PacBio {}x'.format(parse_int_file(input.NA24385_pb69_cov))],
+                          colors2=['#ff0707','#8080ff','#6666ff','#3333ff','b'],
+                          legendloc2='lower left',
+                          title2='NA24385',
+                          dirlist3=[input.NA24149_il30, input.NA24149_pb32],
+                          labels3=['Freebayes, Illumina {}x'.format(parse_int_file(input.NA24149_il30_cov)),
+                          'Longshot, PacBio {}x'.format(parse_int_file(input.NA24149_pb32_cov))],
+                          colors3=['r','#3333ff','#ccccff','#9999ff','#8080ff','#6666ff'],
+                          legendloc3='lower left',
+                           title3='NA24149',
+                           dirlist4=[input.NA24143_il30, input.NA24143_pb30],
+                          labels4=['Freebayes, Illumina {}x'.format(parse_int_file(input.NA24143_il30_cov)),
+                                   'Longshot, PacBio {}x'.format(parse_int_file(input.NA24143_pb30_cov))],
+                           colors4=['r','#3333ff','#ccccff','#9999ff','#8080ff','#6666ff'],
+                          legendloc4='lower left',
+                           title4='NA24143',
+                           xlim=(0.6,1.0),
+                           ylim=(0.98599,1.0),
+                           output_file=output.png
+                          )
+
 rule make_four_genomes_table_extended:
     params: job_name = 'make_four_genomes_table_extended.aj_trio_{aj_trio_build}_{aj_trio_aligner}.{chrom}'
     input:
@@ -240,6 +303,58 @@ rule plot_precision_recall_bars_NA12878_NA24385:
                                                                 ],
                                                        output_file=output.png)
 
+rule plot_precision_recall_bars_NA12878_AJ_Trio:
+    params: job_name = 'plot_precision_recall_bars_NA12878_AJ_Trio.{AJ_trio_aligner}.{AJ_trio_build}',
+    input: pacbio_dirlist_NA12878 = expand('data/NA12878.1000g/vcfeval/longshot.pacbio.blasr.{cov}x._/all',cov=[30,44]),
+           illumina_NA12878 = 'data/NA12878.1000g/vcfeval/freebayes.illumina.aligned.30x.filtered/all',
+           pacbio_dirlist_NA24385 = expand('data/NA24385.{{AJ_trio_build}}/vcfeval/longshot.pacbio.{{AJ_trio_aligner}}.{cov}x._/all',cov=[30,40,50,69]),
+           illumina_NA24385 = 'data/NA24385.hg38/vcfeval/freebayes.illumina.aligned.30x.filtered/all',
+           pacbio_dirlist_NA24149 = expand('data/NA24149.{{AJ_trio_build}}/vcfeval/longshot.pacbio.{{AJ_trio_aligner}}.{cov}x._/all',cov=[32]),
+           illumina_NA24149 = 'data/NA24149.hg38/vcfeval/freebayes.illumina.aligned.30x.filtered/all',
+           pacbio_dirlist_NA24143 = expand('data/NA24143.{{AJ_trio_build}}/vcfeval/longshot.pacbio.{{AJ_trio_aligner}}.{cov}x._/all',cov=[30]),
+           illumina_NA24143 = 'data/NA24143.hg38/vcfeval/freebayes.illumina.aligned.30x.filtered/all',
+           NA12878_pb30_cov = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.median_coverage',
+           NA12878_pb44_cov = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.44x.bam.median_coverage',
+           NA12878_il30_cov = 'data/NA12878.1000g/aligned_reads/illumina/illumina.aligned.all.30x.bam.median_coverage',
+           NA24385_pb30_cov = 'data/NA24385.{AJ_trio_build}/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.median_coverage',
+           NA24385_pb40_cov = 'data/NA24385.{AJ_trio_build}/aligned_reads/pacbio/pacbio.blasr.all.40x.bam.median_coverage',
+           NA24385_pb50_cov = 'data/NA24385.{AJ_trio_build}/aligned_reads/pacbio/pacbio.blasr.all.50x.bam.median_coverage',
+           NA24385_pb69_cov = 'data/NA24385.{AJ_trio_build}/aligned_reads/pacbio/pacbio.blasr.all.69x.bam.median_coverage',
+           NA24385_il30_cov = 'data/NA24385.{AJ_trio_build}/aligned_reads/illumina/illumina.aligned.all.30x.bam.median_coverage',
+           NA24149_pb32_cov = 'data/NA24149.{AJ_trio_build}/aligned_reads/pacbio/pacbio.blasr.all.32x.bam.median_coverage',
+           NA24149_il30_cov = 'data/NA24149.{AJ_trio_build}/aligned_reads/illumina/illumina.aligned.all.30x.bam.median_coverage',
+           NA24143_pb30_cov = 'data/NA24143.{AJ_trio_build}/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.median_coverage',
+           NA24143_il30_cov = 'data/NA24143.{AJ_trio_build}/aligned_reads/illumina/illumina.aligned.all.30x.bam.median_coverage',
+    output: png = 'data/plots/fig3_precision_recall_bars_NA12878_AJ_Trio.{AJ_trio_aligner}.{AJ_trio_build}.png'
+    run:
+        ptf.plot_precision_recall_bars_NA12878_AJ_Trio(pacbio_dirlist_NA12878=list(input.pacbio_dirlist_NA12878),
+                                                       illumina_dirlist_NA12878=[input.illumina_NA12878],
+                                                       pacbio_dirlist_NA24385=list(input.pacbio_dirlist_NA24385),
+                                                       illumina_dirlist_NA24385=[input.illumina_NA24385],
+                                                       pacbio_dirlist_NA24149=list(input.pacbio_dirlist_NA24149),
+                                                       illumina_dirlist_NA24149=[input.illumina_NA24149],
+                                                       pacbio_dirlist_NA24143=list(input.pacbio_dirlist_NA24143),
+                                                       illumina_dirlist_NA24143=[input.illumina_NA24143],
+                                                       gq_cutoffs_NA12878=[parse_int_file(x) for x in
+                                                                     [input.NA12878_pb30_cov, input.NA12878_pb44_cov]],
+                                                       gq_cutoffs_NA24385=[parse_int_file(x) for x in
+                                                                     [input.NA24385_pb30_cov, input.NA24385_pb40_cov,
+                                                                      input.NA24385_pb50_cov, input.NA24385_pb69_cov]],
+                                                       gq_cutoffs_NA24149=[parse_int_file(input.NA24149_pb32_cov)],
+                                                       gq_cutoffs_NA24143=[parse_int_file(input.NA24143_pb30_cov)],
+                                                       gq_cutoff_illumina=50,
+                                                       labels = [str(parse_int_file(x)) for x in
+                                                                     [input.NA12878_pb30_cov, input.NA12878_pb44_cov,
+                                                                      input.NA12878_il30_cov,
+                                                                      input.NA24385_pb30_cov, input.NA24385_pb40_cov,
+                                                                      input.NA24385_pb50_cov, input.NA24385_pb69_cov,
+                                                                      input.NA24385_il30_cov,
+                                                                      input.NA24149_pb32_cov, input.NA24149_il30_cov,
+                                                                      input.NA24143_pb30_cov, input.NA24143_il30_cov,
+                                                                      ]
+                                                                ],
+                                                       output_file=output.png)
+
 
 rule plot_haplotyping_results:
     params: job_name = 'plot_haplotyping_results',
@@ -340,29 +455,9 @@ rule combine_map_counts:
         with open(output[0],'w') as outf:
             print(total, file=outf)
 
-rule generate_map_counts_illumina:
-    params: job_name = 'generate_map_counts_illumina.{individual}.{build}.MAPQ{mapq}.mincov{cov}.mapfrac{mapfrac}.{chrom}'
-    input:  bam = 'data/{individual}.{build}/aligned_reads/illumina/illumina.60x.bam',
-            bai = 'data/{individual}.{build}/aligned_reads/illumina/illumina.60x.bam.bai',
-            hs37d5    = 'data/genomes/hs37d5.fa',
-            hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
-            hg38 = 'data/genomes/hg38.fa',
-            hg38_ix = 'data/genomes/hg38.fa.fai'
-    output: 'data/{individual}.{build}/aligned_reads/illumina/map_counts/mapq{mapq,\d+}_mincov{cov,\d+}_mapfrac{mapfrac}/illumina.60x__{chrom,(\d+)}.map_count.txt'
-    run:
-        w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
-        ref_fa = input.hs37d5 if wildcards.build == '1000g' else input.hg38
-        # NA12878 is an exception, actually has hg19 chrom names instead of 1000g chrom names
-        if wildcards.individual == 'NA12878' and wildcards.build == '1000g' and wildcards.tech=='pacbio':
-            w_chrom = 'chr' + w_chrom
-        shell('''
-        {MAP_COUNTER} --chrom {w_chrom} --bam {input.bam} --ref {ref_fa} --min_cov {wildcards.cov} \
-        --min_mapq {wildcards.mapq} --map_frac {wildcards.mapfrac} > {output}
-        ''')
-
 rule generate_map_counts:
     params: job_name = 'generate_map_counts_{tech}.{aligner}.{individual}.{build}.mapq{mapq}.mincov{cov}.mapfrac{mapfrac}.{chrom}'
-    input:  bam = 'data/{individual}.{build}/aligned_reads{tech}/{tech}.{aligner}.all.60x.bam',
+    input:  bam = 'data/{individual}.{build}/aligned_reads/{tech}/{tech}.{aligner}.all.60x.bam',
             bai = 'data/{individual}.{build}/aligned_reads/{tech}/{tech}.{aligner}.all.60x.bam.bai',
             hs37d5    = 'data/genomes/hs37d5.fa',
             hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
@@ -475,6 +570,54 @@ rule make_venn_diagram_variants_outside_GIAB:
             giab = 'data/NA12878.1000g/variants/ground_truth/all.GQ0.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.vcf.gz',
             plat = 'data/NA12878.1000g/variants/platinum_genomes/all.GQ0.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.vcf.gz'
     output: png = 'data/plots/NA12878_variants_outside_GIAB_confident_venn_diagram.png'
+    run:
+        ptf.make_venn_diagram_variants_outside_GIAB(input.longshot, input.giab, input.plat, output.png)
+
+NA12878_PG_CONFIDENT_REGIONS_URL = 'https://s3.eu-central-1.amazonaws.com/platinum-genomes/2017-1.0/hg19/small_variants/ConfidentRegions.bed.gz'
+rule download_pg_conf_NA12878:
+    params: job_name = 'download_pg_conf_NA12878',
+    input: names = 'genome_tracks/names.txt'
+    output: bed = 'data/NA12878.1000g/variants/platinum_genomes/confident_regions.bed',
+    shell:
+        '''
+        wget {NA12878_PG_CONFIDENT_REGIONS_URL} -O - | \
+        gunzip -c | \
+        python3 filter_bed_chroms.py --remove_chr | \
+        {BEDTOOLS} sort -g {input.names} > {output.bed}
+        '''
+
+rule filter_SNVs_outside_confident_regions_inside_PG_conf:
+    params: job_name = 'filter_SNVs_outside_GIAB_confident_inside_PG_conf.{individual}.{build}.{info}.GQ{GQ}',
+    input:  vcfgz = 'data/{individual}.{build}/variants/{info}/{type}.GQ{GQ}.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.vcf.gz',
+            tbi   = 'data/{individual}.{build}/variants/{info}/{type}.GQ{GQ}.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.vcf.gz.tbi',
+            bed   = 'data/{individual}.{build}/variants/platinum_genomes/confident_regions.bed'
+    output: vcfgz = 'data/{individual}.{build}/variants/{info}/{type}.GQ{GQ}.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.gz'
+    shell:
+        '''
+        {RTGTOOLS} RTG_MEM=12g vcffilter --include-bed={input.bed} \
+        -i {input.vcfgz} -o {output.vcfgz}
+        '''
+
+rule make_dual_venn_diagram_variants_outside_GIAB:
+    params: job_name = 'make_venn_diagram_variants_outside_GIAB',
+    input:  longshot = 'data/NA12878.1000g/variants/longshot.pacbio.blasr.44x._/all.GQ44.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.vcf.gz', #'data/NA12878.1000g/variants/longshot.pacbio.blasr.44x._/all.outside_GIAB.GQ44.vcf.gz',
+            giab = 'data/NA12878.1000g/variants/ground_truth/all.GQ0.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.vcf.gz',
+            plat = 'data/NA12878.1000g/variants/platinum_genomes/all.GQ0.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.vcf.gz',
+            longshot_PGconf = 'data/NA12878.1000g/variants/longshot.pacbio.blasr.44x._/all.GQ44.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.gz',
+            giab_PGconf = 'data/NA12878.1000g/variants/ground_truth/all.GQ0.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.gz',
+            plat_PGconf = 'data/NA12878.1000g/variants/platinum_genomes/all.GQ0.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.gz',
+    output: png = 'data/plots/NA12878_variants_outside_GIAB_confident_dual_venn_diagram.png'
+    run:
+        ptf.make_dual_venn_diagram_variants_outside_GIAB(input.longshot, input.giab, input.plat,
+                                                    input.longshot_PGconf, input.giab_PGconf, input.plat_PGconf,
+                                                    output.png)
+
+rule make_venn_diagram_variants_outside_GIAB_inside_PG:
+    params: job_name = 'make_venn_diagram_variants_outside_GIAB',
+    input: longshot = 'data/NA12878.1000g/variants/longshot.pacbio.blasr.44x._/all.GQ44.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.gz',
+           giab = 'data/NA12878.1000g/variants/ground_truth/all.GQ0.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.gz',
+           plat = 'data/NA12878.1000g/variants/platinum_genomes/all.GQ0.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.gz',
+    output: png = 'data/plots/NA12878_variants_outside_GIAB_confident_inside_PG_confident_venn_diagram.png'
     run:
         ptf.make_venn_diagram_variants_outside_GIAB(input.longshot, input.giab, input.plat, output.png)
 

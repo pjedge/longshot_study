@@ -19,6 +19,7 @@ import calculate_haplotype_statistics
 import random
 from analyze_variants import count_fp_near_true_indel
 from matplotlib_venn import venn3
+import matplotlib.gridspec as gridspec
 
 mpl.rc('legend', fontsize=9)
 mpl.rc('xtick', labelsize=9)
@@ -106,6 +107,82 @@ def plot_vcfeval(dirlist, labels, output_file, title, colors=['r','#3333ff','#cc
     ax1.set_axisbelow(True)
     plt.savefig(output_file)
 
+def plot_vcfeval_4panel(dirlist1, labels1, colors1, legendloc1, title1,
+                        dirlist2, labels2, colors2, legendloc2, title2,
+                        dirlist3, labels3, colors3, legendloc3, title3,
+                        dirlist4, labels4, colors4, legendloc4, title4,
+                        xlim, ylim,
+                        output_file):
+
+    xpad = (xlim[1] - xlim[0])/100
+    ypad = (ylim[1] - ylim[0])/100
+    xlim = (xlim[0]-xpad, xlim[1]+xpad)
+    ylim = (ylim[0]-ypad, ylim[1]+ypad)
+
+    def plot_panel(ax, dirlist, labels, colors, legendloc, xlim, ylim, labelbottom, labelleft, title):
+        # add a small amount of padding to the xlim and ylim so that grid lines show up on the borders
+
+        if len(dirlist) > len(colors):
+            print("need to define larger color pallet to plot this many datasets.")
+            exit(1)
+
+        for color, path, label in zip(colors, dirlist,labels):
+
+            #quals = []
+            recalls = []
+            precisions = []
+
+            with gzip.open(os.path.join(path,'snp_roc.tsv.gz'),mode='rt') as inf:
+
+                for line in inf:
+                    if line[0] == '#':
+                        continue
+                    else:
+                        el = [float(x) for x in line.strip().split()]
+                        assert(len(el) == 8)
+                        #quals.append(el[0])
+                        precisions.append(el[5])
+                        recalls.append(el[6])
+
+            ax.plot(recalls, precisions, color=color,label=label,linewidth=1.5,alpha=0.75)
+
+        ax.grid(True,color='grey',linestyle='--',alpha=0.5)
+
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["bottom"].set_visible(False)
+        ax.spines["left"].set_visible(False)
+        ax.tick_params(axis="both", which="both", bottom="off", top="off",
+                    labelbottom=labelbottom, left="off", right="off", labelleft=labelleft)
+
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+        #plt.xlabel('Recall')
+        #plt.ylabel('Precision')
+        ax.legend(loc=legendloc,title=title)
+        #plt.tight_layout()
+        ax.set_axisbelow(True)
+
+    fig = plt.figure(figsize=(7, 6))
+    gs1 = gridspec.GridSpec(2, 2)
+    gs1.update(wspace=0.1, hspace=0.1) # set the spacing between axes.
+
+    ax1 = plt.subplot(gs1[0])
+    plot_panel(ax=ax1,dirlist=dirlist1, labels=labels1, colors=colors1, legendloc=legendloc1, xlim=xlim, ylim=ylim, title=title1, labelbottom='off', labelleft='on')
+
+    ax2 = plt.subplot(gs1[1])
+    plot_panel(ax=ax2,dirlist=dirlist2, labels=labels2, colors=colors2, legendloc=legendloc2, xlim=xlim, ylim=ylim, title=title2, labelbottom='off', labelleft='off')
+
+    ax3 = plt.subplot(gs1[2])
+    plot_panel(ax=ax3,dirlist=dirlist3, labels=labels3, colors=colors3, legendloc=legendloc3, xlim=xlim, ylim=ylim, title=title3, labelbottom='on', labelleft='on')
+
+    ax4 = plt.subplot(gs1[3])
+    plot_panel(ax=ax4,dirlist=dirlist4, labels=labels4, colors=colors4, legendloc=legendloc4, xlim=xlim, ylim=ylim, title=title4, labelbottom='on', labelleft='off')
+
+    fig.text(0.5, 0.03, 'Recall', ha='center')
+    fig.text(0.02, 0.5, 'Precision', va='center', rotation='vertical')
+
+    plt.savefig(output_file)
 
 # input:
 # vcfeval_dir: directory containing vcfeval output
@@ -241,7 +318,7 @@ def plot_precision_recall_bars_simulation(pacbio_dirlist_genome, illumina_dirlis
     #ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
     #plt.show()
-    plt.savefig(output_file)
+    plt.savefig(output_file, dpi = 600)
 
 def plot_precision_recall_bars_simulation_extended(pacbio_ngmlr_dirlist_genome,
                                                       pacbio_minimap2_dirlist_genome,
@@ -534,15 +611,29 @@ def plot_precision_recall_bars_NA12878_NA24385(pacbio_dirlist_NA24385, illumina_
     width = 0.135
     alpha1 = 0.6
 
+    # credit for this function: https://matplotlib.org/examples/api/barchart_demo.html
+    def autolabel(rects, ax):
+        """
+        Attach a text label above each bar displaying its height
+        """
+        for rect in rects:
+            height = rect.get_height()
+            ax.text(rect.get_x() + rect.get_width()/2., 1.05*height,
+                    "{0:.4f}".format(height),
+                    ha='center', va='bottom')
+
     def plot_bars(ax, ind, vals, color=None, lab=None):
 
-        plt.bar(ind+width, vals, color=color,
+        rects = plt.bar(ind+width, vals, color=color,
                 ecolor='black', # black error bar color
                 alpha=alpha1,      # transparency
                 width=width,      # smaller bar width
                 align='center',
                 label=lab,
                 zorder=0)
+
+        autolabel(rects, ax)
+
 
     def prettify_plot():
 
@@ -578,16 +669,17 @@ def plot_precision_recall_bars_NA12878_NA24385(pacbio_dirlist_NA24385, illumina_
     plot_bars(ax, np.array(ind2), illumina_precisions_NA24385,color='#ff1900',lab='Illumina')
     plot_bars(ax, np.array(ind3), pacbio_precisions_NA12878,color='#2200ff')
     plot_bars(ax, np.array(ind4), illumina_precisions_NA12878,color='#ff1900')
-    ax.legend(loc='center left', bbox_to_anchor=(0.25,1.13),ncol=2)
+    ax.legend(loc='center left', bbox_to_anchor=(0.0,1.25),ncol=2)
 
     plt.ylabel("Precision")
-    plt.ylim(0.9,1.0)
+    #plt.ylim(0.9,1.0)
+    plt.ylim(0,1.0)
     prettify_plot()
     ax.set_xticks([])
     ax.set_xticklabels([])
 
     ax = plt.subplot(212)
-    plt.ylabel("Recall\n")
+    plt.ylabel("Recall")
     plot_bars(ax, np.array(ind1), pacbio_recalls_NA24385,color='#2200ff')
     plot_bars(ax, np.array(ind2), illumina_recalls_NA24385,color='#ff1900')
     plot_bars(ax, np.array(ind3), pacbio_recalls_NA12878,color='#2200ff')
@@ -603,7 +695,7 @@ def plot_precision_recall_bars_NA12878_NA24385(pacbio_dirlist_NA24385, illumina_
     plt.xlabel(" ",labelpad=10)
 
     plt.tight_layout()
-    plt.subplots_adjust(top=0.90)
+    plt.subplots_adjust(top=0.85)
     #t = plt.suptitle(title)
 
     ax.set_axisbelow(True)
@@ -629,35 +721,54 @@ def plot_precision_recall_bars_NA12878_NA24385(pacbio_dirlist_NA24385, illumina_
 
 
 
-
-def plot_precision_recall_bars_NA12878_NA24385_with_haplotypefree(hap_dirlist_NA24385, nohap_dirlist_NA24385,
-                                               hap_dirlist_NA12878, nohap_dirlist_NA12878,
-                                               gq_cutoffs_NA24385, gq_cutoffs_NA12878, output_file):
+def plot_precision_recall_bars_NA12878_AJ_Trio(pacbio_dirlist_NA12878, illumina_dirlist_NA12878,
+                                               pacbio_dirlist_NA24385, illumina_dirlist_NA24385,
+                                               pacbio_dirlist_NA24149, illumina_dirlist_NA24149,
+                                               pacbio_dirlist_NA24143, illumina_dirlist_NA24143,
+                                               gq_cutoffs_NA12878, gq_cutoffs_NA24385,
+                                               gq_cutoffs_NA24149, gq_cutoffs_NA24143,
+                                               gq_cutoff_illumina, labels,
+                                               output_file):
 
     plt.figure(figsize=(7,5))
-    #mpl.rcParams['axes.titlepad'] = 50
 
-    width = 0.05
+    width = 0.09
     alpha1 = 0.6
 
-    def plot_bars(ax, ind, vals1, vals2, lab1=None, lab2=None):
+    # credit for this function: http://composition.al/blog/2015/11/29/a-better-way-to-add-labels-to-bar-charts-with-matplotlib/
+    def autolabel(rects, ax):
+        # Get y-axis height to calculate label position from.
+        (y_bottom, y_top) = ax.get_ylim()
+        y_height = y_top - y_bottom
 
-        plt.bar(ind+width, vals1, color='#2200ff',
+        for rect in rects:
+            height = rect.get_height()
+
+            # Fraction of axis height taken up by this rectangle
+            p_height = (height / y_height)
+
+            label_position = height + (y_height * 0.01)
+
+            ax.text(rect.get_x() + rect.get_width()/2., label_position,
+                    "{0:.4f}".format(height),
+                    ha='center', va='bottom', fontsize=7)
+
+    def plot_bars(ax, ind, vals, color=None, lab=None):
+
+        rects = plt.bar(ind+width, vals, color=color,
                 ecolor='black', # black error bar color
                 alpha=alpha1,      # transparency
                 width=width,      # smaller bar width
                 align='center',
-                label=lab1)
-        plt.bar(ind+2*width, vals2, color='k',
-                ecolor='black', # black error bar color
-                alpha=alpha1,      # transparency
-                width=width,      # smaller bar width
-                align='center',
-                label=lab2)
+                label=lab,
+                zorder=0)
+
+        autolabel(rects, ax)
+
 
     def prettify_plot():
 
-        ax.yaxis.grid(True,color='grey', alpha=0.5, linestyle='--')
+        ax.yaxis.grid(True,color='grey', alpha=0.5, linestyle='--',zorder=1.0)
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
         ax.spines["bottom"].set_visible(False)
@@ -665,33 +776,59 @@ def plot_precision_recall_bars_NA12878_NA24385_with_haplotypefree(hap_dirlist_NA
         plt.tick_params(axis="both", which="both", bottom=False, top=False,
                     labelbottom=True, left=False, right=False, labelleft=True)
 
+    ind_NA12878_pacbio = [0,0.1]
+    ind_NA12878_illumina = [0.2]
+    ind_NA24385_pacbio = [0.4,0.5,0.6,0.7]
+    ind_NA24385_illumina = [0.8]
+    ind_NA24149_pacbio = [1.0]
+    ind_NA24149_illumina = [1.1]
+    ind_NA24143_pacbio = [1.3]
+    ind_NA24143_illumina = [1.4]
 
-    ind1 = [0,0.15,0.3,0.45,0.6]
-    ind2 = [0.9,1.05]
-
-    hap_precisions_NA24385, hap_recalls_NA24385 = zip(*[get_precision_recall(d, g) for d,g in zip(hap_dirlist_NA24385, gq_cutoffs_NA24385)])
-    nohap_precisions_NA24385, nohap_recalls_NA24385 = zip(*[get_precision_recall(d, g) for d,g in zip(nohap_dirlist_NA24385, gq_cutoffs_NA24385)])
-    hap_precisions_NA12878, hap_recalls_NA12878 = zip(*[get_precision_recall(d, g) for d,g in zip(hap_dirlist_NA12878,gq_cutoffs_NA12878)])
-    nohap_precisions_NA12878, nohap_recalls_NA12878 = zip(*[get_precision_recall(d, g) for d,g in zip(nohap_dirlist_NA12878,gq_cutoffs_NA12878)])
+    pacbio_precisions_NA24385, pacbio_recalls_NA24385 = zip(*[get_precision_recall(d, g) for d,g in zip(pacbio_dirlist_NA24385, gq_cutoffs_NA24385)])
+    illumina_precisions_NA24385, illumina_recalls_NA24385 = zip(*[get_precision_recall(d, gq_cutoff_illumina) for d in illumina_dirlist_NA24385])
+    pacbio_precisions_NA24149, pacbio_recalls_NA24149 = zip(*[get_precision_recall(d, g) for d,g in zip(pacbio_dirlist_NA24149, gq_cutoffs_NA24149)])
+    illumina_precisions_NA24149, illumina_recalls_NA24149 = zip(*[get_precision_recall(d, gq_cutoff_illumina) for d in illumina_dirlist_NA24149])
+    pacbio_precisions_NA24143, pacbio_recalls_NA24143 = zip(*[get_precision_recall(d, g) for d,g in zip(pacbio_dirlist_NA24143, gq_cutoffs_NA24143)])
+    illumina_precisions_NA24143, illumina_recalls_NA24143 = zip(*[get_precision_recall(d, gq_cutoff_illumina) for d in illumina_dirlist_NA24143])
+    pacbio_precisions_NA12878, pacbio_recalls_NA12878 = zip(*[get_precision_recall(d, g) for d,g in zip(pacbio_dirlist_NA12878, gq_cutoffs_NA12878)])
+    illumina_precisions_NA12878, illumina_recalls_NA12878 = zip(*[get_precision_recall(d, gq_cutoff_illumina) for d in illumina_dirlist_NA12878])
 
     ax = plt.subplot(211)
-    plot_bars(ax, np.array(ind1), hap_precisions_NA24385, nohap_precisions_NA24385, lab1='With haplotype assembly', lab2='Without haplotype assembly')
-    plot_bars(ax, np.array(ind2), hap_precisions_NA12878, nohap_precisions_NA12878)
-    ax.legend(loc='center left', bbox_to_anchor=(0.25,1.13),ncol=2)
+    plt.ylim(0.95,1.0)
+
+    plot_bars(ax, np.array(ind_NA12878_pacbio), pacbio_precisions_NA12878,color='#2200ff',lab='PacBio SMRT')
+    plot_bars(ax, np.array(ind_NA12878_illumina), illumina_precisions_NA12878,color='#ff1900',lab='Illumina')
+    plot_bars(ax, np.array(ind_NA24385_pacbio), pacbio_precisions_NA24385,color='#2200ff')
+    plot_bars(ax, np.array(ind_NA24385_illumina), illumina_precisions_NA24385,color='#ff1900')
+    plot_bars(ax, np.array(ind_NA24149_pacbio), pacbio_precisions_NA24149,color='#2200ff')
+    plot_bars(ax, np.array(ind_NA24149_illumina), illumina_precisions_NA24149,color='#ff1900')
+    plot_bars(ax, np.array(ind_NA24143_pacbio), pacbio_precisions_NA24143,color='#2200ff')
+    plot_bars(ax, np.array(ind_NA24143_illumina), illumina_precisions_NA24143,color='#ff1900')
+    ax.legend(loc='center left', bbox_to_anchor=(0.0,1.25),ncol=2)
 
     plt.ylabel("Precision")
-    plt.ylim(0.95,1.0)
+    #plt.ylim(0,1.0)
     prettify_plot()
     ax.set_xticks([])
     ax.set_xticklabels([])
 
     ax = plt.subplot(212)
-    plt.ylabel("Recall\n")
-    plot_bars(ax, np.array(ind1), hap_recalls_NA24385, nohap_recalls_NA24385, lab1='With haplotype assembly', lab2='Without haplotype assembly')
-    plot_bars(ax, np.array(ind2), hap_recalls_NA12878, nohap_recalls_NA12878)
+    plt.ylabel("Recall")
+    plot_bars(ax, np.array(ind_NA12878_pacbio), pacbio_recalls_NA12878,color='#2200ff')
+    plot_bars(ax, np.array(ind_NA12878_illumina), illumina_recalls_NA12878,color='#ff1900')
+    plot_bars(ax, np.array(ind_NA24385_pacbio), pacbio_recalls_NA24385,color='#2200ff')
+    plot_bars(ax, np.array(ind_NA24385_illumina), illumina_recalls_NA24385,color='#ff1900')
+    plot_bars(ax, np.array(ind_NA24149_pacbio), pacbio_recalls_NA24149,color='#2200ff')
+    plot_bars(ax, np.array(ind_NA24149_illumina), illumina_recalls_NA24149,color='#ff1900')
+    plot_bars(ax, np.array(ind_NA24143_pacbio), pacbio_recalls_NA24143,color='#2200ff')
+    plot_bars(ax, np.array(ind_NA24143_illumina), illumina_recalls_NA24143,color='#ff1900')
     prettify_plot()
-    ax.set_xticks(np.array(ind1+ind2)+1.5*width)
-    ax.set_xticklabels(['20','30','40','50','69','30','44'])
+    ax.set_xticks(np.array(ind_NA12878_pacbio+ind_NA12878_illumina
+                          +ind_NA24385_pacbio+ind_NA24385_illumina
+                          +ind_NA24149_pacbio+ind_NA24149_illumina
+                          +ind_NA24143_pacbio+ind_NA24143_illumina)+1.0*width)
+    ax.set_xticklabels(labels)
 
     #ax.set_yscale('log')NA12878_prec_recall_{chrom}
     #plt.xlim(())
@@ -700,7 +837,7 @@ def plot_precision_recall_bars_NA12878_NA24385_with_haplotypefree(hap_dirlist_NA
     plt.xlabel(" ",labelpad=10)
 
     plt.tight_layout()
-    plt.subplots_adjust(top=0.90)
+    plt.subplots_adjust(top=0.85)
     #t = plt.suptitle(title)
 
     ax.set_axisbelow(True)
@@ -709,9 +846,13 @@ def plot_precision_recall_bars_NA12878_NA24385_with_haplotypefree(hap_dirlist_NA
 
     ax.annotate('coverage', xy=(-0.1,-0.03), xytext=(5, -ticklabelpad), ha='left', va='top',
                 xycoords='axes fraction', textcoords='offset points')
-    ax.annotate('NA24385', xy=(0.23,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
+    ax.annotate('NA12878', xy=(0.07,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
                 xycoords='axes fraction', textcoords='offset points')
-    ax.annotate('NA12878', xy=(0.7,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
+    ax.annotate('NA24385', xy=(0.38,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
+                xycoords='axes fraction', textcoords='offset points')
+    ax.annotate('NA24149', xy=(0.66,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
+                xycoords='axes fraction', textcoords='offset points')
+    ax.annotate('NA24143', xy=(0.84,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
                 xycoords='axes fraction', textcoords='offset points')
 
     # credit to https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot
@@ -722,7 +863,7 @@ def plot_precision_recall_bars_NA12878_NA24385_with_haplotypefree(hap_dirlist_NA
     #ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
     #plt.show()
-    plt.savefig(output_file)
+    plt.savefig(output_file, dpi=600)
 
 
 
@@ -748,6 +889,73 @@ def get_TsTv(vcfstats_file):
             return 0.0
         else:
             return float(res)
+
+def make_table_4_genomes_pacbio_illumina(NA12878_30x_table_files, NA12878_44x_table_files,
+                                  NA24385_30x_table_files,
+                                  NA24385_40x_table_files, NA24385_50x_table_files,
+                                  NA24385_69x_table_files,
+                                  NA24149_32x_table_files,
+                                  NA24143_30x_table_files,
+                                  gq_cutoffs, coverages,
+                                  outfile):
+
+    def generate_table_line(table_files, gq_cutoff):
+
+        precision, recall = get_precision_recall(table_files.vcfeval_dir, gq_cutoff)
+        with open(table_files.runtime,'r') as inf:
+            hh, mm, ss = inf.readline().strip().split(':')
+        runtime = hh + ':' + mm
+
+        snvs_total = get_snp_count(table_files.vcfstats_genome)
+        snvs_outside_giab = get_snp_count(table_files.vcfstats_outside_GIAB)
+
+        return genomes_table_entry(SNVs_called=snvs_total, precision=precision, recall=recall,
+                                   outside_GIAB=snvs_outside_giab, runtime=runtime)
+
+    NA12878_30x = generate_table_line(NA12878_30x_table_files, gq_cutoffs[0])
+    NA12878_44x = generate_table_line(NA12878_44x_table_files, gq_cutoffs[1])
+
+    NA24385_30x = generate_table_line(NA24385_30x_table_files, gq_cutoffs[2])
+    NA24385_40x = generate_table_line(NA24385_40x_table_files, gq_cutoffs[3])
+    NA24385_50x = generate_table_line(NA24385_50x_table_files, gq_cutoffs[4])
+    NA24385_69x = generate_table_line(NA24385_69x_table_files, gq_cutoffs[5])
+
+    NA24149_32x = generate_table_line(NA24149_32x_table_files, gq_cutoffs[6])
+    NA24143_30x = generate_table_line(NA24143_30x_table_files, gq_cutoffs[7])
+
+    s = '''
+\\begin{{table}}[htbp]
+\\centering
+\\begin{{tabular}}{{lllllll}}
+\\hline
+Genome      & Read & SNVs    & Precision     & Recall    & Outside GIAB  & Run time  \\\\
+            & Coverage & called    &    &  & high-confidence       & (hours:minutes)          \\\\
+\\hline
+NA12878   & ${}\\times$ & {} & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA12878   & ${}\\times$ & {} & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA24385 (AJ son) & ${}\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA24385 (AJ son) & ${}\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA24385 (AJ son) & ${}\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA24385 (AJ son) & ${}\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA24149 (AJ father) & ${}\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+NA24143 (AJ mother) & ${}\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
+\\hline
+\\end{{tabular}}
+\\caption{{{{\\bf Summary of variants called on GIAB genomes.}}}}
+\\label{{tab:stats}}
+\\end{{table}}
+'''.format(coverages[0], NA12878_30x.SNVs_called, NA12878_30x.precision, NA12878_30x.recall, NA12878_30x.outside_GIAB, NA12878_30x.runtime,
+           coverages[1], NA12878_44x.SNVs_called, NA12878_44x.precision, NA12878_44x.recall, NA12878_44x.outside_GIAB, NA12878_44x.runtime,
+           coverages[2], NA24385_30x.SNVs_called, NA24385_30x.precision, NA24385_30x.recall, NA24385_30x.outside_GIAB, NA24385_30x.runtime,
+           coverages[3], NA24385_40x.SNVs_called, NA24385_40x.precision, NA24385_40x.recall, NA24385_40x.outside_GIAB, NA24385_40x.runtime,
+           coverages[4], NA24385_50x.SNVs_called, NA24385_50x.precision, NA24385_50x.recall, NA24385_50x.outside_GIAB, NA24385_50x.runtime,
+           coverages[5], NA24385_69x.SNVs_called, NA24385_69x.precision, NA24385_69x.recall, NA24385_69x.outside_GIAB, NA24385_69x.runtime,
+           coverages[6], NA24149_32x.SNVs_called, NA24149_32x.precision, NA24149_32x.recall, NA24149_32x.outside_GIAB, NA24149_32x.runtime,
+           coverages[7], NA24143_30x.SNVs_called, NA24143_30x.precision, NA24143_30x.recall, NA24143_30x.outside_GIAB, NA24143_30x.runtime)
+
+    with open(outfile,'w') as outf:
+        print(s, file=outf)
+
 
 def make_table_4_genomes_extended(NA12878_30x_table_files, NA12878_44x_table_files,
                                   NA24385_30x_table_files,
@@ -814,6 +1022,7 @@ NA24143 (AJ mother) & ${}\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
 
     with open(outfile,'w') as outf:
         print(s, file=outf)
+
 
 MAX_DEPTH = 50
 def plot_depth_of_mapped_vs_breadth(inputs, labels, colors, output_file):
@@ -1215,6 +1424,36 @@ def plot_mappability_bars(pacbio_mf_0_0,
                 label=lab,
                 zorder=0)
 
+    print("PacBio map fraction 0.5 data:")
+    print("30 40 50")
+    print(pacbio_mf_0_5_data)
+    print("")
+
+    print("PacBio map fraction 0.75 data:")
+    print("30 40 50")
+    print(pacbio_mf_0_75_data)
+    print("")
+
+    print("PacBio map fraction 0.9 data:")
+    print("30 40 50")
+    print(pacbio_mf_0_9_data)
+    print("")
+
+    print("illumina map fraction 0.5 data:")
+    print("30 40 50")
+    print(illumina_mf_0_5_data)
+    print("")
+
+    print("illumina map fraction 0.75 data:")
+    print("30 40 50")
+    print(illumina_mf_0_75_data)
+    print("")
+
+    print("illumina map fraction 0.9 data:")
+    print("30 40 50")
+    print(illumina_mf_0_9_data)
+    print("")
+
     #plot_bars(pacbio_mf_0_0_data,'#c3d6f4',0,'PacBio, all sites')
     plot_bars(pacbio_mf_0_5_data,'#93bcff',1,'PacBio, at least 50% well-mapped')
     plot_bars(pacbio_mf_0_75_data,'#609dff',2,'PacBio, at least 75% well-mapped')
@@ -1403,8 +1642,34 @@ def make_venn_diagram_variants_outside_GIAB(longshot_vcf, giab_vcf, plat_vcf, ou
     plt.figure()
     venn3([vcf2set(longshot_vcf),vcf2set(giab_vcf),vcf2set(plat_vcf)],
           set_labels=['Longshot', 'GIAB', 'Platinum Genomes'])
-    plt.savefig(output_png)
+    plt.savefig(output_png,dpi=600)
 
+
+def make_dual_venn_diagram_variants_outside_GIAB(longshot_vcf, giab_vcf, plat_vcf,
+                                            longshot_vcf_PG_conf, giab_vcf_PG_conf,
+                                            plat_vcf_PG_conf, output_png):
+
+    def vcf2set(vcf_file):
+        vcfset = set()
+        with pysam.VariantFile(vcf_file) as vcf:
+
+            for record in vcf:
+                vcfset.add((record.chrom, record.pos))# tuple(record.alleles), tuple(sorted(record.samples[0]['GT']))))
+
+        return vcfset
+
+    plt.figure(figsize=(10,5))
+    plt.subplot(121)
+    venn3([vcf2set(longshot_vcf),vcf2set(giab_vcf),vcf2set(plat_vcf)],
+          set_labels=['Longshot', 'GIAB', 'Platinum Genomes'])
+    plt.title('Outside GIAB Confident Regions')
+
+    plt.subplot(122)
+    venn3([vcf2set(longshot_vcf_PG_conf),vcf2set(giab_vcf_PG_conf),vcf2set(plat_vcf_PG_conf)],
+          set_labels=['Longshot', 'GIAB', 'Platinum Genomes'])
+    plt.title('Outside GIAB Confident Regions,\n but inside Platinum Genomes Confident Regions')
+
+    plt.savefig(output_png,dpi=600)
 
 if __name__ == '__main__':
     args = parseargs()

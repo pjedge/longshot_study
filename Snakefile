@@ -69,24 +69,23 @@ include: "map_giab_reads.snakefile"
 rule all:
     input:
         # tables & figures
+        'data/simulation.1000g/aligned_reads/illumina/illumina.aligned.all.60x.bam.median_coverage_gt_mapq0',
         'data/plots/actual_vs_effective_coverage.chr1.NA12878.44x.png',
         'data/output/prec_recall_table_known_indels_filtered.tex',
         'data/plots/NA12878_variants_outside_GIAB_confident_venn_diagram.png',
-        'data/NA24385.hg38/aligned_reads/pacbio/pacbio.minimap2.all.69x.bam.median_coverage_gt_mapq0',
-        'data/NA24385.hg38/aligned_reads/pacbio/pacbio.minimap2.all.69x.bam.median_coverage_gt_mapq10',
-        'data/NA24385.hg38/aligned_reads/pacbio/pacbio.minimap2.all.69x.bam.median_coverage_gt_mapq20',
         #'data/plots/simulation_pr_barplot_genome_vs_segdup.all.GQ50.png',             # fig 2
-        'data/plots/fig3_precision_recall_bars_NA24385_NA12878.blasr.hg38.png',         # fig 3
+        'data/plots/fig3_precision_recall_bars_NA12878_AJ_Trio.blasr.hg38.png',          # fig 3
+        #'data/plots/fig3_precision_recall_bars_NA24385_NA12878.blasr.hg38.png',         # fig 3 (old version)
         'data/output/four_GIAB_genomes_table_extended.aj_trio_hg38_minimap2.all.tex',  # table 1 alt (minimap2)
         'data/output/four_GIAB_genomes_table_extended.aj_trio_hg38_blasr.all.tex',     # table 1
         'data/output/variant_analysis_fp_fn_NA12878.1000g.blasr.44x.GQ44.1.tex',       # table 2
-        'data/plots/haplotyping_results_barplot.png',                                  # fig 4
         'data/output/variant_counts_table.NA12878.1000g.il30x.blasr.pb30x.GQ30.tex',   # table 3
         'data/output/variant_counts_table.NA24385.hg38.il60x.blasr.pb69x.GQ69.tex',    # table 3, alt 1 (AJ son, blasr)
         'data/output/variant_counts_table.NA24385.hg38.il60x.minimap2.pb69x.GQ69.tex', # table 3, alt 2 (AJ son, minimap2)
         'data/output/pacbio_illumina_mendelian_concordance_table.blasr.tex',           # table 4
         'data/output/pacbio_illumina_mendelian_concordance_table.minimap2.tex',        # table 4 alt (minimap2)
         # supplementary figs
+        'data/plots/haplotyping_results_barplot.png',
         'data/plots/NA12878.1000g.blasr.prec_recall_all.png',
         'data/plots/NA24385.hg38.blasr.prec_recall_all.png',
         'data/plots/NA24385.hg38.minimap2.prec_recall_all.png',
@@ -443,7 +442,7 @@ rule calculate_median_coverage_mapq:
     output: random_pos = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam.for_median_coverage_gt_mapq{MAPQ}.random_pos',
             cov = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam.median_coverage_gt_mapq{MAPQ}'
     run:
-        shell('{BEDTOOLS} random -l 1 -n 10000 -g {input.genome_file} > {output.random_pos}')
+        shell('{BEDTOOLS} random -l 1 -n 1000 -g {input.genome_file} > {output.random_pos}')
         add_chr = (wildcards.individual == 'NA12878' and wildcards.build == '1000g' and wildcards.tech == 'pacbio')
         mapq_cut = int(wildcards.MAPQ)
         med_cov = calculate_median_coverage(input.bam, output.random_pos, min_mapq=mapq_cut, add_chr=add_chr)

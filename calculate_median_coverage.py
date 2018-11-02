@@ -31,7 +31,7 @@ def calculate_median_coverage(bam_file, random_positions_bed, chrom_filter=CHROM
 
             # should only check one position
             for pileup_column in bam.pileup(chrom, start, stop, truncate=True,
-                                           flag_filter=flag_filter, min_mapping_quality=min_mapq):
+                                           flag_filter=flag_filter, min_mapping_quality=min_mapq, min_base_quality=0):
                 assert(pileup_column.reference_pos == start)
                 dp = 0# 0
                 for pileup_read in pileup_column.pileups:

@@ -3,6 +3,22 @@ NA24143_HG38_ILLUMINA_60x_BAM_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/d
 NA24143_HG38_GIAB_VCF_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG004_NA24143_mother/NISTv3.3.2/GRCh38/HG004_GRCh38_GIAB_highconf_CG-Illfb-IllsentieonHC-Ion-10XsentieonHC_CHROM1-22_v.3.3.2_highconf.vcf.gz'
 NA24143_HG38_GIAB_HIGH_CONF_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG004_NA24143_mother/NISTv3.3.2/GRCh38/HG004_GRCh38_GIAB_highconf_CG-Illfb-IllsentieonHC-Ion-10XsentieonHC_CHROM1-22_v.3.3.2_highconf_noinconsistent.bed'
 
+rule plot_pr_curve_NA24143_hg38_Q30:
+    params: job_name = 'plot_pr_curve_Q30_NA24143.hg38.{aligner}.{chrom}',
+            title = None
+    input: il30 = 'data/NA24143.hg38/vcfeval/freebayes.illumina.aligned.30x.filtered/{chrom}',
+           pb30 = 'data/NA24143.hg38/vcfeval/longshot.pacbio.{aligner}.30x.-Q_30/{chrom}',
+           il30_cov = 'data/NA24143.hg38/aligned_reads/illumina/illumina.aligned.all.30x.bam.median_coverage',
+           pb30_cov = 'data/NA24143.hg38/aligned_reads/pacbio/pacbio.{aligner}.all.30x.bam.median_coverage'
+    output: png = 'data/plots/Q30_NA24143.hg38.{aligner}.prec_recall_{chrom}.png'
+    run:
+        ptf.plot_vcfeval([input.il30, input.pb30],
+                         ['Freebayes, Illumina {}x'.format(parse_int_file(input.il30_cov)),
+                         'Longshot, PacBio {}x'.format(parse_int_file(input.pb30_cov))],
+                          output.png,params.title,
+                          xlim=(0.6,1.0),
+                          ylim=(0.975,1.0))
+
 rule plot_pr_curve_NA24143_hg38:
     params: job_name = 'plot_pr_curve_NA24143.hg38.{aligner}.{chrom}',
             title = None

@@ -225,11 +225,13 @@ rule generate_coverage_bed:
            cov = 'data/{id}.{build}/aligned_reads/{tech}/{tech}.{aligner}.all.{cov}x.bam.median_coverage'
     output: bed = 'data/{id}.{build}/aligned_reads/{tech}/{tech}.{aligner}.{chrom,(\d+)}.{cov}x.cov_greater_than_20.bed',
     run:
-        maxcov = parse_int_file(input.cov)*2 # exclude regions more than twice the mean coverage
+        median_cov = parse_int_file(input.cov)
+        max_cov = int(median_cov + 5*sqrt(median_cov))
+
         shell('''
         {SAMTOOLS} view -F 3844 -q 30 {input.bam} chr{wildcards.chrom} -hb | \
         {BEDTOOLS} genomecov -bga -ibam - | \
-        awk '$4 > 20 && $4 < {maxcov}' | \
+        awk '$4 > 20 && $4 < {max_cov}' | \
         sort -k1,1 -k2,2n -S 1500M | \
         {BEDTOOLS} merge -i - | \
         sort -k1,1 -k2,2n -S 1500M > {output.bed}

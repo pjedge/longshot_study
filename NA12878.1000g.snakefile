@@ -1,3 +1,4 @@
+import statistics
 
 NA12878_PACBIO_BAM_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/NA12878_PacBio_MtSinai/sorted_final_merged.bam'
 NA12878_GIAB_HIGH_CONF_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/latest/GRCh37/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_nosomaticdel.bed'
@@ -26,22 +27,70 @@ rule plot_pr_curve_NA12878:
                           xlim=(0.8,1.0),
                           ylim=(0.985,1.0))
 
-rule get_tlens_haplotype_bams:
-    params: job_name = 'get_tlens_haplotype_bams'
+rule compute_N50_haplotype_reads:
+    params: job_name = 'compute_N50_haplotype_reads'
     input:  'data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.{group}.bam'
     output: 'data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.{group,(hap1|hap2|unassigned)}.tlens.txt'
-    shell: '{SAMTOOLS} view {input} | cut -f 10 > {output}'
+    shell: '{SAMTOOLS} view {input} | cut -f 9 > {output}'
+
+def n50(lst):
+    lst.sort(reverse=True)
+    total = sum(lst)
+    half_total = total/2.0
+    count = 0
+    for l in lst:
+        count += l
+        if count > half_total:
+            return l
+    return 0
+
+def parse_file_lst(fname):
+    lst = []
+    with open(fname,'r') as inf:
+        for line in inf:
+            lst.append(int(line.strip()))
+    return lst
+
+
+rule get_haplotype_bam_stats:
+    params: job_name = 'get_haplotype_bam_stats'
+    input: hap1 = 'data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.hap1.tlens.txt',
+           hap2 = 'data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.hap2.tlens.txt',
+           una = 'data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.unassigned.tlens.txt',
+    output: txt = 'data/output/NA12878_chr1_45x_haplotype_assigned_N50_analysis.txt'
+    run:
+        hap_lst = parse_file_lst(input.hap1) + parse_file_lst(input.hap2)
+        una_lst = parse_file_lst(input.una)
+        with open(output.txt,'w') as outf:
+            print('''Haplotype-assigned reads for NA12878 chr1 (45x reads):
+N50: {}
+mean: {}
+median: {}
+unassigned reads for NA12878 chr1 (45x reads):
+N50: {}
+mean: {}
+median: {}
+            '''.format(n50(hap_lst), statistics.mean(hap_lst), statistics.median(hap_lst),
+                       n50(una_lst), statistics.mean(una_lst), statistics.median(una_lst)), file=outf)
+
 
 rule haplotype_separation_chr1:
     params: job_name = 'haplotype_separation_chr1'
     input: bam = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.44x.bam',
+           bai = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.44x.bam.bai',
+           cov = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.44x.bam.median_coverage',
            ref = 'data/genomes/hg19.fa'
     output: vcf = 'data/NA12878.1000g/variants/reaper.pacbio.blasr.44x.for_haplotype_separation/1.vcf',
             h1_bam = 'data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.hap1.bam',
             h2_bam = 'data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.hap2.bam',
             una_bam = 'data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.unassigned.bam'
-    shell:
-        '{LONGSHOT} -r chr1 -F -s NA12878 --bam {input.bam} --ref {input.ref} --out {output.vcf} -p data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x'
+    run:
+        median_cov = parse_int_file(input.cov)
+        min_cov = int(median_cov - 5*sqrt(median_cov))
+        max_cov = int(median_cov + 5*sqrt(median_cov))
+        if min_cov < 0:
+            min_cov = 0
+        shell('{LONGSHOT} -r chr1 -F -c {min_cov} -C {max_cov} -s NA12878 --bam {input.bam} --ref {input.ref} --out {output.vcf} -p data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x')
 
 # DOWNLOAD 30x Illumina reads
 rule download_Illumina_reads_NA12878:

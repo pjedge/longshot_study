@@ -105,7 +105,7 @@ def plot_vcfeval(dirlist, labels, output_file, title, colors=['r','#3333ff','#cc
     plt.legend(loc=legendloc)
     plt.tight_layout()
     ax1.set_axisbelow(True)
-    plt.savefig(output_file)
+    plt.savefig(output_file, dpi = 600)
 
 def plot_vcfeval_4panel(dirlist1, labels1, colors1, legendloc1, title1,
                         dirlist2, labels2, colors2, legendloc2, title2,
@@ -182,7 +182,7 @@ def plot_vcfeval_4panel(dirlist1, labels1, colors1, legendloc1, title1,
     fig.text(0.5, 0.03, 'Recall', ha='center')
     fig.text(0.02, 0.5, 'Precision', va='center', rotation='vertical')
 
-    plt.savefig(output_file)
+    plt.savefig(output_file, dpi = 600)
 
 # input:
 # vcfeval_dir: directory containing vcfeval output
@@ -270,9 +270,9 @@ def plot_precision_recall_bars_simulation(pacbio_dirlist_genome, illumina_dirlis
     illumina_precisions_segdup, illumina_recalls_segdup = zip(*[get_precision_recall(d, gq_cutoff) for d in illumina_dirlist_segdup])
 
     ax = plt.subplot(211)
-    make_subplot(ax,np.array(ind1), pacbio_precisions_genome, illumina_precisions_genome, lab_pacbio='PacBio + Longshot', lab_illumina='Illumina + Freebayes',fc='#e0e1e2')
+    make_subplot(ax,np.array(ind1), pacbio_precisions_genome, illumina_precisions_genome, lab_pacbio='PacBio + BLASR + Longshot', lab_illumina='Illumina + BWA-MEM + Freebayes',fc='#e0e1e2')
     make_subplot(ax, np.array(ind2), pacbio_precisions_segdup, illumina_precisions_segdup,fc='#dddddd')
-    ax.legend(loc='center left', bbox_to_anchor=(0.25,1.13),ncol=2)
+    ax.legend(loc='center left', bbox_to_anchor=(0.05,1.13),ncol=2)
 
     plt.ylabel("Precision")
     plt.ylim(0.99,1.0)
@@ -429,7 +429,7 @@ def plot_precision_recall_bars_simulation_extended(pacbio_ngmlr_dirlist_genome,
                 lab_pacbio_minimap2='PacBio + Minimap2 + Longshot',
                 lab_pacbio_bwamem='PacBio + BWA-MEM + Longshot',
                 lab_pacbio_blasr='PacBio + BLASR + Longshot',
-                lab_illumina='Illumina + Freebayes')
+                lab_illumina='Illumina + BWA-MEM + Freebayes')
 
     make_subplot(ax=ax1,
                 ind=np.array(ind2),
@@ -500,7 +500,7 @@ def plot_precision_recall_bars_simulation_extended(pacbio_ngmlr_dirlist_genome,
     #ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
     #plt.show()
-    plt.savefig(output_file)
+    plt.savefig(output_file, dpi = 600)
 
 
 def plot_haplotyping_results(longshot_errs, hapcut2_errs, median_covs, output_file):
@@ -556,7 +556,7 @@ def plot_haplotyping_results(longshot_errs, hapcut2_errs, median_covs, output_fi
     ax = plt.subplot(211)
     longshot_switch_mismatch = [e.get_switch_mismatch_rate() for e in longshot_errs]
     hapcut2_switch_mismatch = [e.get_switch_mismatch_rate() for e in hapcut2_errs]
-    make_subplot(ax,np.array(ind), longshot_switch_mismatch, hapcut2_switch_mismatch, lab_longshot='Longshot Haplotype', lab_hapcut2='~30x Illumina + HapCUT2 Haplotype')
+    make_subplot(ax,np.array(ind), longshot_switch_mismatch, hapcut2_switch_mismatch, lab_longshot='Longshot Haplotype', lab_hapcut2='~30' + r'$\times$' + ' Illumina + HapCUT2 Haplotype')
     ax.legend(loc='center left', bbox_to_anchor=(0.0,1.13),ncol=2)
 
     plt.ylabel("Switch + Mismatch Error Rate")
@@ -572,7 +572,7 @@ def plot_haplotyping_results(longshot_errs, hapcut2_errs, median_covs, output_fi
     make_subplot(ax,np.array(ind), longshot_N50, hapcut2_N50)
     prettify_plot()
     ax.set_xticks(np.array(ind)+1.5*width)
-    ax.set_xticklabels(['NA12878\n{}x'.format(median_covs[0]),'NA24385\n{}x'.format(median_covs[1])])
+    ax.set_xticklabels(['NA12878\n{}'.format(median_covs[0]) + r'$\times$','NA24385\n{}'.format(median_covs[1]) + r'$\times$'])
 
     #ax.set_yscale('log')NA12878_prec_recall_{chrom}
     #plt.xlim(())
@@ -596,130 +596,7 @@ def plot_haplotyping_results(longshot_errs, hapcut2_errs, median_covs, output_fi
     #ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
     #plt.show()
-    plt.savefig(output_file)
-
-
-def plot_precision_recall_bars_NA12878_NA24385(pacbio_dirlist_NA24385, illumina_dirlist_NA24385,
-                                               pacbio_dirlist_NA12878, illumina_dirlist_NA12878,
-                                               gq_cutoffs_NA24385, gq_cutoffs_NA12878,
-                                               gq_cutoff_illumina, labels,
-                                               output_file):
-
-    plt.figure(figsize=(7,5))
-    #mpl.rcParams['axes.titlepad'] = 50
-
-    width = 0.135
-    alpha1 = 0.6
-
-    # credit for this function: https://matplotlib.org/examples/api/barchart_demo.html
-    def autolabel(rects, ax):
-        """
-        Attach a text label above each bar displaying its height
-        """
-        for rect in rects:
-            height = rect.get_height()
-            ax.text(rect.get_x() + rect.get_width()/2., 1.05*height,
-                    "{0:.4f}".format(height),
-                    ha='center', va='bottom')
-
-    def plot_bars(ax, ind, vals, color=None, lab=None):
-
-        rects = plt.bar(ind+width, vals, color=color,
-                ecolor='black', # black error bar color
-                alpha=alpha1,      # transparency
-                width=width,      # smaller bar width
-                align='center',
-                label=lab,
-                zorder=0)
-
-        autolabel(rects, ax)
-
-
-    def prettify_plot():
-
-        ax.yaxis.grid(True,color='grey', alpha=0.5, linestyle='--',zorder=1.0)
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-        ax.spines["bottom"].set_visible(False)
-        ax.spines["left"].set_visible(False)
-        plt.tick_params(axis="both", which="both", bottom=False, top=False,
-                    labelbottom=True, left=False, right=False, labelleft=True)
-
-
-    #ind1 = [0,0.15,0.3,0.45,0.6]
-    #ind2 = [0.75]
-    #ind3 = [1.05,1.2]
-    #ind4 = [1.35]
-
-    ind1 = [0,0.15,0.3,0.45]
-    ind2 = [0.6]
-    ind3 = [0.9,1.05]
-    ind4 = [1.2]
-
-
-    pacbio_precisions_NA24385, pacbio_recalls_NA24385 = zip(*[get_precision_recall(d, g) for d,g in zip(pacbio_dirlist_NA24385, gq_cutoffs_NA24385)])
-    pacbio_precisions_NA24385 = pacbio_precisions_NA24385
-    pacbio_recalls_NA24385 = pacbio_recalls_NA24385
-    illumina_precisions_NA24385, illumina_recalls_NA24385 = zip(*[get_precision_recall(d, gq_cutoff_illumina) for d in illumina_dirlist_NA24385])
-    pacbio_precisions_NA12878, pacbio_recalls_NA12878 = zip(*[get_precision_recall(d, g) for d,g in zip(pacbio_dirlist_NA12878, gq_cutoffs_NA12878)])
-    illumina_precisions_NA12878, illumina_recalls_NA12878 = zip(*[get_precision_recall(d, gq_cutoff_illumina) for d in illumina_dirlist_NA12878])
-
-    ax = plt.subplot(211)
-    plot_bars(ax, np.array(ind1), pacbio_precisions_NA24385,color='#2200ff',lab='PacBio SMRT')
-    plot_bars(ax, np.array(ind2), illumina_precisions_NA24385,color='#ff1900',lab='Illumina')
-    plot_bars(ax, np.array(ind3), pacbio_precisions_NA12878,color='#2200ff')
-    plot_bars(ax, np.array(ind4), illumina_precisions_NA12878,color='#ff1900')
-    ax.legend(loc='center left', bbox_to_anchor=(0.0,1.25),ncol=2)
-
-    plt.ylabel("Precision")
-    #plt.ylim(0.9,1.0)
-    plt.ylim(0,1.0)
-    prettify_plot()
-    ax.set_xticks([])
-    ax.set_xticklabels([])
-
-    ax = plt.subplot(212)
-    plt.ylabel("Recall")
-    plot_bars(ax, np.array(ind1), pacbio_recalls_NA24385,color='#2200ff')
-    plot_bars(ax, np.array(ind2), illumina_recalls_NA24385,color='#ff1900')
-    plot_bars(ax, np.array(ind3), pacbio_recalls_NA12878,color='#2200ff')
-    plot_bars(ax, np.array(ind4), illumina_recalls_NA12878,color='#ff1900')
-    prettify_plot()
-    ax.set_xticks(np.array(ind1+ind2+ind3+ind4)+1.0*width)
-    ax.set_xticklabels(labels)
-
-    #ax.set_yscale('log')NA12878_prec_recall_{chrom}
-    #plt.xlim(())
-    #plt.ylim((0,1.0))
-    #plt.legend(loc='upper left')
-    plt.xlabel(" ",labelpad=10)
-
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.85)
-    #t = plt.suptitle(title)
-
-    ax.set_axisbelow(True)
-
-    ticklabelpad = mpl.rcParams['xtick.major.pad']
-
-    ax.annotate('coverage', xy=(-0.1,-0.03), xytext=(5, -ticklabelpad), ha='left', va='top',
-                xycoords='axes fraction', textcoords='offset points')
-    ax.annotate('NA24385', xy=(0.27,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
-                xycoords='axes fraction', textcoords='offset points')
-    ax.annotate('NA12878', xy=(0.77,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
-                xycoords='axes fraction', textcoords='offset points')
-
-    # credit to https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot
-    # Shrink current axis by 20%
-    box = ax.get_position()
-    #ax.set_position([box.x0, box.y0, box.width * 0.85, box.height])
-    # Put a legend to the right of the current axis
-    #ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-
-    #plt.show()
-    plt.savefig(output_file)
-
-
+    plt.savefig(output_file, dpi = 600)
 
 def plot_precision_recall_bars_NA12878_AJ_Trio(pacbio_dirlist_NA12878, illumina_dirlist_NA12878,
                                                pacbio_dirlist_NA24385, illumina_dirlist_NA24385,
@@ -797,8 +674,8 @@ def plot_precision_recall_bars_NA12878_AJ_Trio(pacbio_dirlist_NA12878, illumina_
     ax = plt.subplot(211)
     plt.ylim(0.95,1.0)
 
-    plot_bars(ax, np.array(ind_NA12878_pacbio), pacbio_precisions_NA12878,color='#2200ff',lab='PacBio SMRT')
-    plot_bars(ax, np.array(ind_NA12878_illumina), illumina_precisions_NA12878,color='#ff1900',lab='Illumina')
+    plot_bars(ax, np.array(ind_NA12878_pacbio), pacbio_precisions_NA12878,color='#2200ff',lab='PacBio + BLASR + Longshot')
+    plot_bars(ax, np.array(ind_NA12878_illumina), illumina_precisions_NA12878,color='#ff1900',lab='Illumina + BWA-MEM/NovoAlign + Freebayes')
     plot_bars(ax, np.array(ind_NA24385_pacbio), pacbio_precisions_NA24385,color='#2200ff')
     plot_bars(ax, np.array(ind_NA24385_illumina), illumina_precisions_NA24385,color='#ff1900')
     plot_bars(ax, np.array(ind_NA24149_pacbio), pacbio_precisions_NA24149,color='#2200ff')
@@ -1102,7 +979,7 @@ def plot_depth_of_mapped_vs_breadth(inputs, labels, colors, output_file):
     plt.ylabel('Fraction of Genome Covered')
     plt.tight_layout()
 
-    plt.savefig(output_file)
+    plt.savefig(output_file, dpi = 600)
 
 def make_variant_counts_table(chr1_22_region_size_file,
                               segmental_duplications_95_region_size_file,
@@ -1311,7 +1188,7 @@ def plot_fp_near_indel(fp_vcfs, fixed_gq_VCFstats, scaled_gq_VCFstats, ground_tr
     plt.legend(loc='upper left')
     plt.tight_layout()
     ax1.set_axisbelow(True)
-    plt.savefig(output_png)
+    plt.savefig(output_png, dpi = 600)
 
 def actual_to_effective_read_coverage_plot(vcfgz_file, output_file):
 
@@ -1368,7 +1245,7 @@ def actual_to_effective_read_coverage_plot(vcfgz_file, output_file):
     plt.xlabel('Actual Read Coverage')
     plt.ylabel('Effective Read Coverage')
     plt.tight_layout()
-    plt.savefig(output_file)
+    plt.savefig(output_file, dpi = 600)
 
 
 def plot_mappability_bars(pacbio_mf_0_0,
@@ -1404,16 +1281,16 @@ def plot_mappability_bars(pacbio_mf_0_0,
 
         return lst
 
-    pacbio_mf_0_0_data = parse_datafile_lst(pacbio_mf_0_0)[2:]
-    pacbio_mf_0_5_data = parse_datafile_lst(pacbio_mf_0_5)[2:]
-    pacbio_mf_0_75_data = parse_datafile_lst(pacbio_mf_0_75)[2:]
-    pacbio_mf_0_9_data = parse_datafile_lst(pacbio_mf_0_9)[2:]
-    pacbio_mf_1_0_data = parse_datafile_lst(pacbio_mf_1_0)[2:]
-    illumina_mf_0_0_data = parse_datafile_lst(illumina_mf_0_0)[2:]
-    illumina_mf_0_5_data = parse_datafile_lst(illumina_mf_0_5)[2:]
-    illumina_mf_0_75_data = parse_datafile_lst(illumina_mf_0_75)[2:]
-    illumina_mf_0_9_data = parse_datafile_lst(illumina_mf_0_9)[2:]
-    illumina_mf_1_0_data = parse_datafile_lst(illumina_mf_1_0)[2:]
+    pacbio_mf_0_0_data = parse_datafile_lst(pacbio_mf_0_0)
+    pacbio_mf_0_5_data = parse_datafile_lst(pacbio_mf_0_5)
+    pacbio_mf_0_75_data = parse_datafile_lst(pacbio_mf_0_75)
+    pacbio_mf_0_9_data = parse_datafile_lst(pacbio_mf_0_9)
+    pacbio_mf_1_0_data = parse_datafile_lst(pacbio_mf_1_0)
+    illumina_mf_0_0_data = parse_datafile_lst(illumina_mf_0_0)
+    illumina_mf_0_5_data = parse_datafile_lst(illumina_mf_0_5)
+    illumina_mf_0_75_data = parse_datafile_lst(illumina_mf_0_75)
+    illumina_mf_0_9_data = parse_datafile_lst(illumina_mf_0_9)
+    illumina_mf_1_0_data = parse_datafile_lst(illumina_mf_1_0)
 
     def plot_bars(vals,color,ix,lab):
         plt.bar(ind+ix*width, vals, color=color,
@@ -1475,12 +1352,12 @@ def plot_mappability_bars(pacbio_mf_0_0,
                 labelbottom=True, left=False, right=False, labelleft=True)
 
     ax.set_xticks(ind+3.5*width)
-    ax.set_xticklabels(['30','40','50'])
+    ax.set_xticklabels(['20' + r'$\times$','30' + r'$\times$','40' + r'$\times$'])
 
     plt.xlabel('Minimum read coverage')
     plt.ylabel('Fraction of genome covered (chr. 1-22)')
     plt.ylim((0.7,1.0))
-    plt.legend(loc='upper right')
+    plt.legend(loc='lower right')
     plt.tight_layout()
 
     ax.set_axisbelow(True)
@@ -1490,9 +1367,9 @@ def plot_mappability_bars(pacbio_mf_0_0,
     #ax.annotate('coverage', xy=(-0.1,-0.03), xytext=(5, -ticklabelpad), ha='left', va='top',
     #            xycoords='axes fraction', textcoords='offset points')
 
-    plt.savefig(output_file)
+    plt.savefig(output_file, dpi = 600)
 
-def mendelian_concordance_table(pacbio_row, illumina_row, outfile, include_count=False):
+def mendelian_concordance_table(pacbio_row, outfile, include_count=False):
 
     consistency_re = re.compile("\s+F\+M:\d+\/\d+\s+\((\d+\.\d+%)\)\n")
     count_re = re.compile("\s+F\+M:(\d+)\/\d+\s+\(\d+\.\d+%\)\n")
@@ -1506,7 +1383,6 @@ def mendelian_concordance_table(pacbio_row, illumina_row, outfile, include_count
                 return consistency_re.findall(file_contents)[0]
 
     pacbio_data = [parse_mendelian_output(f).replace('%','\%') for f in pacbio_row]
-    illumina_data = [parse_mendelian_output(f).replace('%','\%') for f in illumina_row]
 
     # read in files containing bed file total lengths
 
@@ -1514,69 +1390,20 @@ def mendelian_concordance_table(pacbio_row, illumina_row, outfile, include_count
 \\begin{{table}}[htbp]
 \\centering
 \\small
-\\begin{{tabular}}{{llllll}}
+\\begin{{tabular}}{{lllll}}
 \\hline
-         & Genome  & Inside GIAB & Outside GIAB & Segmental Dup.       & Segmental Dup.       \\\\
-         & (1-22)  & Confident   & Confident    & ($\geq 95\%$ similar)& ($\geq 99\%$ similar)\\\\
+         & Genome  & Inside GIAB & Outside GIAB & Segmental Dup.       \\\\
+         & (1-22)  & Confident   & Confident    & ($\geq 95\%$ similar)\\\\
 \\hline
-PacBio   & {}      & {}          & {}           & {}                   & {}                   \\tabularnewline
-Illumina & {}      & {}          & {}           & {}                   & {}                   \\tabularnewline
-\\hline
-\\end{{tabular}}
-\\caption{{{{\\bf Mendelian consistency for AJ Trio between variants called using PacBio reads
-($\\mathbf{{69\\times}}$ coverage son, $\\mathbf{{30\\times}}$ coverage mother, $\\mathbf{{32\\times}}$ coverage father),
-and variants called using Illumina reads ($\\mathbf{{60\\times}}$ coverage son, $\\mathbf{{30\\times}}$ coverage mother, $\\mathbf{{30\\times}}$ coverage father).
-Results are shown for genome-wide variants as well as variants within specific genomic regions.}}}}
-\\label{{tab:mendelian}}
-\\end{{table}}
-'''.format(*pacbio_data,
-           *illumina_data)
-
-    with open(outfile,'w') as outf:
-        print(s, file=outf)
-
-def mendelian_concordance_table_blasr_minimap2(blasr_row, minimap2_row, illumina_row, outfile, include_count=False):
-
-    consistency_re = re.compile("\s+F\+M:\d+\/\d+\s+\((\d+\.\d+%)\)\n")
-    count_re = re.compile("\s+F\+M:(\d+)\/\d+\s+\(\d+\.\d+%\)\n")
-
-    def parse_mendelian_output(mendelian_output):
-        with open(mendelian_output,'r') as inf:
-            file_contents = inf.read()
-            if include_count:
-                return count_re.findall(file_contents)[0] + ', ' + consistency_re.findall(file_contents)[0]
-            else:
-                return consistency_re.findall(file_contents)[0]
-
-    blasr_data = [parse_mendelian_output(f).replace('%','\%') for f in blasr_row]
-    minimap2_data = [parse_mendelian_output(f).replace('%','\%') for f in minimap2_row]
-    illumina_data = [parse_mendelian_output(f).replace('%','\%') for f in illumina_row]
-
-    # read in files containing bed file total lengths
-
-    s = '''
-\\begin{{table}}[htbp]
-\\centering
-\\small
-\\begin{{tabular}}{{llllll}}
-\\hline
-         & Genome  & Inside GIAB & Outside GIAB & Segmental Dup.       & Segmental Dup.       \\\\
-         & (1-22)  & Confident   & Confident    & ($\geq 95\%$ similar)& ($\geq 99\%$ similar)\\\\
-\\hline
-PacBio (BLASR) & {}      & {}          & {}           & {}                   & {}                   \\tabularnewline
-PacBio (minimap2) & {}      & {}          & {}           & {}                   & {}                   \\tabularnewline
-Illumina & {}      & {}          & {}           & {}                   & {}                   \\tabularnewline
+PacBio   & {}      & {}          & {}           & {}                   \\tabularnewline
 \\hline
 \\end{{tabular}}
 \\caption{{{{\\bf Mendelian consistency for AJ Trio between variants called using PacBio reads
 ($\\mathbf{{69\\times}}$ coverage son, $\\mathbf{{30\\times}}$ coverage mother, $\\mathbf{{32\\times}}$ coverage father),
-and variants called using Illumina reads ($\\mathbf{{60\\times}}$ coverage son, $\\mathbf{{30\\times}}$ coverage mother, $\\mathbf{{30\\times}}$ coverage father).
 Results are shown for genome-wide variants as well as variants within specific genomic regions.}}}}
 \\label{{tab:mendelian}}
 \\end{{table}}
-'''.format(*blasr_data,
-           *minimap2_data,
-           *illumina_data)
+'''.format(*pacbio_data)
 
     with open(outfile,'w') as outf:
         print(s, file=outf)
@@ -1644,32 +1471,6 @@ def make_venn_diagram_variants_outside_GIAB(longshot_vcf, giab_vcf, plat_vcf, ou
           set_labels=['Longshot', 'GIAB', 'Platinum Genomes'])
     plt.savefig(output_png,dpi=600)
 
-
-def make_dual_venn_diagram_variants_outside_GIAB(longshot_vcf, giab_vcf, plat_vcf,
-                                            longshot_vcf_PG_conf, giab_vcf_PG_conf,
-                                            plat_vcf_PG_conf, output_png):
-
-    def vcf2set(vcf_file):
-        vcfset = set()
-        with pysam.VariantFile(vcf_file) as vcf:
-
-            for record in vcf:
-                vcfset.add((record.chrom, record.pos))# tuple(record.alleles), tuple(sorted(record.samples[0]['GT']))))
-
-        return vcfset
-
-    plt.figure(figsize=(10,5))
-    plt.subplot(121)
-    venn3([vcf2set(longshot_vcf),vcf2set(giab_vcf),vcf2set(plat_vcf)],
-          set_labels=['Longshot', 'GIAB', 'Platinum Genomes'])
-    plt.title('Outside GIAB Confident Regions')
-
-    plt.subplot(122)
-    venn3([vcf2set(longshot_vcf_PG_conf),vcf2set(giab_vcf_PG_conf),vcf2set(plat_vcf_PG_conf)],
-          set_labels=['Longshot', 'GIAB', 'Platinum Genomes'])
-    plt.title('Outside GIAB Confident Regions,\n but inside Platinum Genomes Confident Regions')
-
-    plt.savefig(output_png,dpi=600)
 
 if __name__ == '__main__':
     args = parseargs()

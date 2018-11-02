@@ -135,7 +135,7 @@ rule split_diploid_fasta:
 
 rule align_simulated_illumina:
     params: job_name = 'align_simulated_illumina.{chrom}.{hap}.60x',
-            sort_prefix = 'data/simulation.1000g/aligned_reads/illumina/bwa_separate_chrom/{chrom}.hap{hap}.illumina.60x.tmp'
+            sort_prefix = 'data/simulation.1000g/aligned_reads/illumina/aligned_separate_chrom/{chrom}.hap{hap}.illumina.60x.tmp'
     input:
         fastq   = 'data/simulation.1000g/fastq_reads/illumina/separate_chrom/{chrom}.hap{hap}.illumina.60x.fastq.gz',
         hs37d5    = 'data/genomes/hs37d5.fa',

@@ -10,11 +10,12 @@ import pickle
 import datetime
 import pysam
 from calculate_median_coverage import calculate_median_coverage
+from math import sqrt
 
 # DATA URLs
 HG19_URL     = 'http://hgdownload.cse.ucsc.edu/goldenpath/hg19/bigZips/hg19.2bit'
 HS37D5_URL     = 'ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz'
-HG38_URL = 'http://hgdownload.cse.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz'
+HG38_URL = 'ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_plus_hs38d1_analysis_set.fna.gz' #'http://hgdownload.cse.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz'
 HG19_SDF_URL   = 'https://s3.amazonaws.com/rtg-datasets/references/hg19.sdf.zip'
 TG_v37_SDF_URL = 'https://s3.amazonaws.com/rtg-datasets/references/1000g_v37_phase2.sdf.zip'
 GRCh38_SDF_URL = 'https://s3.amazonaws.com/rtg-datasets/references/GRCh38.sdf.zip'
@@ -69,33 +70,31 @@ include: "map_giab_reads.snakefile"
 rule all:
     input:
         # tables & figures
-        'data/simulation.1000g/aligned_reads/illumina/illumina.aligned.all.60x.bam.median_coverage_gt_mapq0',
-        'data/plots/actual_vs_effective_coverage.chr1.NA12878.44x.png',
-        'data/output/prec_recall_table_known_indels_filtered.tex',
-        'data/plots/NA12878_variants_outside_GIAB_confident_venn_diagram.png',
-        #'data/plots/simulation_pr_barplot_genome_vs_segdup.all.GQ50.png',             # fig 2
-        'data/plots/fig3_precision_recall_bars_NA12878_AJ_Trio.blasr.hg38.png',          # fig 3
-        #'data/plots/fig3_precision_recall_bars_NA24385_NA12878.blasr.hg38.png',         # fig 3 (old version)
-        'data/output/four_GIAB_genomes_table_extended.aj_trio_hg38_minimap2.all.tex',  # table 1 alt (minimap2)
-        'data/output/four_GIAB_genomes_table_extended.aj_trio_hg38_blasr.all.tex',     # table 1
-        'data/output/variant_analysis_fp_fn_NA12878.1000g.blasr.44x.GQ44.1.tex',       # table 2
-        'data/output/variant_counts_table.NA12878.1000g.il30x.blasr.pb30x.GQ30.tex',   # table 3
-        'data/output/variant_counts_table.NA24385.hg38.il60x.blasr.pb69x.GQ69.tex',    # table 3, alt 1 (AJ son, blasr)
-        'data/output/variant_counts_table.NA24385.hg38.il60x.minimap2.pb69x.GQ69.tex', # table 3, alt 2 (AJ son, minimap2)
-        'data/output/pacbio_illumina_mendelian_concordance_table.blasr.tex',           # table 4
-        'data/output/pacbio_illumina_mendelian_concordance_table.minimap2.tex',        # table 4 alt (minimap2)
-        # supplementary figs
-        'data/plots/haplotyping_results_barplot.png',
-        'data/plots/NA12878.1000g.blasr.prec_recall_all.png',
-        'data/plots/NA24385.hg38.blasr.prec_recall_all.png',
-        'data/plots/NA24385.hg38.minimap2.prec_recall_all.png',
-        'data/plots/NA24143.hg38.blasr.prec_recall_all.png',
-        'data/plots/NA24143.hg38.minimap2.prec_recall_all.png',
+        'data/NA24143.hg38/vcfeval/longshot.pacbio.blasr.30x._/all',
+        'data/NA24143.hg38/vcfeval/longshot.pacbio.blasr.30x.-Q_30/all',
         'data/plots/NA24149.hg38.blasr.prec_recall_all.png',
-        'data/plots/NA24149.hg38.minimap2.prec_recall_all.png',
-        'data/plots/plot_mappability_bars.simulation.1000g.png',
-        'data/plots/simulation_pr_barplot_genome_vs_segdup.all.GQ50.png',
-        'data/plots/simulation_pr_barplot_genome_vs_segdup_extended.all.GQ50.png',
+        'data/plots/Q30_NA24149.hg38.blasr.prec_recall_all.png',
+        #'data/plots/prec_recall_4panel_blasr.all.png',
+        #'data/simulation.1000g/aligned_reads/illumina/illumina.aligned.all.60x.bam.median_coverage_gt_mapq0',
+        #'data/plots/actual_vs_effective_coverage.chr1.NA12878.44x.png',
+        #'data/output/prec_recall_table_known_indels_filtered.tex',
+        #'data/plots/NA12878_variants_outside_GIAB_confident_venn_diagram.png',
+        #'data/plots/fig3_precision_recall_bars_NA12878_AJ_Trio.blasr.hg38.png',          # fig 3
+        #'data/output/four_GIAB_genomes_table_extended.aj_trio_hg38_blasr.all.tex',     # table 1
+        #'data/output/variant_analysis_fp_fn_NA12878.1000g.blasr.44x.GQ44.1.tex',       # table 2
+        #'data/output/variant_counts_table.NA12878.1000g.il30x.blasr.pb30x.GQ30.tex',   # table 3
+        #'data/output/pacbio_mendelian_concordance_table.blasr.tex',           # table 4
+        # supplementary figs
+        #'data/plots/haplotyping_results_barplot.png',
+        #'data/plots/NA12878.1000g.blasr.prec_recall_all.png',
+        #'data/plots/NA24385.hg38.blasr.prec_recall_all.png',
+        #'data/plots/NA24143.hg38.blasr.prec_recall_all.png',
+        #'data/plots/NA24149.hg38.blasr.prec_recall_all.png',
+        #'data/plots/plot_mappability_bars.simulation.1000g.png',
+        #'data/plots/simulation_pr_barplot_genome_vs_segdup.all.GQ50.png',
+        #'data/plots/simulation_pr_barplot_genome_vs_segdup_extended.all.GQ50.png',
+
+        #expand('data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.{group}.tlens.txt',group=['hap1','hap2','unassigned']),
 
 
 rule run_pileups:
@@ -230,13 +229,20 @@ rule rtg_decompose_variants_ground_truth:
 from filter_SNVs import filter_SNVs
 rule filter_illumina_SNVs:
     params: job_name = 'filter_SNVs_illumina.{individual}.{build}.chr{chrom}',
-    input:  vcf = 'data/{individual}.{build}/variants/freebayes.illumina.aligned.{cov}x.unfiltered/{chrom}.vcf',
-            runtime = 'data/{individual}.{build}/variants/freebayes.illumina.aligned.{cov}x.unfiltered/{chrom}.vcf.runtime'
+    input:  vcfgz = 'data/{individual}.{build}/variants/freebayes.illumina.aligned.{cov}x.unfiltered/{chrom}.vcf.gz',
+            runtime = 'data/{individual}.{build}/variants/freebayes.illumina.aligned.{cov}x.unfiltered/{chrom}.vcf.runtime',
+            cov = 'data/{individual}.{build}/aligned_reads/illumina/illumina.aligned.all.{cov}x.bam.median_coverage'
     output: vcf = 'data/{individual}.{build}/variants/freebayes.illumina.aligned.{cov,\d+}x.filtered/{chrom,(\d+)}.vcf',
             runtime = 'data/{individual}.{build}/variants/freebayes.illumina.aligned.{cov,\d+}x.filtered/{chrom,(\d+)}.vcf.runtime'
     run:
-        cov_filter = int(float(wildcards.cov)*2)
-        filter_SNVs(input.vcf, output.vcf, cov_filter, density_count=10, density_len=500, density_qual=50)
+        median_cov = parse_int_file(input.cov)
+        min_cov = int(median_cov - 5*sqrt(median_cov))
+        max_cov = int(median_cov + 5*sqrt(median_cov))
+        if min_cov < 0:
+            min_cov = 0
+        shell('{RTGTOOLS} RTG_MEM=12g vcffilter --snps-only -d {min_cov} -D {max_cov} -i {input.vcfgz} -o {output.vcf}.gz')
+        shell('gunzip -c {output.vcf}.gz > {output.vcf}')
+        #filter_SNVs(input.vcf, output.vcf, cov_filter, density_count=10, density_len=500, density_qual=50)
         shell('cp {input.runtime} {output.runtime}')
 
 rule combine_chrom:
@@ -280,6 +286,7 @@ rule run_longshot:
     params: job_name = 'longshot.pacbio.{aligner}.{individual}.{build}.cov{cov}.{options}.chr{chrom}',
     input:  bam = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.all.{cov}x.bam',
             bai = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.all.{cov}x.bam.bai',
+            cov = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.all.{cov}x.bam.median_coverage',
             hg19    = 'data/genomes/hg19.fa',
             hg19_ix = 'data/genomes/hg19.fa.fai',
             hs37d5    = 'data/genomes/hs37d5.fa',
@@ -290,10 +297,15 @@ rule run_longshot:
             debug = directory('data/{individual}.{build}/variants/longshot.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug'),
             runtime = 'data/{individual}.{build}/variants/longshot.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+)}.vcf.runtime'
     run:
+        median_cov = parse_int_file(input.cov)
+        min_cov = int(median_cov - 5*sqrt(median_cov))
+        max_cov = int(median_cov + 5*sqrt(median_cov))
+        if min_cov < 0:
+            min_cov = 0
         options_str = wildcards.options.replace('_',' ')
         if wildcards.individual == 'NA12878':
             t1 = time.time()
-            shell('{LONGSHOT} -r chr{wildcards.chrom} -F -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {input.hg19} --out {output.vcf}.tmp')
+            shell('{LONGSHOT} -r chr{wildcards.chrom} -F -c {min_cov} -C {max_cov} -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {input.hg19} --out {output.vcf}.tmp')
             t2 = time.time()
             # remove 'chr' from reference name in vcf
             remove_chr_from_vcf(output.vcf+'.tmp',output.vcf)
@@ -302,7 +314,7 @@ rule run_longshot:
             w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
             w_ref = ref_file[wildcards.build]
             t1 = time.time()
-            shell('{LONGSHOT} -r {w_chrom} -F -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {w_ref} --out {output.vcf}')
+            shell('{LONGSHOT} -r {w_chrom} -F -c {min_cov} -C {max_cov} -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {w_ref} --out {output.vcf}')
             t2 = time.time()
 
         with open(output.runtime,'w') as outf:
@@ -337,7 +349,7 @@ rule call_variants_Illumina:
 
 rule generate_genomecov_bed:
     params: job_name = 'generate_genomecov_bed.{individual}.{build}.{tech}.{info}.MAPQ{mapq}'
-    input:  expand('data/{{individual}}.{{build}}/aligned_reads/{{tech}}/genomecov_histograms_mapq{{mapq}}/{{tech}}.{{aligner}}.30x.{{chrom,(\d+)}}.txt', chrom=chroms)
+    input:  expand('data/{{individual}}.{{build}}/aligned_reads/{{tech}}/genomecov_histograms_mapq{{mapq}}/{{tech}}.{{aligner}}.30x.{{chrom}}.txt', chrom=chroms)
     output: 'data/{individual}.{build}/aligned_reads/{tech}/genomecov_histograms_mapq{mapq}/{tech}.{aligner}.30x.all.txt'
     shell: 'cat {input} > {output}'
 
@@ -485,7 +497,7 @@ rule calculate_median_coverage:
 rule subsample_illumina_60x:
     params: job_name = 'subsample_illumina_{individual}.{build}.{cov}x'
     input:  'data/{individual}.{build}/aligned_reads/illumina/illumina.aligned.all.60x.bam'
-    output: 'data/{individual,NA\d+}.{build}/aligned_reads/illumina/illumina.aligned.all.{cov,(1|2|3|4|5)0}x.bam'
+    output: 'data/{individual,NA\d+}.{build}/aligned_reads/illumina/illumina.aligned.all.{cov,[0-5][0-9]}x.bam'
     run:
         subsample_frac = float(wildcards.cov) / 60.0
         shell('{SAMTOOLS} view -hb {input} -s {subsample_frac} > {output}')

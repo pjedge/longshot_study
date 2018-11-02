@@ -236,8 +236,8 @@ rule filter_illumina_SNVs:
             runtime = 'data/{individual}.{build}/variants/freebayes.illumina.aligned.{cov,\d+}x.filtered/{chrom,(\d+)}.vcf.runtime'
     run:
         median_cov = parse_int_file(input.cov)
-        min_cov = int(median_cov - 5*sqrt(median_cov))
-        max_cov = int(median_cov + 5*sqrt(median_cov))
+        min_cov = int(median_cov - 4*sqrt(median_cov))
+        max_cov = int(median_cov + 4*sqrt(median_cov))
         if min_cov < 0:
             min_cov = 0
         shell('{RTGTOOLS} RTG_MEM=12g vcffilter --snps-only -d {min_cov} -D {max_cov} -i {input.vcfgz} -o {output.vcf}.gz')
@@ -298,8 +298,8 @@ rule run_longshot:
             runtime = 'data/{individual}.{build}/variants/longshot.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+)}.vcf.runtime'
     run:
         median_cov = parse_int_file(input.cov)
-        min_cov = int(median_cov - 5*sqrt(median_cov))
-        max_cov = int(median_cov + 5*sqrt(median_cov))
+        min_cov = int(median_cov - 4*sqrt(median_cov))
+        max_cov = int(median_cov + 4*sqrt(median_cov))
         if min_cov < 0:
             min_cov = 0
         options_str = wildcards.options.replace('_',' ')

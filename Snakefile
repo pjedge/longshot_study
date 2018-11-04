@@ -70,29 +70,21 @@ include: "map_giab_reads.snakefile"
 rule all:
     input:
         # tables & figures
-        'data/NA24143.hg38/vcfeval/longshot.pacbio.blasr.30x._/all',
-        'data/NA24143.hg38/vcfeval/longshot.pacbio.blasr.30x.-Q_30/all',
-        'data/plots/NA24149.hg38.blasr.prec_recall_all.png',
-        'data/plots/Q30_NA24149.hg38.blasr.prec_recall_all.png',
-        #'data/plots/prec_recall_4panel_blasr.all.png',
-        #'data/simulation.1000g/aligned_reads/illumina/illumina.aligned.all.60x.bam.median_coverage_gt_mapq0',
-        #'data/plots/actual_vs_effective_coverage.chr1.NA12878.44x.png',
-        #'data/output/prec_recall_table_known_indels_filtered.tex',
-        #'data/plots/NA12878_variants_outside_GIAB_confident_venn_diagram.png',
-        #'data/plots/fig3_precision_recall_bars_NA12878_AJ_Trio.blasr.hg38.png',          # fig 3
-        #'data/output/four_GIAB_genomes_table_extended.aj_trio_hg38_blasr.all.tex',     # table 1
-        #'data/output/variant_analysis_fp_fn_NA12878.1000g.blasr.44x.GQ44.1.tex',       # table 2
-        #'data/output/variant_counts_table.NA12878.1000g.il30x.blasr.pb30x.GQ30.tex',   # table 3
-        #'data/output/pacbio_mendelian_concordance_table.blasr.tex',           # table 4
+        'data/plots/prec_recall_4panel_blasr.all.png',
+        'data/simulation.1000g/aligned_reads/illumina/illumina.aligned.all.60x.bam.median_coverage_gt_mapq0',
+        'data/plots/actual_vs_effective_coverage.chr1.NA12878.44x.png',
+        'data/output/prec_recall_table_known_indels_filtered.tex',
+        'data/plots/NA12878_variants_outside_GIAB_confident_venn_diagram.png',
+        'data/plots/fig3_precision_recall_bars_NA12878_AJ_Trio.blasr.hg38.png',          # fig 3
+        'data/output/four_GIAB_genomes_table_extended.aj_trio_hg38_blasr.all.tex',     # table 1
+        'data/output/variant_analysis_fp_fn_NA12878.1000g.blasr.44x.GQ44.1.tex',       # table 2
+        'data/output/variant_counts_table.NA12878.1000g.il30x.blasr.pb30x.GQ30.tex',   # table 3
+        'data/output/pacbio_mendelian_concordance_table.blasr.tex',           # table 4
         # supplementary figs
-        #'data/plots/haplotyping_results_barplot.png',
-        #'data/plots/NA12878.1000g.blasr.prec_recall_all.png',
-        #'data/plots/NA24385.hg38.blasr.prec_recall_all.png',
-        #'data/plots/NA24143.hg38.blasr.prec_recall_all.png',
-        #'data/plots/NA24149.hg38.blasr.prec_recall_all.png',
-        #'data/plots/plot_mappability_bars.simulation.1000g.png',
-        #'data/plots/simulation_pr_barplot_genome_vs_segdup.all.GQ50.png',
-        #'data/plots/simulation_pr_barplot_genome_vs_segdup_extended.all.GQ50.png',
+        'data/plots/haplotyping_results_barplot.png',
+        'data/plots/plot_mappability_bars.simulation.1000g.png',
+        'data/plots/simulation_pr_barplot_genome_vs_segdup.all.GQ50.png',
+        'data/plots/simulation_pr_barplot_genome_vs_segdup_extended.all.GQ50.png',
 
         #expand('data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.{group}.tlens.txt',group=['hap1','hap2','unassigned']),
 

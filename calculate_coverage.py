@@ -5,8 +5,7 @@ import time
 
 CHROM_FILTER = set(['chr{}'.format(x) for x in range(1,23)]+['{}'.format(x) for x in range(1,23)])
 
-
-def calculate_median_coverage(bam_file, random_positions_bed, chrom_filter=CHROM_FILTER, min_mapq=30, flag_filter=3844, add_chr=False):
+def calculate_coverage(bam_file, random_positions_bed, chrom_filter=CHROM_FILTER, min_mapq=0, flag_filter=3844, add_chr=False):
 
     t1 = time.time()
 
@@ -30,17 +29,18 @@ def calculate_median_coverage(bam_file, random_positions_bed, chrom_filter=CHROM
             assert(stop == start + 1)
 
             # should only check one position
+            dp = 0
             for pileup_column in bam.pileup(chrom, start, stop, truncate=True,
                                            flag_filter=flag_filter, min_mapping_quality=min_mapq, min_base_quality=0):
                 assert(pileup_column.reference_pos == start)
-                dp = 0# 0
+
                 for pileup_read in pileup_column.pileups:
                     dp += 1
                 #assert(dp == pileup_column.nsegments)
 
-                depth_lst.append(dp)
+            depth_lst.append(dp)
 
     t2 = time.time()
     print("time: {:2}".format(t2-t1))
 
-    return statistics.median(depth_lst)
+    return statistics.median(depth_lst), statistics.mean(depth_lst), statistics.stdev(depth_lst)

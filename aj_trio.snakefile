@@ -226,7 +226,7 @@ rule generate_coverage_bed:
     output: bed = 'data/{id}.{build}/aligned_reads/{tech}/{tech}.{aligner}.{chrom,(\d+)}.{cov}x.cov_greater_than_20.bed',
     run:
         median_cov = parse_int_file(input.cov)
-        max_cov = int(median_cov + 4*sqrt(median_cov))
+        max_cov = int(median_cov + 5*sqrt(median_cov))
 
         shell('''
         {SAMTOOLS} view -F 3844 -q 30 {input.bam} chr{wildcards.chrom} -hb | \

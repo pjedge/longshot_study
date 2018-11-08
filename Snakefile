@@ -9,7 +9,7 @@ import prune_haplotype as ph
 import pickle
 import datetime
 import pysam
-from calculate_median_coverage import calculate_median_coverage
+from calculate_coverage import calculate_coverage
 from math import sqrt
 
 # DATA URLs
@@ -71,7 +71,6 @@ rule all:
     input:
         # tables & figures
         'data/plots/prec_recall_4panel_blasr.all.png',
-        'data/simulation.1000g/aligned_reads/illumina/illumina.aligned.all.60x.bam.median_coverage_gt_mapq0',
         'data/plots/actual_vs_effective_coverage.chr1.NA12878.44x.png',
         'data/output/prec_recall_table_known_indels_filtered.tex',
         'data/plots/NA12878_variants_outside_GIAB_confident_venn_diagram.png',
@@ -80,12 +79,10 @@ rule all:
         'data/output/variant_analysis_fp_fn_NA12878.1000g.blasr.44x.GQ44.1.tex',       # table 2
         'data/output/variant_counts_table.NA12878.1000g.il30x.blasr.pb30x.GQ30.tex',   # table 3
         'data/output/pacbio_mendelian_concordance_table.blasr.tex',           # table 4
-        # supplementary figs
         'data/plots/haplotyping_results_barplot.png',
         'data/plots/plot_mappability_bars.simulation.1000g.png',
         'data/plots/simulation_pr_barplot_genome_vs_segdup.all.GQ50.png',
         'data/plots/simulation_pr_barplot_genome_vs_segdup_extended.all.GQ50.png',
-
         #expand('data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.{group}.tlens.txt',group=['hap1','hap2','unassigned']),
 
 
@@ -228,11 +225,8 @@ rule filter_illumina_SNVs:
             runtime = 'data/{individual}.{build}/variants/freebayes.illumina.aligned.{cov,\d+}x.filtered/{chrom,(\d+)}.vcf.runtime'
     run:
         median_cov = parse_int_file(input.cov)
-        min_cov = int(median_cov - 4*sqrt(median_cov))
-        max_cov = int(median_cov + 4*sqrt(median_cov))
-        if min_cov < 0:
-            min_cov = 0
-        shell('{RTGTOOLS} RTG_MEM=12g vcffilter --snps-only -d {min_cov} -D {max_cov} -i {input.vcfgz} -o {output.vcf}.gz')
+        max_cov = int(median_cov + 5*sqrt(median_cov))
+        shell('{RTGTOOLS} RTG_MEM=12g vcffilter --snps-only -D {max_cov} -i {input.vcfgz} -o {output.vcf}.gz')
         shell('gunzip -c {output.vcf}.gz > {output.vcf}')
         #filter_SNVs(input.vcf, output.vcf, cov_filter, density_count=10, density_len=500, density_qual=50)
         shell('cp {input.runtime} {output.runtime}')
@@ -290,14 +284,11 @@ rule run_longshot:
             runtime = 'data/{individual}.{build}/variants/longshot.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+)}.vcf.runtime'
     run:
         median_cov = parse_int_file(input.cov)
-        min_cov = int(median_cov - 4*sqrt(median_cov))
-        max_cov = int(median_cov + 4*sqrt(median_cov))
-        if min_cov < 0:
-            min_cov = 0
+        max_cov = int(median_cov + 5*sqrt(median_cov))
         options_str = wildcards.options.replace('_',' ')
         if wildcards.individual == 'NA12878':
             t1 = time.time()
-            shell('{LONGSHOT} -r chr{wildcards.chrom} -F -c {min_cov} -C {max_cov} -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {input.hg19} --out {output.vcf}.tmp')
+            shell('{LONGSHOT} -r chr{wildcards.chrom} -F -C {max_cov} -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {input.hg19} --out {output.vcf}.tmp')
             t2 = time.time()
             # remove 'chr' from reference name in vcf
             remove_chr_from_vcf(output.vcf+'.tmp',output.vcf)
@@ -306,7 +297,7 @@ rule run_longshot:
             w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
             w_ref = ref_file[wildcards.build]
             t1 = time.time()
-            shell('{LONGSHOT} -r {w_chrom} -F -c {min_cov} -C {max_cov} -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {w_ref} --out {output.vcf}')
+            shell('{LONGSHOT} -r {w_chrom} -F -C {max_cov} -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {w_ref} --out {output.vcf}')
             t2 = time.time()
 
         with open(output.runtime,'w') as outf:
@@ -437,53 +428,36 @@ rule convert_genome_track_to_1000g:
         bgzip -c > {output.track}
         '''
 
-# count_bam_median_coverage
-rule calculate_median_coverage_mapq:
-    params: job_name = 'calculate_median_coverage_mapq.{individual}.{build}.{tech}.{info}'
+rule calculate_coverage:
+    params: job_name = 'calculate_coverage.{individual}.{build}.{tech}.{info}'
     input:  bam = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam',
             bai = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam.bai',
-            genome_file = 'genome_tracks/{build}.chrom.sizes.txt'
-    output: random_pos = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam.for_median_coverage_gt_mapq{MAPQ}.random_pos',
-            cov = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam.median_coverage_gt_mapq{MAPQ}'
+            genome_file = 'genome_tracks/{build}.chrom.sizes.txt',
+            n_regions = 'genome_tracks/N_regions_{build}.bed',
+            hg38_centromere = 'genome_tracks/sv_repeat_telomere_centromere_hg38.bed'
+    output: random_pos = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam.random_pos_for_coverage',
+            med_cov = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam.median_coverage',
+            mean_cov = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam.mean_coverage',
+            stdev_cov = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam.stdev_coverage'
     run:
-        shell('{BEDTOOLS} random -l 1 -n 1000 -g {input.genome_file} > {output.random_pos}')
-        add_chr = (wildcards.individual == 'NA12878' and wildcards.build == '1000g' and wildcards.tech == 'pacbio')
-        mapq_cut = int(wildcards.MAPQ)
-        med_cov = calculate_median_coverage(input.bam, output.random_pos, min_mapq=mapq_cut, add_chr=add_chr)
-        with open(output.cov,'w') as outf:
-            print(med_cov,file=outf)
+        assert(wildcards.build in ['1000g','hg38'])
+        # if we're using hg38, we need to remove positions in the centromeres
+        centromere_subtract = '| {{BEDTOOLS}} subtract -a stdin -b {}'.format(input.hg38_centromere) if wildcards.build == 'hg38' else ''
+        # sample 100000 random positions, remove N bases and centromeres (for hg38), and sort
+        shell('''
+        {BEDTOOLS} random -l 1 -n 100000 -g {input.genome_file} | \
+        {BEDTOOLS} subtract -a stdin -b {input.n_regions} ''' + centromere_subtract + ''' |
+        {BEDTOOLS} sort -faidx {input.genome_file} > {output.random_pos}''')
 
-# count_bam_median_coverage
-rule calculate_median_coverage_with_supp:
-    params: job_name = 'calculate_median_coverage_with_supp.{individual}.{build}.{tech}.{info}'
-    input:  bam = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam',
-            bai = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam.bai',
-            genome_file = 'genome_tracks/{build}.chrom.sizes.txt'
-    output: random_pos = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam.for_median_coverage_supp.random_pos',
-            cov = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam.median_coverage_with_supp'
-    run:
-        shell('{BEDTOOLS} random -l 1 -n 10000 -g {input.genome_file} > {output.random_pos}')
         add_chr = (wildcards.individual == 'NA12878' and wildcards.build == '1000g' and wildcards.tech == 'pacbio')
 
-        med_cov = calculate_median_coverage(input.bam, output.random_pos, add_chr=add_chr, flag_filter=1796)
-        with open(output.cov,'w') as outf:
+        med_cov, mean_cov, stdev_cov = calculate_coverage(input.bam, output.random_pos, add_chr=add_chr)
+        with open(output.med_cov,'w') as outf:
             print(med_cov,file=outf)
-
-# count_bam_median_coverage
-rule calculate_median_coverage:
-    params: job_name = 'calculate_median_coverage.{individual}.{build}.{tech}.{info}'
-    input:  bam = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam',
-            bai = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam.bai',
-            genome_file = 'genome_tracks/{build}.chrom.sizes.txt'
-    output: random_pos = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam.for_median_coverage.random_pos',
-            cov = 'data/{individual}.{build}/aligned_reads/{tech}/{info}.bam.median_coverage'
-    run:
-        shell('{BEDTOOLS} random -l 1 -n 100000 -g {input.genome_file} > {output.random_pos}')
-        add_chr = (wildcards.individual == 'NA12878' and wildcards.build == '1000g' and wildcards.tech == 'pacbio')
-
-        med_cov = calculate_median_coverage(input.bam, output.random_pos, add_chr=add_chr)
-        with open(output.cov,'w') as outf:
-            print(med_cov,file=outf)
+        with open(output.mean_cov,'w') as outf:
+            print(mean_cov,file=outf)
+        with open(output.stdev_cov,'w') as outf:
+            print(stdev_cov,file=outf)
 
 # SUBSAMPLE ILLUMINA BAM
 rule subsample_illumina_60x:

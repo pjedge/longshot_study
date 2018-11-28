@@ -6,7 +6,7 @@ import itertools
 import numpy as np
 from numpy.random import choice
 
-VALID_CHROMS = set(['{}'.format(c) for c in range(1,23)]+['X'])
+VALID_CHROMS = set(['{}'.format(c) for c in range(1,23)]+['X']+['contig1','contig2','contig3'])
 
 # estimate prior probability of genotypes using strategy described here:
 # http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2694485/
@@ -72,7 +72,7 @@ def create_phased_genotype_selector():
     return phased_genotype_selector
 
 
-def simulate_SNV_VCF(hg19_fasta, output_vcf):
+def simulate_SNV_VCF(hg19_fasta, output_vcf, min_pos=None, max_pos=None):
 
     phased_genotype_selector = create_phased_genotype_selector()
 
@@ -121,6 +121,9 @@ def simulate_SNV_VCF(hg19_fasta, output_vcf):
                 if(chrom not in VALID_CHROMS):
                     continue
 
+                if pos < min_pos or pos > max_pos:
+                    continue
+
                 if genotype != (ref_allele,ref_allele) and 'N' not in genotype:
 
                     el = [None]*10
@@ -131,7 +134,7 @@ def simulate_SNV_VCF(hg19_fasta, output_vcf):
                     el[4] = var_str
                     el[5] = 100
                     el[6] = 'PASS'
-                    el[7] = 'None'
+                    el[7] = '.'
                     el[8] = 'GT'
                     el[9] = genotype_str
                     line = '{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}'.format(*el)

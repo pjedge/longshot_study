@@ -54,6 +54,7 @@ chroms = ['{}'.format(i) for i in range(1,23)]
 ref_file = {'1000g':'data/genomes/hs37d5.fa', 'hg38':'data/genomes/hg38.fa'}
 
 include: "simulation.1000g.snakefile"
+include: "simulation.test.snakefile"
 include: "NA12878.1000g.snakefile"
 include: "NA24385.hg38.snakefile"  # AJ Son,    hg38
 include: "NA24143.hg38.snakefile"  # AJ Mother, hg38
@@ -70,26 +71,27 @@ include: "map_giab_reads.snakefile"
 rule all:
     input:
         # tables & figures
-        'data/plots/fig3_precision_recall_bars_NA12878_AJ_Trio_with_haplotyping_results.blasr.hg38.png',
-        'data/plots/prec_recall_4panel_blasr.all.png',
-        'data/plots/actual_vs_effective_coverage.chr1.NA12878.44x.png',
-        'data/output/prec_recall_table_known_indels_filtered.tex',
-        'data/plots/NA12878_variants_outside_GIAB_confident_venn_diagram.png',
-        'data/output/four_GIAB_genomes_table_extended.aj_trio_hg38_blasr.all.tex',     # table 1
-        'data/output/variant_analysis_fp_fn_NA12878.1000g.blasr.44x.GQ44.1.tex',       # table 2
-        'data/output/variant_counts_table.NA12878.1000g.il30x.blasr.pb30x.GQ30.tex',   # table 3
-        'data/output/pacbio_mendelian_concordance_table.blasr.tex',           # table 4
-        'data/plots/haplotyping_results_barplot.png',
-        'data/plots/plot_mappability_bars.simulation.1000g.png',
-        'data/plots/simulation_pr_barplot_genome_vs_segdup.all.GQ50.png',
-        'data/plots/simulation_pr_barplot_genome_vs_segdup_extended.all.GQ50.png',
-        'data/plots/NA12878_variants_outside_GIAB_confident_inside_PG_confident_venn_diagram.png',\
-        'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.read_lengths',
-        'data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.read_lengths',
-        'data/output/NA12878_chr1_45x_haplotype_assigned_N50_analysis.txt',
-        'data/NA12878.1000g/variants/misc/INTERSECT_PG_longshot.pacbio.blasr.44x._.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats',
-        'data/NA12878.1000g/variants/misc/MINUS_longshot.pacbio.blasr.44x._.PG.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats',
-        'data/NA12878.1000g/variants/misc/MINUS_PG_longshot.pacbio.blasr.44x._.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats'
+        'data/simulation.test/aligned_reads/pacbio/pacbio.blasr.all.30x.bam',
+        #'data/plots/fig3_precision_recall_bars_NA12878_AJ_Trio_with_haplotyping_results.blasr.hg38.png',
+        #'data/plots/prec_recall_4panel_blasr.all.png',
+        #'data/plots/actual_vs_effective_coverage.chr1.NA12878.44x.png',
+        #'data/output/prec_recall_table_known_indels_filtered.tex',
+        #'data/plots/NA12878_variants_outside_GIAB_confident_venn_diagram.png',
+        #'data/output/four_GIAB_genomes_table_extended.aj_trio_hg38_blasr.all.tex',     # table 1
+        #'data/output/variant_analysis_fp_fn_NA12878.1000g.blasr.44x.GQ44.1.tex',       # table 2
+        #'data/output/variant_counts_table.NA12878.1000g.il30x.blasr.pb30x.GQ30.tex',   # table 3
+        #'data/output/pacbio_mendelian_concordance_table.blasr.tex',           # table 4
+        #'data/plots/haplotyping_results_barplot.png',
+        #'data/plots/plot_mappability_bars.simulation.1000g.png',
+        #'data/plots/simulation_pr_barplot_genome_vs_segdup.all.GQ50.png',
+        #'data/plots/simulation_pr_barplot_genome_vs_segdup_extended.all.GQ50.png',
+        #'data/plots/NA12878_variants_outside_GIAB_confident_inside_PG_confident_venn_diagram.png',\
+        #'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.read_lengths',
+        #'data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.read_lengths',
+        #'data/output/NA12878_chr1_45x_haplotype_assigned_N50_analysis.txt',
+        #'data/NA12878.1000g/variants/misc/INTERSECT_PG_longshot.pacbio.blasr.44x._.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats',
+        #'data/NA12878.1000g/variants/misc/MINUS_longshot.pacbio.blasr.44x._.PG.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats',
+        #'data/NA12878.1000g/variants/misc/MINUS_PG_longshot.pacbio.blasr.44x._.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats'
 
 
 rule run_pileups:

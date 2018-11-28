@@ -121,7 +121,7 @@ def simulate_SNV_VCF(hg19_fasta, output_vcf, min_pos=None, max_pos=None):
                 if(chrom not in VALID_CHROMS):
                     continue
 
-                if pos < min_pos or pos > max_pos:
+                if (min_pos != None and pos < min_pos) or (max_pos != None and pos > max_pos):
                     continue
 
                 if genotype != (ref_allele,ref_allele) and 'N' not in genotype:

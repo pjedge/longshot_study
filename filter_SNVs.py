@@ -118,9 +118,13 @@ def filter_longshot_VCF_for_haplotype_assessment(infile, outfile, min_phase_qual
                 # convert the total to phred score
                 phred_qual = qual * -10.0
 
-                # this line has too low phase quality, print filtered line to stdout and move on
+                # this line has too low phase quality, remove the genotype phase
                 if phred_qual < min_phase_qual:
-                    print(line.strip())
+
+                    assert(el[9][1] in ['|','/'])
+                    el[9] = el[9][0]+'/'+el[9][2:]
+                    line = '\t'.join(el)
+                    print(line, file=outf)
                     continue
 
                 # this line has high enough phase quality

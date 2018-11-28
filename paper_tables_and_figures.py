@@ -119,7 +119,7 @@ def plot_vcfeval_4panel(dirlist1, labels1, colors1, legendloc1, title1,
     xlim = (xlim[0]-xpad, xlim[1]+xpad)
     ylim = (ylim[0]-ypad, ylim[1]+ypad)
 
-    def plot_panel(ax, dirlist, labels, colors, legendloc, xlim, ylim, labelbottom, labelleft, title):
+    def plot_panel(ax, dirlist, labels, colors, legendloc, xlim, ylim, labelbottom, labelleft, title, letter_label):
         # add a small amount of padding to the xlim and ylim so that grid lines show up on the borders
 
         if len(dirlist) > len(colors):
@@ -157,6 +157,8 @@ def plot_vcfeval_4panel(dirlist1, labels1, colors1, legendloc1, title1,
 
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
+        ax.text(-0.05, 1.07, letter_label, transform=ax.transAxes,fontsize=11, fontweight='bold', va='top')
+
         #plt.xlabel('Recall')
         #plt.ylabel('Precision')
         ax.legend(loc=legendloc,title=title)
@@ -168,16 +170,16 @@ def plot_vcfeval_4panel(dirlist1, labels1, colors1, legendloc1, title1,
     gs1.update(wspace=0.1, hspace=0.1) # set the spacing between axes.
 
     ax1 = plt.subplot(gs1[0])
-    plot_panel(ax=ax1,dirlist=dirlist1, labels=labels1, colors=colors1, legendloc=legendloc1, xlim=xlim, ylim=ylim, title=title1, labelbottom='off', labelleft='on')
+    plot_panel(ax=ax1,dirlist=dirlist1, labels=labels1, colors=colors1, legendloc=legendloc1, xlim=xlim, ylim=ylim, title=title1, labelbottom='off', labelleft='on', letter_label='a')
 
     ax2 = plt.subplot(gs1[1])
-    plot_panel(ax=ax2,dirlist=dirlist2, labels=labels2, colors=colors2, legendloc=legendloc2, xlim=xlim, ylim=ylim, title=title2, labelbottom='off', labelleft='off')
+    plot_panel(ax=ax2,dirlist=dirlist2, labels=labels2, colors=colors2, legendloc=legendloc2, xlim=xlim, ylim=ylim, title=title2, labelbottom='off', labelleft='off', letter_label='b')
 
     ax3 = plt.subplot(gs1[2])
-    plot_panel(ax=ax3,dirlist=dirlist3, labels=labels3, colors=colors3, legendloc=legendloc3, xlim=xlim, ylim=ylim, title=title3, labelbottom='on', labelleft='on')
+    plot_panel(ax=ax3,dirlist=dirlist3, labels=labels3, colors=colors3, legendloc=legendloc3, xlim=xlim, ylim=ylim, title=title3, labelbottom='on', labelleft='on', letter_label='c')
 
     ax4 = plt.subplot(gs1[3])
-    plot_panel(ax=ax4,dirlist=dirlist4, labels=labels4, colors=colors4, legendloc=legendloc4, xlim=xlim, ylim=ylim, title=title4, labelbottom='on', labelleft='off')
+    plot_panel(ax=ax4,dirlist=dirlist4, labels=labels4, colors=colors4, legendloc=legendloc4, xlim=xlim, ylim=ylim, title=title4, labelbottom='on', labelleft='off', letter_label='d')
 
     fig.text(0.5, 0.03, 'Recall', ha='center')
     fig.text(0.02, 0.5, 'Precision', va='center', rotation='vertical')
@@ -228,26 +230,45 @@ def plot_precision_recall_bars_simulation(pacbio_dirlist_genome, illumina_dirlis
     width = 0.15
     alpha1 = 0.6
 
+    # credit for this function: http://composition.al/blog/2015/11/29/a-better-way-to-add-labels-to-bar-charts-with-matplotlib/
+    def autolabel(rects, ax, format_str="{0:.4f}"):
+        # Get y-axis height to calculate label position from.
+        (y_bottom, y_top) = ax.get_ylim()
+        y_height = y_top - y_bottom
+
+        for rect in rects:
+            height = rect.get_height()
+
+            # Fraction of axis height taken up by this rectangle
+            p_height = (height / y_height)
+
+            label_position = height + (y_height * 0.01)
+
+            ax.text(rect.get_x() + rect.get_width()/2., label_position,
+                    format_str.format(height),
+                    ha='center', va='bottom', fontsize=3.5)
 
     def make_subplot(ax, ind, pacbio_vals, illumina_vals, lab_pacbio=None, lab_illumina=None, fc='#ffffff'):
 
-        plt.bar(ind+width, pacbio_vals, color='#2200ff',
+        rects1 = plt.bar(ind+width, pacbio_vals, color='#2200ff',
                 ecolor='black', # black error bar color
                 alpha=alpha1,      # transparency
                 width=width,      # smaller bar width
                 align='center',
                 label=lab_pacbio,
                 zorder=0)
-        plt.bar(ind+2*width, illumina_vals, color='#ff1900',
+        autolabel(rects1, ax)
+        rects2 = plt.bar(ind+2*width, illumina_vals, color='#ff1900',
                 ecolor='black', # black error bar color
                 alpha=alpha1,      # transparency
                 width=width,      # smaller bar width
                 align='center',
                 label=lab_illumina,
                 zorder=0)
+        autolabel(rects2, ax)
+
         # add some text for labels, title and axes ticks
         #plt.xlim(-0.5,6)
-
 
     def prettify_plot():
 
@@ -270,12 +291,12 @@ def plot_precision_recall_bars_simulation(pacbio_dirlist_genome, illumina_dirlis
     illumina_precisions_segdup, illumina_recalls_segdup = zip(*[get_precision_recall(d, gq_cutoff) for d in illumina_dirlist_segdup])
 
     ax = plt.subplot(211)
+    plt.ylim(0.99,1.0)
     make_subplot(ax,np.array(ind1), pacbio_precisions_genome, illumina_precisions_genome, lab_pacbio='PacBio + BLASR + Longshot', lab_illumina='Illumina + BWA-MEM + Freebayes',fc='#e0e1e2')
     make_subplot(ax, np.array(ind2), pacbio_precisions_segdup, illumina_precisions_segdup,fc='#dddddd')
     ax.legend(loc='center left', bbox_to_anchor=(0.05,1.13),ncol=2)
 
     plt.ylabel("Precision")
-    plt.ylim(0.99,1.0)
     prettify_plot()
     ax.set_xticks([])
     ax.set_xticklabels([])
@@ -503,6 +524,242 @@ def plot_precision_recall_bars_simulation_extended(pacbio_ngmlr_dirlist_genome,
     plt.savefig(output_file, dpi = 600)
 
 
+def plot_precision_recall_bars_NA12878_AJ_Trio_with_haplotyping_results(pacbio_dirlist_NA12878, illumina_dirlist_NA12878,
+                                               pacbio_dirlist_NA24385, illumina_dirlist_NA24385,
+                                               pacbio_dirlist_NA24149, illumina_dirlist_NA24149,
+                                               pacbio_dirlist_NA24143, illumina_dirlist_NA24143,
+                                               gq_cutoffs_NA12878, gq_cutoffs_NA24385,
+                                               gq_cutoffs_NA24149, gq_cutoffs_NA24143,
+                                               gq_cutoff_illumina, labels_variants, labels_hap, longshot_errs, illumina_errs,
+                                               output_file):
+
+    fig = plt.figure(constrained_layout=True, figsize=(9,7))
+    gs = gridspec.GridSpec(ncols=4, nrows=13, figure=fig)
+
+    width = 0.09
+    alpha1 = 0.6
+
+    # credit for this function: http://composition.al/blog/2015/11/29/a-better-way-to-add-labels-to-bar-charts-with-matplotlib/
+    def autolabel(rects, ax, height_fmt_string):
+        # Get y-axis height to calculate label position from.
+        (y_bottom, y_top) = ax.get_ylim()
+        y_height = y_top - y_bottom
+
+        for rect in rects:
+            height = rect.get_height()
+
+            # Fraction of axis height taken up by this rectangle
+            p_height = (height / y_height)
+
+            label_position = height + (y_height * 0.01)
+
+            ax.text(rect.get_x() + rect.get_width()/2., label_position,
+                    height_fmt_string.format(height),
+                    ha='center', va='bottom', fontsize=6)
+
+    def plot_bars(ax, ind, vals, color=None, lab=None, height_fmt_string="{0:.4f}", letter_label=None):
+
+        rects = plt.bar(ind+width, vals, color=color,
+                ecolor='black', # black error bar color
+                alpha=alpha1,      # transparency
+                width=width,      # smaller bar width
+                align='center',
+                label=lab,
+                zorder=0)
+
+        autolabel(rects, ax, height_fmt_string)
+
+
+    def prettify_plot(ax):
+        ax.set_facecolor('#f7f7f7')
+        ax.yaxis.grid(True,color='grey', alpha=0.5, linestyle='--',zorder=1.0)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["bottom"].set_visible(False)
+        ax.spines["left"].set_visible(False)
+        plt.tick_params(axis="both", which="both", bottom=False, top=False,
+                    labelbottom=True, left=False, right=False, labelleft=True)
+
+    ind_NA12878_pacbio = [0,0.1]
+    ind_NA12878_illumina = [0.2]
+    ind_NA24385_pacbio = [0.4,0.5,0.6,0.7]
+    ind_NA24385_illumina = [0.8]
+    ind_NA24149_pacbio = [1.0]
+    ind_NA24149_illumina = [1.1]
+    ind_NA24143_pacbio = [1.3]
+    ind_NA24143_illumina = [1.4]
+
+    pacbio_precisions_NA24385, pacbio_recalls_NA24385 = zip(*[get_precision_recall(d, g) for d,g in zip(pacbio_dirlist_NA24385, gq_cutoffs_NA24385)])
+    illumina_precisions_NA24385, illumina_recalls_NA24385 = zip(*[get_precision_recall(d, gq_cutoff_illumina) for d in illumina_dirlist_NA24385])
+    pacbio_precisions_NA24149, pacbio_recalls_NA24149 = zip(*[get_precision_recall(d, g) for d,g in zip(pacbio_dirlist_NA24149, gq_cutoffs_NA24149)])
+    illumina_precisions_NA24149, illumina_recalls_NA24149 = zip(*[get_precision_recall(d, gq_cutoff_illumina) for d in illumina_dirlist_NA24149])
+    pacbio_precisions_NA24143, pacbio_recalls_NA24143 = zip(*[get_precision_recall(d, g) for d,g in zip(pacbio_dirlist_NA24143, gq_cutoffs_NA24143)])
+    illumina_precisions_NA24143, illumina_recalls_NA24143 = zip(*[get_precision_recall(d, gq_cutoff_illumina) for d in illumina_dirlist_NA24143])
+    pacbio_precisions_NA12878, pacbio_recalls_NA12878 = zip(*[get_precision_recall(d, g) for d,g in zip(pacbio_dirlist_NA12878, gq_cutoffs_NA12878)])
+    illumina_precisions_NA12878, illumina_recalls_NA12878 = zip(*[get_precision_recall(d, gq_cutoff_illumina) for d in illumina_dirlist_NA12878])
+
+    ax1 = fig.add_subplot(gs[1:7,0:3])
+    plt.ylim(0.95,1.0)
+
+    plot_bars(ax1, np.array(ind_NA12878_pacbio), pacbio_precisions_NA12878,color='#2200ff',lab='Longshot (PacBio)')
+    plot_bars(ax1, np.array(ind_NA12878_illumina), illumina_precisions_NA12878,color='#ff1900',lab='Freebayes (Illumina)')
+    plot_bars(ax1, np.array(ind_NA24385_pacbio), pacbio_precisions_NA24385,color='#2200ff')
+    plot_bars(ax1, np.array(ind_NA24385_illumina), illumina_precisions_NA24385,color='#ff1900')
+    plot_bars(ax1, np.array(ind_NA24149_pacbio), pacbio_precisions_NA24149,color='#2200ff')
+    plot_bars(ax1, np.array(ind_NA24149_illumina), illumina_precisions_NA24149,color='#ff1900')
+    plot_bars(ax1, np.array(ind_NA24143_pacbio), pacbio_precisions_NA24143,color='#2200ff')
+    plot_bars(ax1, np.array(ind_NA24143_illumina), illumina_precisions_NA24143,color='#ff1900')
+    ax1.legend(loc='center left', bbox_to_anchor=(0.3,1.12),ncol=2)
+    ax1.text(-0.01, 1.055, 'a', transform=ax1.transAxes,fontsize=11, fontweight='bold', va='top')
+
+    plt.ylabel("SNV Precision")
+    #plt.ylim(0,1.0)
+    prettify_plot(ax1)
+    ax1.set_xticks([])
+    ax1.set_xticklabels([])
+
+    ax2 = fig.add_subplot(gs[7:13,0:3])
+    plt.ylabel("SNV Recall")
+    plot_bars(ax2, np.array(ind_NA12878_pacbio), pacbio_recalls_NA12878,color='#2200ff')
+    plot_bars(ax2, np.array(ind_NA12878_illumina), illumina_recalls_NA12878,color='#ff1900')
+    plot_bars(ax2, np.array(ind_NA24385_pacbio), pacbio_recalls_NA24385,color='#2200ff')
+    plot_bars(ax2, np.array(ind_NA24385_illumina), illumina_recalls_NA24385,color='#ff1900')
+    plot_bars(ax2, np.array(ind_NA24149_pacbio), pacbio_recalls_NA24149,color='#2200ff')
+    plot_bars(ax2, np.array(ind_NA24149_illumina), illumina_recalls_NA24149,color='#ff1900')
+    plot_bars(ax2, np.array(ind_NA24143_pacbio), pacbio_recalls_NA24143,color='#2200ff')
+    plot_bars(ax2, np.array(ind_NA24143_illumina), illumina_recalls_NA24143,color='#ff1900')
+    prettify_plot(ax2)
+    ax2.set_xticks(np.array(ind_NA12878_pacbio+ind_NA12878_illumina
+                          +ind_NA24385_pacbio+ind_NA24385_illumina
+                          +ind_NA24149_pacbio+ind_NA24149_illumina
+                          +ind_NA24143_pacbio+ind_NA24143_illumina)+1.0*width)
+    ax2.set_xticklabels(labels_variants)
+    ax2.text(-0.01, 1.055, 'b', transform=ax2.transAxes,fontsize=11, fontweight='bold', va='top')
+
+    #ax.set_yscale('log')NA12878_prec_recall_{chrom}
+    #plt.xlim(())
+    #plt.ylim((0,1.0))
+    #plt.legend(loc='upper left')
+    plt.xlabel(" ",labelpad=10)
+
+    #plt.tight_layout()
+    #plt.subplots_adjust(top=0.85)
+    #t = plt.suptitle(title)
+
+    ax2.set_axisbelow(True)
+
+    ticklabelpad = mpl.rcParams['xtick.major.pad']
+
+    ax2.annotate('coverage', xy=(-0.1,-0.03), xytext=(5, -ticklabelpad), ha='left', va='top',
+                xycoords='axes fraction', textcoords='offset points')
+    ax2.annotate('NA12878', xy=(0.07,-0.1), xytext=(5, -ticklabelpad), ha='left', va='top',
+                xycoords='axes fraction', textcoords='offset points')
+    ax2.annotate('NA24385', xy=(0.38,-0.1), xytext=(5, -ticklabelpad), ha='left', va='top',
+                xycoords='axes fraction', textcoords='offset points')
+    ax2.annotate('NA24149', xy=(0.66,-0.1), xytext=(5, -ticklabelpad), ha='left', va='top',
+                xycoords='axes fraction', textcoords='offset points')
+    ax2.annotate('NA24143', xy=(0.84,-0.1), xytext=(5, -ticklabelpad), ha='left', va='top',
+                xycoords='axes fraction', textcoords='offset points')
+
+    ###############################################################################
+    # plot haplotyping results
+    ###############################################################################
+
+    #mpl.rcParams['axes.titlepad'] = 50
+
+    width = 0.09
+    alpha1 = 0.6
+
+    def make_hap_subplot(ax, ind, longshot_vals, illumina_vals):
+
+        plt.bar(ind+width, longshot_vals, color='#2200ff',
+                ecolor='black', # black error bar color
+                alpha=alpha1,      # transparency
+                width=width,      # smaller bar width
+                align='center',
+                zorder=0)
+        plt.bar(ind+2.1*width, illumina_vals, color='#ff1900',
+                ecolor='black', # black error bar color
+                alpha=alpha1,      # transparency
+                width=width,      # smaller bar width
+                align='center',
+                zorder=0)
+        # add some text for labels, title and axes ticks
+        #plt.xlim(-0.5,6)
+
+    #unpickle the error objects
+    longshot_errs = [pickle.load(open(f,'rb')) for f in longshot_errs]
+    illumina_errs = [pickle.load(open(f,'rb')) for f in illumina_errs]
+
+    ind = [0,0.1,0.3,0.4]
+    #ind_NA24149_pacbio = [1.0]
+    #ind_NA24149_illumina = [1.1]
+    #ind_NA24143_pacbio = [1.3]
+    #ind_NA24143_illumina = [1.4]
+
+    ax3 = fig.add_subplot(gs[1:5,3])
+    longshot_switch_mismatch = [e.get_switch_mismatch_rate() for e in longshot_errs]
+    illumina_switch_mismatch = [e.get_switch_mismatch_rate() for e in illumina_errs]
+    plot_bars(ax3, ind[0], longshot_switch_mismatch[0], color='#2200ff')
+    plot_bars(ax3, ind[1], illumina_switch_mismatch[0], color='#ff1900')
+    plot_bars(ax3, ind[2], longshot_switch_mismatch[1], color='#2200ff')
+    plot_bars(ax3, ind[3], illumina_switch_mismatch[1], color='#ff1900')
+
+    plt.ylabel("Haplotype Combined\nSwitch Error Rate")
+
+    prettify_plot(ax3)
+    ax3.set_xticks([])
+    ax3.set_xticklabels([])
+    ax3.text(-0.05, 1.07, 'c', transform=ax3.transAxes,fontsize=11, fontweight='bold', va='top')
+
+    ax4 = fig.add_subplot(gs[5:9,3])
+    longshot_median_len = [e.get_N50_phased_portion()/1000 for e in longshot_errs]
+    illumina_median_len = [e.get_N50_phased_portion()/1000 for e in illumina_errs]
+    #make_hap_subplot(ax4,np.array(ind), longshot_median_len, illumina_median_len)
+    plot_bars(ax4, ind[0], longshot_median_len[0], color='#2200ff', height_fmt_string="{0:.1f}")
+    plot_bars(ax4, ind[1], illumina_median_len[0], color='#ff1900', height_fmt_string="{0:.1f}")
+    plot_bars(ax4, ind[2], longshot_median_len[1], color='#2200ff', height_fmt_string="{0:.1f}")
+    plot_bars(ax4, ind[3], illumina_median_len[1], color='#ff1900', height_fmt_string="{0:.1f}")
+    plt.ylabel("Haplotype N50 (kb)")
+    prettify_plot(ax4)
+    ax4.set_xticks([])
+    ax4.set_xticklabels([])
+    ax4.text(-0.05, 1.07, 'd', transform=ax4.transAxes,fontsize=11, fontweight='bold', va='top')
+
+
+    ax5 = fig.add_subplot(gs[9:13,3])
+    longshot_fraction_phased = [e.get_phased_count() / e.get_num_snps() for e in longshot_errs]
+    illumina_fraction_phased = [e.get_phased_count() / e.get_num_snps() for e in illumina_errs]
+    plot_bars(ax5, ind[0], longshot_fraction_phased[0], color='#2200ff')
+    plot_bars(ax5, ind[1], illumina_fraction_phased[0], color='#ff1900')
+    plot_bars(ax5, ind[2], longshot_fraction_phased[1], color='#2200ff')
+    plot_bars(ax5, ind[3], illumina_fraction_phased[1], color='#ff1900')
+
+    #make_hap_subplot(ax5,np.array(ind), longshot_fraction_phased, illumina_fraction_phased)
+    plt.ylabel("Fraction of Heterozygous\nVariants Phased")
+    prettify_plot(ax5)
+    ax5.set_xticks(np.array(ind)+width)
+    ax5.set_xticklabels(labels_hap)
+    ax5.tick_params(pad=1)
+
+    ax5.annotate('NA12878', xy=(0.01,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
+                xycoords='axes fraction', textcoords='offset points')
+    ax5.annotate('NA24385', xy=(0.55,-0.15), xytext=(5, -ticklabelpad), ha='left', va='top',
+                xycoords='axes fraction', textcoords='offset points')
+    ax5.text(-0.05, 1.07, 'e', transform=ax5.transAxes,fontsize=11, fontweight='bold', va='top')
+
+    plt.xlabel(" ",labelpad=10)
+
+    #plt.tight_layout()
+    #plt.subplots_adjust(top=0.90)
+
+    ax5.set_axisbelow(True)
+
+    ticklabelpad = mpl.rcParams['xtick.major.pad']
+
+    plt.savefig(output_file, dpi=600)
+
+
 def plot_haplotyping_results(longshot_errs, hapcut2_errs, median_covs, output_file):
     # errs should be in order: NA12878 44x, NA24385 69x
     assert(len(longshot_errs) == 2)
@@ -513,29 +770,52 @@ def plot_haplotyping_results(longshot_errs, hapcut2_errs, median_covs, output_fi
     longshot_errs = [pickle.load(open(f,'rb')) for f in longshot_errs]
     hapcut2_errs = [pickle.load(open(f,'rb')) for f in hapcut2_errs]
 
-    plt.figure(figsize=(6,6))
+    plt.figure(figsize=(5,6))
     #mpl.rcParams['axes.titlepad'] = 50
 
-    width = 0.15
+    width = 0.10
     alpha1 = 0.6
 
+    # credit for this function: http://composition.al/blog/2015/11/29/a-better-way-to-add-labels-to-bar-charts-with-matplotlib/
+    def autolabel(rects, ax, format_str="{0:.4f}"):
+        # Get y-axis height to calculate label position from.
+        (y_bottom, y_top) = ax.get_ylim()
+        y_height = y_top - y_bottom
 
-    def make_subplot(ax, ind, longshot_vals, hapcut2_vals, lab_longshot=None, lab_hapcut2=None):
+        for rect in rects:
+            height = rect.get_height()
 
-        plt.bar(ind+width, longshot_vals, color='#2200ff',
+            # Fraction of axis height taken up by this rectangle
+            p_height = (height / y_height)
+
+            label_position = height + (y_height * 0.01)
+
+            ax.text(rect.get_x() + rect.get_width()/2., label_position,
+                    format_str.format(height),
+                    ha='center', va='bottom', fontsize=6)
+
+    def make_subplot(ax, ind, longshot_vals, hapcut2_vals, lab_longshot=None, lab_hapcut2=None, letter_label=None, format_str="{0:.4f}"):
+
+        rects1 = plt.bar(ind+width, longshot_vals, color='#2200ff',
                 ecolor='black', # black error bar color
                 alpha=alpha1,      # transparency
                 width=width,      # smaller bar width
                 align='center',
                 label=lab_longshot,
                 zorder=0)
-        plt.bar(ind+2*width, hapcut2_vals, color='k',
+        autolabel(rects1, ax, format_str)
+
+        rects2 = plt.bar(ind+2*width, hapcut2_vals, color='k',
                 ecolor='black', # black error bar color
                 alpha=alpha1,      # transparency
                 width=width,      # smaller bar width
                 align='center',
                 label=lab_hapcut2,
                 zorder=0)
+
+        autolabel(rects2, ax, format_str)
+        #ax.text(-0.05, 1.07, letter_label, transform=ax.transAxes,fontsize=11, fontweight='bold', va='top')
+
         # add some text for labels, title and axes ticks
         #plt.xlim(-0.5,6)
 
@@ -551,13 +831,13 @@ def plot_haplotyping_results(longshot_errs, hapcut2_errs, median_covs, output_fi
                     labelbottom=True, left=False, right=False, labelleft=True)
 
 
-    ind = [0,0.4]
+    ind = [0,0.3]
 
     ax = plt.subplot(211)
     longshot_switch_mismatch = [e.get_switch_mismatch_rate() for e in longshot_errs]
     hapcut2_switch_mismatch = [e.get_switch_mismatch_rate() for e in hapcut2_errs]
-    make_subplot(ax,np.array(ind), longshot_switch_mismatch, hapcut2_switch_mismatch, lab_longshot='Longshot Haplotype', lab_hapcut2='~30' + r'$\times$' + ' Illumina + HapCUT2 Haplotype')
-    ax.legend(loc='center left', bbox_to_anchor=(0.0,1.13),ncol=2)
+    make_subplot(ax,np.array(ind), longshot_switch_mismatch, hapcut2_switch_mismatch, lab_longshot='Longshot Haplotype', lab_hapcut2='~30' + r'$\times$' + ' Illumina + HapCUT2 Haplotype', letter_label='a')
+    ax.legend(loc='center left', bbox_to_anchor=(0.0,1.15),ncol=1)
 
     plt.ylabel("Switch + Mismatch Error Rate")
     #plt.ylim(0.99,1.0)
@@ -566,10 +846,10 @@ def plot_haplotyping_results(longshot_errs, hapcut2_errs, median_covs, output_fi
     ax.set_xticklabels([])
 
     ax = plt.subplot(212)
-    plt.ylabel("N50\n")
-    longshot_N50 = [e.get_N50() for e in longshot_errs]
-    hapcut2_N50 = [e.get_N50() for e in hapcut2_errs]
-    make_subplot(ax,np.array(ind), longshot_N50, hapcut2_N50)
+    plt.ylabel("N50 (kb)")
+    longshot_N50 = [e.get_N50_phased_portion()/1000 for e in longshot_errs]
+    hapcut2_N50 = [e.get_N50_phased_portion()/1000  for e in hapcut2_errs]
+    make_subplot(ax,np.array(ind), longshot_N50, hapcut2_N50, letter_label='b', format_str='{0:.1f}')
     prettify_plot()
     ax.set_xticks(np.array(ind)+1.5*width)
     ax.set_xticklabels(['NA12878\n{}'.format(median_covs[0]) + r'$\times$','NA24385\n{}'.format(median_covs[1]) + r'$\times$'])
@@ -1264,7 +1544,9 @@ def plot_mappability_bars(pacbio_mf_0_0,
     plt.figure(figsize=(8.5,4))
     #mpl.rcParams['axes.titlepad'] = 50
     ax = plt.subplot(111)
+    plt.ylim((0.9,1.0))
 
+    subplots_adjust_frac = 0.82
     width = 0.005
     alpha1 = 0.6
 
@@ -1292,55 +1574,71 @@ def plot_mappability_bars(pacbio_mf_0_0,
     illumina_mf_0_9_data = parse_datafile_lst(illumina_mf_0_9)
     illumina_mf_1_0_data = parse_datafile_lst(illumina_mf_1_0)
 
-    def plot_bars(vals,color,ix,lab):
-        plt.bar(ind+ix*width, vals, color=color,
+    # credit for this function: http://composition.al/blog/2015/11/29/a-better-way-to-add-labels-to-bar-charts-with-matplotlib/
+    def autolabel(rects, ax, height_fmt_string="{0:.4f}"):
+        # Get y-axis height to calculate label position from.
+        (y_bottom, y_top) = ax.get_ylim()
+        y_height = y_top - y_bottom
+
+        for rect in rects:
+            height = rect.get_height()
+
+            label_position = height + (y_height * 0.01)
+
+            ax.text(rect.get_x() + rect.get_width()/2., label_position,
+                    height_fmt_string.format(height),
+                    ha='center', va='bottom', fontsize=6)
+
+    def plot_bars(ax, vals,color,ix,lab):
+        rects = plt.bar(ind+ix*width, vals, color=color,
                 ecolor='black', # black error bar color
                 alpha=alpha1,      # transparency
                 width=width,      # smaller bar width
                 align='center',
                 label=lab,
                 zorder=0)
+        autolabel(rects,ax)
 
     print("PacBio map fraction 0.5 data:")
-    print("30 40 50")
+    print("20 30 40")
     print(pacbio_mf_0_5_data)
     print("")
 
     print("PacBio map fraction 0.75 data:")
-    print("30 40 50")
+    print("20 30 40")
     print(pacbio_mf_0_75_data)
     print("")
 
     print("PacBio map fraction 0.9 data:")
-    print("30 40 50")
+    print("20 30 40")
     print(pacbio_mf_0_9_data)
     print("")
 
     print("illumina map fraction 0.5 data:")
-    print("30 40 50")
+    print("20 30 40")
     print(illumina_mf_0_5_data)
     print("")
 
     print("illumina map fraction 0.75 data:")
-    print("30 40 50")
+    print("20 30 40")
     print(illumina_mf_0_75_data)
     print("")
 
     print("illumina map fraction 0.9 data:")
-    print("30 40 50")
+    print("20 30 40")
     print(illumina_mf_0_9_data)
     print("")
 
     #plot_bars(pacbio_mf_0_0_data,'#c3d6f4',0,'PacBio, all sites')
-    plot_bars(pacbio_mf_0_5_data,'#93bcff',1,'PacBio, at least 50% well-mapped')
-    plot_bars(pacbio_mf_0_75_data,'#609dff',2,'PacBio, at least 75% well-mapped')
-    plot_bars(pacbio_mf_0_9_data,'#3582ff',3,'PacBio, at least 90% well-mapped')
+    plot_bars(ax, pacbio_mf_0_5_data,'#93bcff',1,'PacBio, at least 50% well-mapped')
+    plot_bars(ax, pacbio_mf_0_75_data,'#609dff',2,'PacBio, at least 75% well-mapped')
+    plot_bars(ax, pacbio_mf_0_9_data,'#3582ff',3,'PacBio, at least 90% well-mapped')
     #plot_bars(pacbio_mf_1_0_data,'#0061ff',4,'PacBio, 100% well-mapped')
 
     #plot_bars(illumina_mf_0_0_data,'#ffa0a0',5,'Illumina, all sites')
-    plot_bars(illumina_mf_0_5_data,'#ff7272',4,'Illumina, at least 50% well-mapped')
-    plot_bars(illumina_mf_0_75_data,'#ff4242',5,'Illumina, at least 75% well-mapped')
-    plot_bars(illumina_mf_0_9_data,'#ff2323',6,'Illumina, at least 90% well-mapped')
+    plot_bars(ax, illumina_mf_0_5_data,'#ff7272',4,'Illumina, at least 50% well-mapped')
+    plot_bars(ax, illumina_mf_0_75_data,'#ff4242',5,'Illumina, at least 75% well-mapped')
+    plot_bars(ax, illumina_mf_0_9_data,'#ff2323',6,'Illumina, at least 90% well-mapped')
     #plot_bars(illumina_mf_1_0_data,'#ff0000',9,'Illumina, 100% well-mapped')
 
     ax.yaxis.grid(True,color='grey', alpha=0.5, linestyle='--',zorder=1.0)
@@ -1356,8 +1654,8 @@ def plot_mappability_bars(pacbio_mf_0_0,
 
     plt.xlabel('Minimum read coverage')
     plt.ylabel('Fraction of genome covered (chr. 1-22)')
-    plt.ylim((0.7,1.0))
-    plt.legend(loc='lower right')
+    ax.legend(loc='center left', bbox_to_anchor=(0.1,1.25),ncol=2)
+    plt.subplots_adjust(top=subplots_adjust_frac)
     plt.tight_layout()
 
     ax.set_axisbelow(True)

@@ -50,11 +50,11 @@ rule download_GIAB_VCF_NA24385_hg38:
     shell: 'wget {NA24385_HG38_GIAB_VCF_URL} -O {output}'
 
 # SPLIT PACBIO BAM
-rule split_bam_pacbio_NA24385_hg38_BLASR:
-    params: job_name = 'split_bam_pacbio_NA24385.hg38.{chrom}'
-    input: bam = 'data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.all.69x.bam',
-           bai = 'data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.all.69x.bam.bai'
-    output: bam = 'data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.all.69x.split_chroms/{chrom,(\d+)}.bam',
+rule split_bam_NA24385:
+    params: job_name = 'split_bam_NA24385.hg38.{chrom}'
+    input: bam = 'data/NA24385.hg38/aligned_reads/{tech}/{tech}.{aligner}.all.{cov}x.bam',
+           bai = 'data/NA24385.hg38/aligned_reads/{tech}/{tech}.{aligner}.all.{cov}x.bam.bai'
+    output: bam = 'data/NA24385.hg38/aligned_reads/{tech}/{tech}.{aligner}.all.{cov}x.split_chroms/{chrom,(\d+)}.bam',
     shell: '{SAMTOOLS} view -hb {input.bam} chr{wildcards.chrom} > {output.bam}'
 
 # SUBSAMPLE PACBIO BAM

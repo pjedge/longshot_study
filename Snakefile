@@ -70,11 +70,11 @@ include: "map_giab_reads.snakefile"
 rule all:
     input:
         # tables & figures
+        'data/plots/fig3_precision_recall_bars_NA12878_AJ_Trio_with_haplotyping_results.blasr.hg38.png',
         'data/plots/prec_recall_4panel_blasr.all.png',
         'data/plots/actual_vs_effective_coverage.chr1.NA12878.44x.png',
         'data/output/prec_recall_table_known_indels_filtered.tex',
         'data/plots/NA12878_variants_outside_GIAB_confident_venn_diagram.png',
-        'data/plots/fig3_precision_recall_bars_NA12878_AJ_Trio.blasr.hg38.png',          # fig 3
         'data/output/four_GIAB_genomes_table_extended.aj_trio_hg38_blasr.all.tex',     # table 1
         'data/output/variant_analysis_fp_fn_NA12878.1000g.blasr.44x.GQ44.1.tex',       # table 2
         'data/output/variant_counts_table.NA12878.1000g.il30x.blasr.pb30x.GQ30.tex',   # table 3
@@ -83,7 +83,13 @@ rule all:
         'data/plots/plot_mappability_bars.simulation.1000g.png',
         'data/plots/simulation_pr_barplot_genome_vs_segdup.all.GQ50.png',
         'data/plots/simulation_pr_barplot_genome_vs_segdup_extended.all.GQ50.png',
-        #expand('data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.{group}.tlens.txt',group=['hap1','hap2','unassigned']),
+        'data/plots/NA12878_variants_outside_GIAB_confident_inside_PG_confident_venn_diagram.png',\
+        'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.read_lengths',
+        'data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.read_lengths',
+        'data/output/NA12878_chr1_45x_haplotype_assigned_N50_analysis.txt',
+        'data/NA12878.1000g/variants/misc/INTERSECT_PG_longshot.pacbio.blasr.44x._.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats',
+        'data/NA12878.1000g/variants/misc/MINUS_longshot.pacbio.blasr.44x._.PG.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats',
+        'data/NA12878.1000g/variants/misc/MINUS_PG_longshot.pacbio.blasr.44x._.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats'
 
 
 rule run_pileups:
@@ -134,6 +140,12 @@ rule rtg_filter_longshot_MEC_AQ:
         {RTGTOOLS} RTG_MEM=12g vcffilter --keep-expr "INFO.AQ > 7" --fail=AQ -i {input.vcfgz} -o {output.vcf}.gz
         gunzip {output.vcf}.gz
         '''
+
+rule get_read_lengths:
+    params: job_name = lambda wildcards: 'get_read_lengths.{}'.format(str(wildcards.x).replace("/", "."))
+    input:  '{x}.bam'
+    output: '{x}.bam.read_lengths'
+    shell: '''{SAMTOOLS} view {input} | awk '{{print length($10)}}' > {output}'''
 
 rule remove_x_y_region_filter:
     params: job_name = 'remove_x_y_region_filter'
@@ -226,7 +238,7 @@ rule filter_illumina_SNVs:
     run:
         median_cov = parse_int_file(input.cov)
         max_cov = int(median_cov + 5*sqrt(median_cov))
-        shell('{RTGTOOLS} RTG_MEM=12g vcffilter --snps-only -D {max_cov} -i {input.vcfgz} -o {output.vcf}.gz')
+        shell('{RTGTOOLS} RTG_MEM=12g vcffilter -D {max_cov} -i {input.vcfgz} -o {output.vcf}.gz')
         shell('gunzip -c {output.vcf}.gz > {output.vcf}')
         #filter_SNVs(input.vcf, output.vcf, cov_filter, density_count=10, density_len=500, density_qual=50)
         shell('cp {input.runtime} {output.runtime}')

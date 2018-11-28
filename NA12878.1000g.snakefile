@@ -27,12 +27,6 @@ rule plot_pr_curve_NA12878:
                           xlim=(0.8,1.0),
                           ylim=(0.985,1.0))
 
-rule compute_N50_haplotype_reads:
-    params: job_name = 'compute_N50_haplotype_reads'
-    input:  'data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.{group}.bam'
-    output: 'data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.{group,(hap1|hap2|unassigned)}.tlens.txt'
-    shell: '{SAMTOOLS} view {input} | cut -f 9 > {output}'
-
 def n50(lst):
     lst.sort(reverse=True)
     total = sum(lst)
@@ -54,23 +48,27 @@ def parse_file_lst(fname):
 
 rule get_haplotype_bam_stats:
     params: job_name = 'get_haplotype_bam_stats'
-    input: hap1 = 'data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.hap1.tlens.txt',
-           hap2 = 'data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.hap2.tlens.txt',
-           una = 'data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.unassigned.tlens.txt',
+    input: hap1 = 'data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.hap1.bam.read_lengths',
+           hap2 = 'data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.hap2.bam.read_lengths',
+           una = 'data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.unassigned.bam.read_lengths',
     output: txt = 'data/output/NA12878_chr1_45x_haplotype_assigned_N50_analysis.txt'
     run:
         hap_lst = parse_file_lst(input.hap1) + parse_file_lst(input.hap2)
         una_lst = parse_file_lst(input.una)
+        total_hap = sum(hap_lst)
+        total_una = sum(una_lst)
+        fraction_bases_hap_assigned = total_hap / (total_hap + total_una)
         with open(output.txt,'w') as outf:
             print('''Haplotype-assigned reads for NA12878 chr1 (45x reads):
 N50: {}
 mean: {}
 median: {}
+{} of total bases are assigned to a haplotype.
 unassigned reads for NA12878 chr1 (45x reads):
 N50: {}
 mean: {}
 median: {}
-            '''.format(n50(hap_lst), statistics.mean(hap_lst), statistics.median(hap_lst),
+            '''.format(n50(hap_lst), statistics.mean(hap_lst), statistics.median(hap_lst), fraction_bases_hap_assigned,
                        n50(una_lst), statistics.mean(una_lst), statistics.median(una_lst)), file=outf)
 
 
@@ -86,11 +84,8 @@ rule haplotype_separation_chr1:
             una_bam = 'data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x.unassigned.bam'
     run:
         median_cov = parse_int_file(input.cov)
-        min_cov = int(median_cov - 5*sqrt(median_cov))
         max_cov = int(median_cov + 5*sqrt(median_cov))
-        if min_cov < 0:
-            min_cov = 0
-        shell('{LONGSHOT} -r chr1 -F -c {min_cov} -C {max_cov} -s NA12878 --bam {input.bam} --ref {input.ref} --out {output.vcf} -p data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x')
+        shell('{LONGSHOT} -r chr1 -F -C {max_cov} -s NA12878 --bam {input.bam} --ref {input.ref} --out {output.vcf} -p data/NA12878.1000g/aligned_reads/pacbio/haplotype_separated.pacbio.blasr.chr1.44x')
 
 # DOWNLOAD 30x Illumina reads
 rule download_Illumina_reads_NA12878:
@@ -110,12 +105,14 @@ rule download_GIAB_VCF_NA12878:
     output: 'data/NA12878.1000g/variants/ground_truth/ground_truth.vcf.gz'
     shell: 'wget {NA12878_GIAB_VCF_URL} -O {output}'
 
-# SPLIT PACBIO BAM
-rule split_bam_pacbio_NA12878:
-    params: job_name = 'split_bam_pacbio_NA12878.1000g.{chrom}'
-    input: bam = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.44x.bam',
-    output: bam = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.44x.split_chroms/{chrom}.bam',
-    shell: '{SAMTOOLS} view -hb {input.bam} chr{wildcards.chrom} > {output.bam}'
+# SPLIT BAM
+rule split_bam_NA12878:
+    params: job_name = 'split_bam_{tech}.{aligner}.{cov}x_NA12878.1000g.{chrom}'
+    input: bam = 'data/NA12878.1000g/aligned_reads/{tech}/{tech}.{aligner}.all.{cov}x.bam',
+    output: bam = 'data/NA12878.1000g/aligned_reads/{tech}/{tech}.{aligner}.all.{cov}x.split_chroms/{chrom}.bam',
+    run:
+        w_chrom = 'chr'+wildcards.chrom if wildcards.tech == 'pacbio' else wildcards.chrom
+        shell('{SAMTOOLS} view -hb {input.bam} {w_chrom} > {output.bam}')
 
 # SUBSAMPLE PACBIO BAM
 rule subsample_pacbio_NA12878:

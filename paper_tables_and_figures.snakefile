@@ -317,6 +317,71 @@ rule plot_haplotyping_results:
                                      parse_int_file(input.NA24385_69_cov)],
                                      output_file=output.png)
 
+rule plot_precision_recall_bars_NA12878_AJ_Trio_with_haplotyping_results:
+    params: job_name = 'plot_precision_recall_bars_NA12878_AJ_Trio_with_haplotyping_results.{AJ_trio_aligner}.{AJ_trio_build}',
+    input: pacbio_dirlist_NA12878 = expand('data/NA12878.1000g/vcfeval/longshot.pacbio.blasr.{cov}x._/all',cov=[30,44]),
+           illumina_NA12878 = 'data/NA12878.1000g/vcfeval/freebayes.illumina.aligned.30x.filtered/all',
+           pacbio_dirlist_NA24385 = expand('data/NA24385.{{AJ_trio_build}}/vcfeval/longshot.pacbio.{{AJ_trio_aligner}}.{cov}x._/all',cov=[30,40,50,69]),
+           illumina_NA24385 = 'data/NA24385.hg38/vcfeval/freebayes.illumina.aligned.30x.filtered/all',
+           pacbio_dirlist_NA24149 = expand('data/NA24149.{{AJ_trio_build}}/vcfeval/longshot.pacbio.{{AJ_trio_aligner}}.{cov}x._/all',cov=[32]),
+           illumina_NA24149 = 'data/NA24149.hg38/vcfeval/freebayes.illumina.aligned.34x.filtered/all',
+           pacbio_dirlist_NA24143 = expand('data/NA24143.{{AJ_trio_build}}/vcfeval/longshot.pacbio.{{AJ_trio_aligner}}.{cov}x._/all',cov=[30]),
+           illumina_NA24143 = 'data/NA24143.hg38/vcfeval/freebayes.illumina.aligned.30x.filtered/all',
+           NA12878_pb30_cov = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.median_coverage',
+           NA12878_pb44_cov = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.44x.bam.median_coverage',
+           NA12878_il30_cov = 'data/NA12878.1000g/aligned_reads/illumina/illumina.aligned.all.30x.bam.median_coverage',
+           NA24385_pb30_cov = 'data/NA24385.{AJ_trio_build}/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.median_coverage',
+           NA24385_pb40_cov = 'data/NA24385.{AJ_trio_build}/aligned_reads/pacbio/pacbio.blasr.all.40x.bam.median_coverage',
+           NA24385_pb50_cov = 'data/NA24385.{AJ_trio_build}/aligned_reads/pacbio/pacbio.blasr.all.50x.bam.median_coverage',
+           NA24385_pb69_cov = 'data/NA24385.{AJ_trio_build}/aligned_reads/pacbio/pacbio.blasr.all.69x.bam.median_coverage',
+           NA24385_il30_cov = 'data/NA24385.{AJ_trio_build}/aligned_reads/illumina/illumina.aligned.all.30x.bam.median_coverage',
+           NA24149_pb32_cov = 'data/NA24149.{AJ_trio_build}/aligned_reads/pacbio/pacbio.blasr.all.32x.bam.median_coverage',
+           NA24149_il34_cov = 'data/NA24149.{AJ_trio_build}/aligned_reads/illumina/illumina.aligned.all.34x.bam.median_coverage',
+           NA24143_pb30_cov = 'data/NA24143.{AJ_trio_build}/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.median_coverage',
+           NA24143_il30_cov = 'data/NA24143.{AJ_trio_build}/aligned_reads/illumina/illumina.aligned.all.30x.bam.median_coverage',
+           longshot_NA12878_30x_hap = 'data/NA12878.1000g/longshot_haplotypes/hap_statistics/longshot.pacbio.blasr.30x._.all.p',
+           longshot_NA24385_30x_hap = 'data/NA24385.hg38/longshot_haplotypes/hap_statistics/longshot.pacbio.blasr.30x._.all.p',
+           illumina_NA12878_30x_hap = 'data/NA12878.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.illumina.aligned.30x.all.p',
+           illumina_NA24385_30x_hap = 'data/NA24385.hg38/HapCUT2_haplotypes/hap_statistics/illumina.30x.illumina.aligned.30x.all.p'
+    output: png = 'data/plots/fig3_precision_recall_bars_NA12878_AJ_Trio_with_haplotyping_results.{AJ_trio_aligner}.{AJ_trio_build}.png'
+    run:
+        ptf.plot_precision_recall_bars_NA12878_AJ_Trio_with_haplotyping_results(pacbio_dirlist_NA12878=list(input.pacbio_dirlist_NA12878),
+                                                       illumina_dirlist_NA12878=[input.illumina_NA12878],
+                                                       pacbio_dirlist_NA24385=list(input.pacbio_dirlist_NA24385),
+                                                       illumina_dirlist_NA24385=[input.illumina_NA24385],
+                                                       pacbio_dirlist_NA24149=list(input.pacbio_dirlist_NA24149),
+                                                       illumina_dirlist_NA24149=[input.illumina_NA24149],
+                                                       pacbio_dirlist_NA24143=list(input.pacbio_dirlist_NA24143),
+                                                       illumina_dirlist_NA24143=[input.illumina_NA24143],
+                                                       gq_cutoffs_NA12878=[parse_int_file(x) for x in
+                                                                     [input.NA12878_pb30_cov, input.NA12878_pb44_cov]],
+                                                       gq_cutoffs_NA24385=[parse_int_file(x) for x in
+                                                                     [input.NA24385_pb30_cov, input.NA24385_pb40_cov,
+                                                                      input.NA24385_pb50_cov, input.NA24385_pb69_cov]],
+                                                       gq_cutoffs_NA24149=[parse_int_file(input.NA24149_pb32_cov)],
+                                                       gq_cutoffs_NA24143=[parse_int_file(input.NA24143_pb30_cov)],
+                                                       gq_cutoff_illumina=50,
+                                                       labels_variants = [str(parse_int_file(x))+r'$\times$' for x in
+                                                                     [input.NA12878_pb30_cov, input.NA12878_pb44_cov,
+                                                                      input.NA12878_il30_cov,
+                                                                      input.NA24385_pb30_cov, input.NA24385_pb40_cov,
+                                                                      input.NA24385_pb50_cov, input.NA24385_pb69_cov,
+                                                                      input.NA24385_il30_cov,
+                                                                      input.NA24149_pb32_cov, input.NA24149_il34_cov,
+                                                                      input.NA24143_pb30_cov, input.NA24143_il30_cov,
+                                                                      ]
+                                                                ],
+                                                        labels_hap = [str(parse_int_file(x))+r'$\times$' for x in
+                                                                      [input.NA12878_pb30_cov,
+                                                                       input.NA12878_il30_cov,
+                                                                       input.NA24385_pb30_cov,
+                                                                       input.NA24385_il30_cov]],
+                                                        longshot_errs=[input.longshot_NA12878_30x_hap,
+                                                                       input.longshot_NA24385_30x_hap],
+                                                        illumina_errs=[input.illumina_NA12878_30x_hap,
+                                                                      input.illumina_NA24385_30x_hap],
+                                                        output_file=output.png)
+
 rule plot_fp_near_indel:
     params: job_name = 'plot_fp_near_indel',
     input: vcfevals = expand('data/NA24385.hg38/vcfeval/longshot.pacbio.blasr.{cov}x._/all',cov=[20,30,40,50,69]),
@@ -531,12 +596,27 @@ rule make_dual_venn_diagram_variants_outside_GIAB:
 
 rule make_venn_diagram_variants_outside_GIAB_inside_PG:
     params: job_name = 'make_venn_diagram_variants_outside_GIAB',
-    input: longshot = 'data/NA12878.1000g/variants/longshot.pacbio.blasr.44x._/all.GQ44.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.gz',
+    input: longshot = 'data/NA12878.1000g/variants/longshot.pacbio.blasr.44x._/all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.gz',
            giab = 'data/NA12878.1000g/variants/ground_truth/all.GQ0.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.gz',
            plat = 'data/NA12878.1000g/variants/platinum_genomes/all.GQ0.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.gz',
     output: png = 'data/plots/NA12878_variants_outside_GIAB_confident_inside_PG_confident_venn_diagram.png'
     run:
         ptf.make_venn_diagram_variants_outside_GIAB(input.longshot, input.giab, input.plat, output.png)
+
+rule get_longshot_PG_venndiagram_vcfs:
+    params: job_name = 'get_longshot_PG_venndiagram_vcfs',
+    input: longshot = 'data/NA12878.1000g/variants/longshot.pacbio.blasr.44x._/all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.gz',
+           giab = 'data/NA12878.1000g/variants/ground_truth/all.GQ0.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.gz',
+           plat = 'data/NA12878.1000g/variants/platinum_genomes/all.GQ0.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.gz',
+    output: longshot_intersect_plat = 'data/NA12878.1000g/variants/misc/INTERSECT_PG_longshot.pacbio.blasr.44x._.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.gz',
+            longshot_minus_plat = 'data/NA12878.1000g/variants/misc/MINUS_longshot.pacbio.blasr.44x._.PG.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.gz',
+            plat_minus_longshot = 'data/NA12878.1000g/variants/misc/MINUS_PG_longshot.pacbio.blasr.44x._.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.gz'
+    shell:
+        '''
+        {BEDTOOLS} intersect -header -a {input.longshot} -b {input.plat} | bgzip -c > {output.longshot_intersect_plat}
+        {BEDTOOLS} subtract -header -a {input.longshot} -b {input.plat} | bgzip -c > {output.longshot_minus_plat}
+        {BEDTOOLS} subtract -header -b {input.longshot} -a {input.plat} | bgzip -c > {output.plat_minus_longshot}
+        '''
 
 rule make_table_filtered_indels:
     params: job_name = 'make_table_filtered_indels',

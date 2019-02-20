@@ -67,6 +67,16 @@ include: "duplicated_gene_visualization.snakefile"
 include: "make_duplicated_gene_table.snakefile"
 include: "map_giab_reads.snakefile"
 
+rule default:
+    input:
+        'data/NA12878.hg38/vcfeval/longshot.ont.minimap2.30x.-P_0.0/20',
+        'data/NA12878.hg38/vcfeval/longshot.ont.minimap2.30x.-P_0.0/1',
+        'data/NA12878.hg38/vcfeval/longshot.ont.minimap2.30x._/20',
+        'data/NA12878.hg38/vcfeval/longshot.ont.minimap2.30x._/1',
+        'data/NA12878.1000g/vcfeval/longshot.pacbio.blasr.30x.-B_20/1',
+        'data/NA12878.1000g/vcfeval/longshot.pacbio.blasr.30x.-B_20/20',
+
+
 # DEFAULT
 rule all:
     input:
@@ -283,24 +293,24 @@ rule add_runtimes:
             print(seconds_to_formatted_time(t),file=outf)
 
 rule run_longshot:
-    params: job_name = 'longshot.pacbio.{aligner}.{individual}.{build}.cov{cov}.{options}.chr{chrom}',
-    input:  bam = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.all.{cov}x.bam',
-            bai = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.all.{cov}x.bam.bai',
-            cov = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.all.{cov}x.bam.median_coverage',
+    params: job_name = 'longshot.{tech}.{aligner}.{individual}.{build}.cov{cov}.{options}.chr{chrom}',
+    input:  bam = 'data/{individual}.{build}/aligned_reads/{tech}/{tech}.{aligner}.all.{cov}x.bam',
+            bai = 'data/{individual}.{build}/aligned_reads/{tech}/{tech}.{aligner}.all.{cov}x.bam.bai',
+            cov = 'data/{individual}.{build}/aligned_reads/{tech}/{tech}.{aligner}.all.{cov}x.bam.median_coverage',
             hg19    = 'data/genomes/hg19.fa',
             hg19_ix = 'data/genomes/hg19.fa.fai',
             hs37d5    = 'data/genomes/hs37d5.fa',
             hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
             hg38 = 'data/genomes/hg38.fa',
             hg38_ix = 'data/genomes/hg38.fa.fai'
-    output: vcf = 'data/{individual}.{build}/variants/longshot.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+)}.vcf',
-            debug = directory('data/{individual}.{build}/variants/longshot.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom}.debug'),
-            runtime = 'data/{individual}.{build}/variants/longshot.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+)}.vcf.runtime'
+    output: vcf = 'data/{individual}.{build}/variants/longshot.{tech}.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.vcf',
+            debug = directory('data/{individual}.{build}/variants/longshot.{tech}.{aligner}.{cov,\d+}x.{options}/{chrom}.debug'),
+            runtime = 'data/{individual}.{build}/variants/longshot.{tech}.{aligner}.{cov}x.{options}/{chrom}.vcf.runtime'
     run:
         median_cov = parse_int_file(input.cov)
         max_cov = int(median_cov + 5*sqrt(median_cov))
         options_str = wildcards.options.replace('_',' ')
-        if wildcards.individual == 'NA12878':
+        if wildcards.individual == 'NA12878' and wildcards.build == '1000g' and wildcards.tech == 'pacbio':
             t1 = time.time()
             shell('{LONGSHOT} -r chr{wildcards.chrom} -F -C {max_cov} -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {input.hg19} --out {output.vcf}.tmp')
             t2 = time.time()
@@ -501,7 +511,7 @@ rule make_hs37d5_alias:
 rule bgzip_vcf_calls:
     params: job_name = 'bgzip_vcf_calls.{individual}.{build}.{calls_name}.{chrom}'
     input:  'data/{individual}.{build}/variants/{calls_name}/{chrom}.vcf'
-    output: 'data/{individual}.{build}/variants/{calls_name}/{chrom,(all|\d+)}.vcf.gz'
+    output: 'data/{individual}.{build}/variants/{calls_name}/{chrom,(all|\d+|X|Y)}.vcf.gz'
     shell:  '{BGZIP} -c {input} > {output}'
 
 # bgzip vcf

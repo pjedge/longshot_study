@@ -56,6 +56,7 @@ ref_file = {'1000g':'data/genomes/hs37d5.fa', 'hg38':'data/genomes/hg38.fa'}
 include: "simulation.1000g.snakefile"
 include: "simulation.test.snakefile"
 include: "NA12878.1000g.snakefile"
+include: "NA12878.hg38.snakefile"
 include: "NA24385.hg38.snakefile"  # AJ Son,    hg38
 include: "NA24143.hg38.snakefile"  # AJ Mother, hg38
 include: "NA24149.hg38.snakefile"  # AJ Father, hg38
@@ -67,41 +68,42 @@ include: "duplicated_gene_visualization.snakefile"
 include: "make_duplicated_gene_table.snakefile"
 include: "map_giab_reads.snakefile"
 
-rule default:
-    input:
-        'data/NA12878.hg38/vcfeval/longshot.ont.minimap2.30x.-P_0.0/20',
-        'data/NA12878.hg38/vcfeval/longshot.ont.minimap2.30x.-P_0.0/1',
-        'data/NA12878.hg38/vcfeval/longshot.ont.minimap2.30x._/20',
-        'data/NA12878.hg38/vcfeval/longshot.ont.minimap2.30x._/1',
-        'data/NA12878.1000g/vcfeval/longshot.pacbio.blasr.30x.-B_20/1',
-        'data/NA12878.1000g/vcfeval/longshot.pacbio.blasr.30x.-B_20/20',
+#rule default:
+#    input:
+#        'data/NA12878.hg38/vcfeval/longshot.ont.minimap2.30x.-P_0.0/20',
+#        'data/NA12878.hg38/vcfeval/longshot.ont.minimap2.30x.-P_0.0/1',
+#        'data/NA12878.hg38/vcfeval/longshot.ont.minimap2.30x._/20',
+#        'data/NA12878.hg38/vcfeval/longshot.ont.minimap2.30x._/1',
+#        'data/NA12878.1000g/vcfeval/longshot.pacbio.blasr.30x.-B_20/1',
+#        'data/NA12878.1000g/vcfeval/longshot.pacbio.blasr.30x.-B_20/20',
 
 
 # DEFAULT
 rule all:
     input:
         # tables & figures
+        'data/plots/NA12878.hg38_ONT_PR_curve_all.png',
         'data/simulation.test/aligned_reads/pacbio/pacbio.blasr.all.30x.bam',
-        #'data/plots/fig3_precision_recall_bars_NA12878_AJ_Trio_with_haplotyping_results.blasr.hg38.png',
-        #'data/plots/prec_recall_4panel_blasr.all.png',
-        #'data/plots/actual_vs_effective_coverage.chr1.NA12878.44x.png',
-        #'data/output/prec_recall_table_known_indels_filtered.tex',
-        #'data/plots/NA12878_variants_outside_GIAB_confident_venn_diagram.png',
-        #'data/output/four_GIAB_genomes_table_extended.aj_trio_hg38_blasr.all.tex',     # table 1
-        #'data/output/variant_analysis_fp_fn_NA12878.1000g.blasr.44x.GQ44.1.tex',       # table 2
-        #'data/output/variant_counts_table.NA12878.1000g.il30x.blasr.pb30x.GQ30.tex',   # table 3
-        #'data/output/pacbio_mendelian_concordance_table.blasr.tex',           # table 4
-        #'data/plots/haplotyping_results_barplot.png',
-        #'data/plots/plot_mappability_bars.simulation.1000g.png',
-        #'data/plots/simulation_pr_barplot_genome_vs_segdup.all.GQ50.png',
-        #'data/plots/simulation_pr_barplot_genome_vs_segdup_extended.all.GQ50.png',
-        #'data/plots/NA12878_variants_outside_GIAB_confident_inside_PG_confident_venn_diagram.png',\
-        #'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.read_lengths',
-        #'data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.read_lengths',
-        #'data/output/NA12878_chr1_45x_haplotype_assigned_N50_analysis.txt',
-        #'data/NA12878.1000g/variants/misc/INTERSECT_PG_longshot.pacbio.blasr.44x._.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats',
-        #'data/NA12878.1000g/variants/misc/MINUS_longshot.pacbio.blasr.44x._.PG.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats',
-        #'data/NA12878.1000g/variants/misc/MINUS_PG_longshot.pacbio.blasr.44x._.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats'
+        'data/plots/fig3_precision_recall_bars_NA12878_AJ_Trio_with_haplotyping_results.blasr.hg38.png',
+        'data/plots/prec_recall_4panel_blasr.all.png',
+        'data/plots/actual_vs_effective_coverage.chr1.NA12878.44x.png',
+        'data/output/prec_recall_table_known_indels_filtered.tex',
+        'data/plots/NA12878_variants_outside_GIAB_confident_venn_diagram.png',
+        'data/output/four_GIAB_genomes_table_extended.aj_trio_hg38_blasr.all.tex',     # table 1
+        'data/output/variant_analysis_fp_fn_NA12878.1000g.blasr.44x.GQ44.1.tex',       # table 2
+        'data/output/variant_counts_table.NA12878.1000g.il30x.blasr.pb30x.GQ30.tex',   # table 3
+        'data/output/pacbio_mendelian_concordance_table.blasr.tex',           # table 4
+        'data/plots/haplotyping_results_barplot.png',
+        'data/plots/plot_mappability_bars.simulation.1000g.png',
+        'data/plots/simulation_pr_barplot_genome_vs_segdup.all.GQ50.png',
+        'data/plots/simulation_pr_barplot_genome_vs_segdup_extended.all.GQ50.png',
+        'data/plots/NA12878_variants_outside_GIAB_confident_inside_PG_confident_venn_diagram.png',\
+        'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.read_lengths',
+        'data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.read_lengths',
+        'data/output/NA12878_chr1_45x_haplotype_assigned_N50_analysis.txt',
+        'data/NA12878.1000g/variants/misc/INTERSECT_PG_longshot.pacbio.blasr.44x._.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats',
+        'data/NA12878.1000g/variants/misc/MINUS_longshot.pacbio.blasr.44x._.PG.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats',
+        'data/NA12878.1000g/variants/misc/MINUS_PG_longshot.pacbio.blasr.44x._.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats'
 
 
 rule run_pileups:
@@ -258,7 +260,7 @@ rule filter_illumina_SNVs:
 rule combine_chrom:
     params: job_name = 'combine_chroms.{individual}.{build}.{caller}.{tech}.{further_info}',
     input: expand('data/{{individual}}.{{build}}/variants/{{caller}}.{{tech}}.{{further_info}}/{chrom}.vcf',chrom=chroms)
-    output: 'data/{individual}.{build}/variants/{caller,(freebayes|longshot)}.{tech,(pacbio|illumina)}.{further_info}/all.vcf'
+    output: 'data/{individual}.{build}/variants/{caller,(freebayes|longshot)}.{tech,(pacbio|illumina|ont)}.{further_info}/all.vcf'
     shell:
         '''
         grep -P '^#' {input[0]} > {output}; # grep header
@@ -292,25 +294,25 @@ rule add_runtimes:
         with open(output[0],'w') as outf:
             print(seconds_to_formatted_time(t),file=outf)
 
-rule run_longshot:
-    params: job_name = 'longshot.{tech}.{aligner}.{individual}.{build}.cov{cov}.{options}.chr{chrom}',
-    input:  bam = 'data/{individual}.{build}/aligned_reads/{tech}/{tech}.{aligner}.all.{cov}x.bam',
-            bai = 'data/{individual}.{build}/aligned_reads/{tech}/{tech}.{aligner}.all.{cov}x.bam.bai',
-            cov = 'data/{individual}.{build}/aligned_reads/{tech}/{tech}.{aligner}.all.{cov}x.bam.median_coverage',
+rule run_longshot_pacbio:
+    params: job_name = 'longshot.pacbio.{aligner}.{individual}.{build}.cov{cov}.{options}.chr{chrom}',
+    input:  bam = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.all.{cov}x.bam',
+            bai = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.all.{cov}x.bam.bai',
+            cov = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.all.{cov}x.bam.median_coverage',
             hg19    = 'data/genomes/hg19.fa',
             hg19_ix = 'data/genomes/hg19.fa.fai',
             hs37d5    = 'data/genomes/hs37d5.fa',
             hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
             hg38 = 'data/genomes/hg38.fa',
             hg38_ix = 'data/genomes/hg38.fa.fai'
-    output: vcf = 'data/{individual}.{build}/variants/longshot.{tech}.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.vcf',
-            debug = directory('data/{individual}.{build}/variants/longshot.{tech}.{aligner}.{cov,\d+}x.{options}/{chrom}.debug'),
-            runtime = 'data/{individual}.{build}/variants/longshot.{tech}.{aligner}.{cov}x.{options}/{chrom}.vcf.runtime'
+    output: vcf = 'data/{individual}.{build}/variants/longshot.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.vcf',
+            debug = directory('data/{individual}.{build}/variants/longshot.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.debug'),
+            runtime = 'data/{individual}.{build}/variants/longshot.pacbio.{aligner}.{cov}x.{options}/{chrom,(\d+|X|Y)}.vcf.runtime'
     run:
         median_cov = parse_int_file(input.cov)
         max_cov = int(median_cov + 5*sqrt(median_cov))
         options_str = wildcards.options.replace('_',' ')
-        if wildcards.individual == 'NA12878' and wildcards.build == '1000g' and wildcards.tech == 'pacbio':
+        if wildcards.individual == 'NA12878' and wildcards.build == '1000g':
             t1 = time.time()
             shell('{LONGSHOT} -r chr{wildcards.chrom} -F -C {max_cov} -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {input.hg19} --out {output.vcf}.tmp')
             t2 = time.time()
@@ -323,6 +325,33 @@ rule run_longshot:
             t1 = time.time()
             shell('{LONGSHOT} -r {w_chrom} -F -C {max_cov} -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {w_ref} --out {output.vcf}')
             t2 = time.time()
+
+        with open(output.runtime,'w') as outf:
+            print(seconds_to_formatted_time(t2-t1),file=outf)
+
+rule run_longshot_ont:
+    params: job_name = 'longshot.ont.{aligner}.{individual}.{build}.cov{cov}.{options}.chr{chrom}',
+    input:  bam = 'data/{individual}.{build}/aligned_reads/ont/ont.{aligner}.all.{cov}x.bam',
+            bai = 'data/{individual}.{build}/aligned_reads/ont/ont.{aligner}.all.{cov}x.bam.bai',
+            cov = 'data/{individual}.{build}/aligned_reads/ont/ont.{aligner}.all.{cov}x.bam.median_coverage',
+            hg19    = 'data/genomes/hg19.fa',
+            hg19_ix = 'data/genomes/hg19.fa.fai',
+            hs37d5    = 'data/genomes/hs37d5.fa',
+            hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
+            hg38 = 'data/genomes/hg38.fa',
+            hg38_ix = 'data/genomes/hg38.fa.fai'
+    output: vcf = 'data/{individual}.{build}/variants/longshot.ont.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.vcf',
+            debug = directory('data/{individual}.{build}/variants/longshot.ont.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.debug'),
+            runtime = 'data/{individual}.{build}/variants/longshot.ont.{aligner}.{cov}x.{options}/{chrom,(\d+|X|Y)}.vcf.runtime'
+    run:
+        median_cov = parse_int_file(input.cov)
+        max_cov = int(median_cov + 5*sqrt(median_cov))
+        options_str = wildcards.options.replace('_',' ')
+        w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
+        w_ref = ref_file[wildcards.build]
+        t1 = time.time()
+        shell('{LONGSHOT} -r {w_chrom} -F -C {max_cov} -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {w_ref} --out {output.vcf}')
+        t2 = time.time()
 
         with open(output.runtime,'w') as outf:
             print(seconds_to_formatted_time(t2-t1),file=outf)

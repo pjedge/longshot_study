@@ -144,17 +144,6 @@ def formatted_time_to_seconds(fmt_time):
     hh, mm, ss = vals
     return hh*3600 + mm*60 + ss
 
-rule rtg_filter_longshot_MEC_AQ:
-    params: job_name = 'rtg_filter_longshot_MEC_AQ.{individual}.{build}.{aligner}.{cov}x.chr{chrom}',
-    input:  vcfgz = 'data/{individual}.{build}/variants/longshot.pacbio.{aligner}.{cov}x.-z/{chrom}.vcf.gz',
-            tbi   = 'data/{individual}.{build}/variants/longshot.pacbio.{aligner}.{cov}x.-z/{chrom}.vcf.gz.tbi',
-    output: vcf = 'data/{individual}.{build}/variants/longshot.filtered.pacbio.{aligner}.{cov}x.-z/{chrom}.vcf',
-    shell:
-        '''
-        {RTGTOOLS} RTG_MEM=12g vcffilter --keep-expr "INFO.AQ > 7" --fail=AQ -i {input.vcfgz} -o {output.vcf}.gz
-        gunzip {output.vcf}.gz
-        '''
-
 rule get_read_lengths:
     params: job_name = lambda wildcards: 'get_read_lengths.{}'.format(str(wildcards.x).replace("/", "."))
     input:  '{x}.bam'

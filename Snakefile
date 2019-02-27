@@ -82,6 +82,7 @@ include: "map_giab_reads.snakefile"
 rule all:
     input:
         # tables & figures
+        'data/NA12878.hg38/longshot_haplotypes/hap_statistics/longshot.ont.minimap2.30x._.all.p',
         'data/plots/NA12878.hg38_ONT_PR_curve_all.png',
         'data/simulation.test/aligned_reads/pacbio/pacbio.blasr.all.30x.bam',
         'data/plots/fig3_precision_recall_bars_NA12878_AJ_Trio_with_haplotyping_results.blasr.hg38.png',
@@ -103,7 +104,7 @@ rule all:
         'data/output/NA12878_chr1_45x_haplotype_assigned_N50_analysis.txt',
         'data/NA12878.1000g/variants/misc/INTERSECT_PG_longshot.pacbio.blasr.44x._.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats',
         'data/NA12878.1000g/variants/misc/MINUS_longshot.pacbio.blasr.44x._.PG.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats',
-        'data/NA12878.1000g/variants/misc/MINUS_PG_longshot.pacbio.blasr.44x._.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats'
+        'data/NA12878.1000g/variants/misc/MINUS_PG_longshot.pacbio.blasr.44x._.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats',
 
 
 rule run_pileups:

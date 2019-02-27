@@ -16,7 +16,7 @@ rule plot_pr_curve_NA12878_pacbio_vs_ONT:
     run:
         ptf.plot_vcfeval([input.pb30, input.ont30],
                          ['Longshot, PacBio {}x'.format(parse_int_file(input.pb30_cov)),
-                          'Longshot, Oxford Nanopore {}x'.format(parse_int_file(input.pb30_cov))],
+                          'Longshot, Oxford Nanopore {}x'.format(parse_int_file(input.ont30_cov))],
                           output.png,params.title,
                           colors=['b','g'],
                           xlim=(0,1.0),
@@ -32,11 +32,11 @@ rule plot_pr_curve_NA12878_ONT:
         png = 'data/plots/NA12878.hg38_ONT_PR_curve_all.png'
     run:
         ptf.plot_vcfeval([input.ont30],
-                         ['Longshot, Oxford Nanopore {}x'.format(parse_int_file(input.pb30_cov))],
+                         ['Longshot, Oxford Nanopore {}x'.format(parse_int_file(input.ont30_cov))],
                           output.png, params.title,
                           colors=['g'],
-                          xlim=(0,1.0),
-                          ylim=(0,1.0))
+                          xlim=(0.7,1.0),
+                          ylim=(0.8,1.0))
 
 # DOWNLOAD GIAB VARIANTS
 rule download_GIAB_high_confidence_bed_NA12878_hg38:

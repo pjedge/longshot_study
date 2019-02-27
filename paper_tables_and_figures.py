@@ -738,6 +738,7 @@ def plot_precision_recall_bars_NA12878_AJ_Trio_with_haplotyping_results(pacbio_d
     #make_hap_subplot(ax5,np.array(ind), longshot_fraction_phased, illumina_fraction_phased)
     plt.ylabel("Fraction of Heterozygous\nVariants Phased")
     prettify_plot(ax5)
+    ax5.set_yticks([0.0,0.2,0.4,0.6,0.8])
     ax5.set_xticks(np.array(ind)+width)
     ax5.set_xticklabels(labels_hap)
     ax5.tick_params(pad=1)

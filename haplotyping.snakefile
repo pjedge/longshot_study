@@ -36,22 +36,38 @@ rule haplotype_accuracy_HapCUT2:
         print(err, file=sys.stderr)
         pickle.dump(err, open(output.pickle, "wb"))
 
-NA12878_PLATINUM_GENOMES_URL = 'https://s3.eu-central-1.amazonaws.com/platinum-genomes/2017-1.0/hg19/small_variants/NA12878/NA12878.vcf.gz'
-rule get_haplotyping_ground_truth_NA12878:
-    params: job_name = "get_haplotyping_ground_truth_NA12878",
+NA12878_HG19_PLATINUM_GENOMES_URL = 'https://s3.eu-central-1.amazonaws.com/platinum-genomes/2017-1.0/hg19/small_variants/NA12878/NA12878.vcf.gz'
+rule get_haplotyping_ground_truth_NA12878_hg19:
+    params: job_name = "get_haplotyping_ground_truth_NA12878_hg19",
     output: pg_vcfgz = 'data/NA12878.1000g/variants/platinum_genomes/with_chr.vcf.gz',
             pg_vcf = 'data/NA12878.1000g/variants/platinum_genomes/with_chr.vcf',
             pg_vcf_nochr = 'data/NA12878.1000g/variants/platinum_genomes/all.vcf',
             pg_chroms = expand('data/NA12878.1000g/variants/ground_truth/separate_chrom/ground_truth.for_haplotyping.{chrom}.vcf', chrom=chroms)
     shell:
         '''
-        wget {NA12878_PLATINUM_GENOMES_URL} -O {output.pg_vcfgz}
+        wget {NA12878_HG19_PLATINUM_GENOMES_URL} -O {output.pg_vcfgz}
         gunzip -c {output.pg_vcfgz} > {output.pg_vcf}
         grep -P "^#" {output.pg_vcf} > {output.pg_vcf_nochr}
         grep -Pv "^#" {output.pg_vcf} | awk '{{gsub(/^chr/,""); print}}' >> {output.pg_vcf_nochr}
         for i in {{1..22}}; do
             echo "splitting chr${{i}}"
             grep -P "^chr${{i}}\\t" {output.pg_vcf} | awk '{{gsub(/^chr/,""); print}}' > data/NA12878.1000g/variants/ground_truth/separate_chrom/ground_truth.for_haplotyping.${{i}}.vcf
+        done
+        '''
+
+NA12878_HG38_PLATINUM_GENOMES_URL = 'https://s3.eu-central-1.amazonaws.com/platinum-genomes/2017-1.0/hg38/small_variants/NA12878/NA12878.vcf.gz'
+rule get_haplotyping_ground_truth_NA12878_hg38:
+    params: job_name = "get_haplotyping_ground_truth_NA12878_hg38",
+    output: pg_vcfgz = 'data/NA12878.hg38/variants/platinum_genomes/all.vcf.gz',
+            pg_vcf = 'data/NA12878.hg38/variants/platinum_genomes/all.vcf',
+            pg_chroms = expand('data/NA12878.hg38/variants/ground_truth/separate_chrom/ground_truth.for_haplotyping.{chrom}.vcf', chrom=chroms)
+    shell:
+        '''
+        wget {NA12878_HG38_PLATINUM_GENOMES_URL} -O {output.pg_vcfgz}
+        gunzip -c {output.pg_vcfgz} > {output.pg_vcf}
+        for i in {{1..22}}; do
+            echo "splitting chr${{i}}"
+            grep -P "^chr${{i}}\\t" {output.pg_vcf} > data/NA12878.hg38/variants/ground_truth/separate_chrom/ground_truth.for_haplotyping.${{i}}.vcf
         done
         '''
 
@@ -79,9 +95,9 @@ rule get_haplotyping_ground_truth_NA24385_10X:
         '''
 
 rule prune_longshot_vcf:
-    params: job_name = "prune_longshot_haplotype.{individual}.{build}.longshot.pacbio.{aligner}.{rcov}x._.{chrom}",
-    input: 'data/{individual}.{build}/variants/longshot.pacbio.{aligner}.{rcov}x._/{chrom}.vcf'
-    output: 'data/{individual}.{build}/variants/longshot.pacbio.{aligner}.{rcov}x._/{chrom}.PQ30_filtered.vcf'
+    params: job_name = "prune_longshot_haplotype.{individual}.{build}.longshot.{tech}.{aligner}.{rcov}x._.{chrom}",
+    input: 'data/{individual}.{build}/variants/longshot.{tech}.{aligner}.{rcov}x._/{chrom}.vcf'
+    output: 'data/{individual}.{build}/variants/longshot.{tech}.{aligner}.{rcov}x._/{chrom}.PQ30_filtered.vcf'
     run:
         filter_longshot_VCF_for_haplotype_assessment(input[0], output[0], min_phase_qual=30)
 
@@ -129,8 +145,13 @@ rule extractHAIRS:
                 {EXTRACTHAIRS} --ref {w_ref} --bam {input.bam} --vcf {chr_prefix_vcf} --out {output.frag} --pacbio 1
                 ''')
         else:
-            pacbio_flag = '--ref {w_ref} --pacbio 1' if wildcards.tech == 'pacbio' else ''
-            shell('{EXTRACTHAIRS} ' + pacbio_flag + ' --bam {input.bam} --vcf {input.vcf} --out {output.frag}')
+            tech_flag = ''
+            if wildcards.tech == 'pacbio':
+                tech_flag = '--ref {w_ref} --pacbio 1'
+            elif wildcards.tech == 'ont':
+                tech_flag = '--ref {w_ref} --ont 1'
+
+            shell('{EXTRACTHAIRS} ' + tech_flag + ' --bam {input.bam} --vcf {input.vcf} --out {output.frag}')
 
 rule haplotyping_filters:
     params: job_name = 'haplotyping_filters.{individual}.{build}',

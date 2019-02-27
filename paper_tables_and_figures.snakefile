@@ -580,6 +580,18 @@ rule filter_SNVs_outside_confident_regions_inside_PG_conf:
         -i {input.vcfgz} -o {output.vcfgz}
         '''
 
+rule filter_SNVs_inside_confident_regions_inside_PG_conf:
+    params: job_name = 'filter_SNVs_outside_GIAB_confident_inside_PG_conf.{individual}.{build}.{info}.GQ{GQ}',
+    input:  vcfgz = 'data/{individual}.{build}/variants/{info}/{type}.GQ{GQ}.PASS.SNPs_ONLY.DECOMPOSED.GIAB_confident_only.vcf.gz',
+            tbi   = 'data/{individual}.{build}/variants/{info}/{type}.GQ{GQ}.PASS.SNPs_ONLY.DECOMPOSED.GIAB_confident_only.vcf.gz.tbi',
+            bed   = 'data/{individual}.{build}/variants/platinum_genomes/confident_regions.bed'
+    output: vcfgz = 'data/{individual}.{build}/variants/{info}/{type}.GQ{GQ}.PASS.SNPs_ONLY.DECOMPOSED.GIAB_confident_only.inside_PG_confident.vcf.gz'
+    shell:
+        '''
+        {RTGTOOLS} RTG_MEM=12g vcffilter --include-bed={input.bed} \
+        -i {input.vcfgz} -o {output.vcfgz}
+        '''
+
 rule make_dual_venn_diagram_variants_outside_GIAB:
     params: job_name = 'make_venn_diagram_variants_outside_GIAB',
     input:  longshot = 'data/NA12878.1000g/variants/longshot.pacbio.blasr.44x._/all.GQ44.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.vcf.gz', #'data/NA12878.1000g/variants/longshot.pacbio.blasr.44x._/all.outside_GIAB.GQ44.vcf.gz',

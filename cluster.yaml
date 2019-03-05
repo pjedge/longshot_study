@@ -1,6 +1,6 @@
 __default__:
     email:           pedge@eng.ucsd.edu
-    working_dir:     /home/pedge/git/longshot/study
+    working_dir:     /home/pedge/git/longshot_study
     queue:           hotel
     group:           bansal-group
     qsub_stdout_dir: /oasis/tscc/scratch/pedge/longshot/stdout

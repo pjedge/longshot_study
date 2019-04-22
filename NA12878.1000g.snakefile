@@ -109,6 +109,7 @@ rule download_GIAB_VCF_NA12878:
 rule split_bam_NA12878:
     params: job_name = 'split_bam_{tech}.{aligner}.{cov}x_NA12878.1000g.{chrom}'
     input: bam = 'data/NA12878.1000g/aligned_reads/{tech}/{tech}.{aligner}.all.{cov}x.bam',
+           bai = 'data/NA12878.1000g/aligned_reads/{tech}/{tech}.{aligner}.all.{cov}x.bam.bai',
     output: bam = 'data/NA12878.1000g/aligned_reads/{tech}/{tech}.{aligner}.all.{cov}x.split_chroms/{chrom}.bam',
     run:
         w_chrom = 'chr'+wildcards.chrom if wildcards.tech == 'pacbio' else wildcards.chrom

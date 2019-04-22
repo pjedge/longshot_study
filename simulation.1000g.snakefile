@@ -219,7 +219,7 @@ rule align_simulated_pacbio_ngmlr:
 # SUBSAMPLE PACBIO BAM
 rule subsample_simulated_reads:
     params: job_name = 'subsample_simulated_{tech}.{aligner}.{cov}x'
-    input: bam = 'data/simulation.1000g/aligned_reads/{tech}/{tech}.{aligner}.all.60x.bam',
+    input: bam = 'data/simulation.1000g/aligned_reads/{tech}/{tech}.{aligner}.all.60x.bam'
     output: bam = 'data/simulation.1000g/aligned_reads/{tech}/{tech}.{aligner}.all.{cov,(20|30|40)}x.bam'
     run:
         subsample_frac = float(wildcards.cov) / 60.0
@@ -262,8 +262,8 @@ rule simulate_illumina:
         shell('''
         {DWGSIM} -H -z 0 -1 {short_read_len} -2 {short_read_len} -N {n_read_pairs} \
         -e 0.001 -E 0.001 -r 0 -R 0 -y 0 \
-        -o 2 {input.diploid_fasta} {params.output_prefix}
-        mv {params.output_prefix}.bfast.fastq.gz {params.output_prefix}.fastq.gz
+        {input.diploid_fasta} {params.output_prefix}
+        bgzip -c {params.output_prefix}.bfast.fastq > {params.output_prefix}.fastq.gz
         ''')
 
 rule simulate_pacbio:

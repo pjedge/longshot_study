@@ -23,18 +23,19 @@ KNOWN_INDELS_URL_1000g = 'ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundl
 KNOWN_INDELS_URL_HG38 = 'ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg38/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz'
 
 # PATHS TO TOOLS
-FASTQUTILS = '/home/pedge/installed/ngsutils/bin/fastqutils'
-TWOBITTOFASTA = 'twoBitToFa' # can be downloaded from 'http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/twoBitToFa'
-SAMTOOLS       = 'samtools' # v1.3
-FASTQ_DUMP     = 'fastq-dump' # v2.5.2
-LONGSHOT         = '../target/release/longshot' # v0.1
-RTGTOOLS       = 'rtg' #'/home/pedge/installed/rtg-tools-3.8.4/rtg' # v3.8.4, https://www.realtimegenomics.com/products/rtg-tools
+TWOBITTOFASTA = 'twoBitToFa'
+SAMTOOLS       = 'samtools'
+FASTQ_DUMP     = 'fastq-dump'
+LONGSHOT_BETA_ALN_PARAMS  = 'longshot_beta_const_aln_params/target/release/longshot'
+LONGSHOT_BETA  = 'longshot_beta/target/release/longshot'
+LONGSHOT       = 'longshot'
+RTGTOOLS       = 'rtg'
 BGZIP = 'bgzip'
 TABIX = 'tabix'
-FREEBAYES      = '/home/pedge/git/freebayes/bin/freebayes'
+FREEBAYES      = 'freebayes'
 SIMLORD = 'simlord'
-DWGSIM = '/home/pedge/git/DWGSIM/dwgsim'
-BWA = '/home/pedge/installed/bwa'
+DWGSIM = 'dwgsim'
+BWA = 'bwa'
 BLASR = 'blasr'
 BAX2BAM = 'bax2bam'
 BAM2FASTQ = 'bam2fastq'
@@ -54,7 +55,7 @@ chroms = ['{}'.format(i) for i in range(1,23)]
 ref_file = {'1000g':'data/genomes/hs37d5.fa', 'hg38':'data/genomes/hg38.fa'}
 
 include: "simulation.1000g.snakefile"
-include: "simulation.test.snakefile"
+#include: "simulation.test.snakefile"
 include: "NA12878.1000g.snakefile"
 include: "NA12878.hg38.snakefile"
 include: "NA24385.hg38.snakefile"  # AJ Son,    hg38
@@ -70,21 +71,13 @@ include: "map_giab_reads.snakefile"
 
 #rule default:
 #    input:
-#        'data/NA12878.hg38/vcfeval/longshot.ont.minimap2.30x.-P_0.0/20',
-#        'data/NA12878.hg38/vcfeval/longshot.ont.minimap2.30x.-P_0.0/1',
-#        'data/NA12878.hg38/vcfeval/longshot.ont.minimap2.30x._/20',
-#        'data/NA12878.hg38/vcfeval/longshot.ont.minimap2.30x._/1',
-#        'data/NA12878.1000g/vcfeval/longshot.pacbio.blasr.30x.-B_20/1',
-#        'data/NA12878.1000g/vcfeval/longshot.pacbio.blasr.30x.-B_20/20',
+#        'data/NA12878.1000g/variants/freebayes.illumina.aligned.30x.unfiltered/7.vcf'        
 
-
-# DEFAULT
 rule all:
     input:
         # tables & figures
         'data/NA12878.hg38/longshot_haplotypes/hap_statistics/longshot.ont.minimap2.30x._.all.p',
         'data/plots/NA12878.hg38_ONT_PR_curve_all.png',
-        'data/simulation.test/aligned_reads/pacbio/pacbio.blasr.all.30x.bam',
         'data/plots/fig3_precision_recall_bars_NA12878_AJ_Trio_with_haplotyping_results.blasr.hg38.png',
         'data/plots/prec_recall_4panel_blasr.all.png',
         'data/plots/actual_vs_effective_coverage.chr1.NA12878.44x.png',
@@ -175,6 +168,28 @@ rule vcfeval_rtgtools:
         -b {input.ground_truth} \
         -e {input.region_filter} \
         -t {input.sdf} \
+        -o {output.dir}
+        '''
+
+rule vcfeval_allvariants:
+    params: job_name = 'vcfeval_allvariants.{individual}.{build}.{calls_name}.{chrom}',
+            region_arg = lambda wildcards: '--region={}'.format(chr_prefix(wildcards.chrom,wildcards.build)) if wildcards.chrom != 'all' else ''
+    input:  calls_vcf = 'data/{individual}.{build}/variants/{calls_name}/{chrom}.vcf.gz',
+            calls_ix = 'data/{individual}.{build}/variants/{calls_name}/{chrom}.vcf.gz.tbi',
+            ground_truth = 'data/{individual}.{build}/variants/ground_truth/ground_truth.vcf.gz',
+            ground_truth_ix = 'data/{individual}.{build}/variants/ground_truth/ground_truth.vcf.gz.tbi',
+            region_filter ='data/{individual}.{build}/variants/ground_truth/region_filter.1_22_only.bed',
+            sdf = 'data/genomes/{build}.sdf'
+    output: dir = directory('data/{individual}.{build}/vcfeval_allvariants/{calls_name}/{chrom}')
+    shell:
+        '''
+        {RTGTOOLS} RTG_MEM=12g vcfeval \
+        {params.region_arg} \
+        -c {input.calls_vcf} \
+        -b {input.ground_truth} \
+        -e {input.region_filter} \
+        -t {input.sdf} \
+        --decompose \
         -o {output.dir}
         '''
 
@@ -319,6 +334,41 @@ rule run_longshot_pacbio:
         with open(output.runtime,'w') as outf:
             print(seconds_to_formatted_time(t2-t1),file=outf)
 
+rule run_longshot_beta_pacbio:
+    params: job_name = 'longshot_beta.pacbio.{aligner}.{individual}.{build}.cov{cov}.{options}.chr{chrom}',
+    input:  bam = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.all.{cov}x.bam',
+            bai = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.all.{cov}x.bam.bai',
+            cov = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.all.{cov}x.bam.median_coverage',
+            hg19    = 'data/genomes/hg19.fa',
+            hg19_ix = 'data/genomes/hg19.fa.fai',
+            hs37d5    = 'data/genomes/hs37d5.fa',
+            hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
+            hg38 = 'data/genomes/hg38.fa',
+            hg38_ix = 'data/genomes/hg38.fa.fai'
+    output: vcf = 'data/{individual}.{build}/variants/longshot_beta.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.vcf',
+            debug = directory('data/{individual}.{build}/variants/longshot_beta.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.debug'),
+            runtime = 'data/{individual}.{build}/variants/longshot_beta.pacbio.{aligner}.{cov}x.{options}/{chrom,(\d+|X|Y)}.vcf.runtime'
+    run:
+        median_cov = parse_int_file(input.cov)
+        max_cov = int(median_cov + 5*sqrt(median_cov))
+        options_str = wildcards.options.replace('_',' ')
+        if wildcards.individual == 'NA12878' and wildcards.build == '1000g':
+            t1 = time.time()
+            shell('{LONGSHOT_BETA} -r chr{wildcards.chrom} -F -C {max_cov} -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {input.hg19} --out {output.vcf}.tmp')
+            t2 = time.time()
+            # remove 'chr' from reference name in vcf
+            remove_chr_from_vcf(output.vcf+'.tmp',output.vcf)
+            # remove 'chr' from no-haplotype version of vcf
+        else:
+            w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
+            w_ref = ref_file[wildcards.build]
+            t1 = time.time()
+            shell('{LONGSHOT_BETA} -r {w_chrom} -F -C {max_cov} -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {w_ref} --out {output.vcf}')
+            t2 = time.time()
+
+        with open(output.runtime,'w') as outf:
+            print(seconds_to_formatted_time(t2-t1),file=outf)
+
 rule run_longshot_ont:
     params: job_name = 'longshot.ont.{aligner}.{individual}.{build}.cov{cov}.{options}.chr{chrom}',
     input:  bam = 'data/{individual}.{build}/aligned_reads/ont/ont.{aligner}.all.{cov}x.bam',
@@ -357,21 +407,8 @@ rule call_variants_Illumina:
             ref_hg38_fai = 'data/genomes/hg38.fa.fai'
     output: vcf = 'data/{individual}.{build}/variants/freebayes.illumina.aligned.{cov}x.unfiltered/{chrom,(\d+)}.vcf',
             runtime = 'data/{individual}.{build}/variants/freebayes.illumina.aligned.{cov}x.unfiltered/{chrom,(\d+)}.vcf.runtime'
-    run:
-        w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
-        w_ref = ref_file[wildcards.build]
-        t1 = time.time()
-        shell('''
-        {FREEBAYES} -f {w_ref} \
-        --standard-filters \
-        --region {w_chrom} \
-         --genotype-qualities \
-         {input.bam} \
-          > {output.vcf}
-        ''')
-        t2 = time.time()
-        with open(output.runtime,'w') as outf:
-            print(seconds_to_formatted_time(t2-t1),file=outf)
+    conda: 'envs/freebayes.yaml'
+    script: 'scripts/call_variants_Illumina.py'
 
 rule generate_genomecov_bed:
     params: job_name = 'generate_genomecov_bed.{individual}.{build}.{tech}.{info}.MAPQ{mapq}'
@@ -505,11 +542,11 @@ rule calculate_coverage:
 # SUBSAMPLE ILLUMINA BAM
 rule subsample_illumina_60x:
     params: job_name = 'subsample_illumina_{individual}.{build}.{cov}x'
-    input:  'data/{individual}.{build}/aligned_reads/illumina/illumina.aligned.all.60x.bam'
-    output: 'data/{individual,NA\d+}.{build}/aligned_reads/illumina/illumina.aligned.all.{cov,[0-5][0-9]}x.bam'
+    input:  bam = 'data/{individual}.{build}/aligned_reads/illumina/illumina.aligned.all.60x.bam'
+    output: bam = 'data/{individual,NA\d+}.{build}/aligned_reads/illumina/illumina.aligned.all.{cov,[0-5][0-9]}x.bam'
     run:
         subsample_frac = float(wildcards.cov) / 60.0
-        shell('{SAMTOOLS} view -hb {input} -s {subsample_frac} > {output}')
+        shell('{SAMTOOLS} view -hb {input.bam} -s {subsample_frac} > {output.bam}')
 
 rule tabix_index:
     params: job_name = lambda wildcards: 'tabix_index.{}'.format(str(wildcards.x).replace("/", "."))

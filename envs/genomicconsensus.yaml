@@ -1,0 +1,7 @@
+name: genomicconsensus
+channels:
+- defaults
+- bioconda
+- conda-forge
+dependencies:
+- genomicconsensus=2.3.3-0

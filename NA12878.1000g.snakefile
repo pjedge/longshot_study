@@ -4,6 +4,26 @@ NA12878_PACBIO_BAM_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878
 NA12878_GIAB_HIGH_CONF_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/latest/GRCh37/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_nosomaticdel.bed'
 NA12878_GIAB_VCF_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/NISTv3.3.2/GRCh37/HG001_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_PGandRTGphasetransfer.vcf.gz'
 NA12878_Illumina_30x_BAM_URL = 'ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/NA12878/NIST_NA12878_HG001_HiSeq_300x/RMNISTHS_30xdownsample.bam'
+NA12878_PACBIO_NGMLR_BAM_URL = 'http://www.bio8.cs.hku.hk/clairvoyante/bamUsed/PacBio-HG001-hg19/na12878_pacbio_mts_ngmlr-0.2.3_mapped.rg.bam'
+
+rule plot_pr_curve_NA12878_3method:
+    params: job_name = 'plot_pr_curve_NA12878.1000g.ngmlr.all',
+            title = None
+    input:
+        wh44 = 'data/NA12878.1000g/vcfeval/whatshap.pacbio.ngmlr.44x.dp_filtered/all',
+        cl44 = 'data/NA12878.1000g/vcfeval/clairvoyante.pacbio.ngmlr.44x.unfiltered/all',
+        ls44 = 'data/NA12878.1000g/vcfeval/longshot.pacbio.ngmlr.44x._/all',
+    output:
+        png = 'data/plots/3method_NA12878.1000g.ngmlr.prec_recall_all.png'
+    run:
+        ptf.plot_vcfeval([input.wh44, input.cl44, input.ls44],
+                         ['WhatsHap',
+                          'Clairvoyante',
+                          'Longshot'],
+                          output.png,params.title,
+                          colors=['orange','k','blue'],
+                          xlim=(0.9,1.0),
+                          ylim=(0.9,1.0))
 
 rule plot_pr_curve_NA12878:
     params: job_name = 'plot_pr_curve_NA12878.1000g.{aligner}.{chrom}',
@@ -115,6 +135,13 @@ rule split_bam_NA12878:
         w_chrom = 'chr'+wildcards.chrom if wildcards.tech == 'pacbio' else wildcards.chrom
         shell('{SAMTOOLS} view -hb {input.bam} {w_chrom} > {output.bam}')
 
+# FILTER PACBIO BAM
+rule filter_pacbio_NA12878:
+    params: job_name = 'filter_pacbio_NA12878.1000g'
+    input: bam = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.44x.bam',
+    output: bam = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr_filtered.all.44x.bam',
+    shell: '{SAMTOOLS} view -hb {input.bam} -F 3844 -q 30 chr20 > {output.bam}'
+
 # SUBSAMPLE PACBIO BAM
 rule subsample_pacbio_NA12878:
     params: job_name = 'subsample_pacbio_NA12878.1000g'
@@ -123,6 +150,12 @@ rule subsample_pacbio_NA12878:
     run:
         subsample_frac = float(wildcards.cov) / 44.0
         shell('{SAMTOOLS} view -hb {input.bam} -s {subsample_frac} > {output.bam}')
+
+# DOWNLOAD PACBIO BAM
+rule download_pacbio_ngmlr_NA12878:
+    params: job_name = 'download_pacbio_ngmlr_NA12878.1000g'
+    output: bam = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.ngmlr.all.44x.bam',
+    shell: 'wget {NA12878_PACBIO_NGMLR_BAM_URL} -O {output.bam}'
 
 # DOWNLOAD PACBIO BAM
 rule download_pacbio_NA12878:

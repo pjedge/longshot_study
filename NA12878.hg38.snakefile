@@ -34,7 +34,7 @@ rule plot_pr_curve_NA12878_ONT:
         ptf.plot_vcfeval([input.ont30],
                          ['Longshot, Oxford Nanopore {}x'.format(parse_int_file(input.ont30_cov))],
                           output.png, params.title,
-                          colors=['g'],
+                          colors=['k'],
                           xlim=(0.7,1.0),
                           ylim=(0.8,1.0))
 

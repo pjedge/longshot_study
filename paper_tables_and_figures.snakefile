@@ -40,7 +40,7 @@ rule plot_pr_curve_4panel:
                           labels1=['Freebayes, Illumina {}'.format(parse_int_file(input.NA12878_il30_cov)) + r'$\times$',
                           'Longshot, PacBio {}'.format(parse_int_file(input.NA12878_pb30_cov)) + r'$\times$',
                           'Longshot, PacBio {}'.format(parse_int_file(input.NA12878_pb44_cov)) + r'$\times$'],
-                          colors1=['r','#8080ff','#3333ff'],
+                          colors1=['k','#8080ff','#3333ff'],
                           legendloc1='lower left',
                           title1='NA12878',
                           dirlist2=[input.NA24385_il30, input.NA24385_pb30, input.NA24385_pb40, input.NA24385_pb50, input.NA24385_pb69],
@@ -49,19 +49,19 @@ rule plot_pr_curve_4panel:
                           'Longshot, PacBio {}'.format(parse_int_file(input.NA24385_pb40_cov)) + r'$\times$',
                           'Longshot, PacBio {}'.format(parse_int_file(input.NA24385_pb50_cov)) + r'$\times$',
                           'Longshot, PacBio {}'.format(parse_int_file(input.NA24385_pb69_cov)) + r'$\times$'],
-                          colors2=['#ff0707','#8080ff','#6666ff','#3333ff','b'],
+                          colors2=['k','#8080ff','#6666ff','#3333ff','b'],
                           legendloc2='lower left',
                           title2='NA24385',
                           dirlist3=[input.NA24149_il34, input.NA24149_pb32],
                           labels3=['Freebayes, Illumina {}'.format(parse_int_file(input.NA24149_il34_cov)) + r'$\times$',
                           'Longshot, PacBio {}'.format(parse_int_file(input.NA24149_pb32_cov)) + r'$\times$'],
-                          colors3=['r','#3333ff','#ccccff','#9999ff','#8080ff','#6666ff'],
+                          colors3=['k','#3333ff','#ccccff','#9999ff','#8080ff','#6666ff'],
                           legendloc3='lower left',
                            title3='NA24149',
                            dirlist4=[input.NA24143_il30, input.NA24143_pb30],
                           labels4=['Freebayes, Illumina {}'.format(parse_int_file(input.NA24143_il30_cov)) + r'$\times$',
                                    'Longshot, PacBio {}'.format(parse_int_file(input.NA24143_pb30_cov)) + r'$\times$'] ,
-                           colors4=['r','#3333ff','#ccccff','#9999ff','#8080ff','#6666ff'],
+                           colors4=['k','#3333ff','#ccccff','#9999ff','#8080ff','#6666ff'],
                           legendloc4='lower left',
                            title4='NA24143',
                            xlim=(0.6,1.0),
@@ -170,6 +170,181 @@ rule make_four_genomes_table_extended:
                                  NA24143_30x_table_files,
                                  covs,
                                  covs,
+                                 output.table)
+
+
+rule make_methods_comparison_table:
+    params: job_name = 'make_methods_comparison_table.all'
+    input:
+        longshot_NA12878_pacbio_vcfeval = 'data/NA12878.1000g/vcfeval/longshot.pacbio.ngmlr.44x._/all',
+        longshot_NA12878_pacbio_vcfstats_genome = 'data/NA12878.1000g/variants/longshot.pacbio.ngmlr.44x._/all.GQ44.vcf.stats',
+        longshot_NA12878_pacbio_runtime = 'data/NA12878.1000g/variants/longshot.pacbio.ngmlr.44x._/all.vcf.runtime',
+        whatshap_NA12878_pacbio_vcfeval = 'data/NA12878.1000g/vcfeval/whatshap.pacbio.ngmlr.44x.dp_filtered/all',
+        whatshap_NA12878_pacbio_vcfstats_genome = 'data/NA12878.1000g/variants/whatshap.pacbio.ngmlr.44x.dp_filtered/all.GQ44.vcf.stats',
+        whatshap_NA12878_pacbio_runtime = 'data/NA12878.1000g/variants/whatshap.pacbio.ngmlr.44x.dp_filtered/all.vcf.runtime',
+        clairvoyante_NA12878_pacbio_vcfeval = 'data/NA12878.1000g/vcfeval/clairvoyante.pacbio.ngmlr.44x.unfiltered/all',
+        clairvoyante_NA12878_pacbio_vcfstats_genome = 'data/NA12878.1000g/variants/clairvoyante.pacbio.ngmlr.44x.unfiltered/all.GQ44.vcf.stats',
+        clairvoyante_NA12878_pacbio_runtime = 'data/NA12878.1000g/variants/clairvoyante.pacbio.ngmlr.44x.unfiltered/all.vcf.runtime',
+        pacbio_NA12878_cov = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.ngmlr.all.44x.bam.median_coverage',
+
+        longshot_NA24385_pacbio_vcfeval = 'data/NA24385.1000g/vcfeval/longshot.pacbio.ngmlr.69x._/all',
+        longshot_NA24385_pacbio_vcfstats_genome = 'data/NA24385.1000g/variants/longshot.pacbio.ngmlr.69x._/all.GQ69.vcf.stats',
+        longshot_NA24385_pacbio_runtime = 'data/NA24385.1000g/variants/longshot.pacbio.ngmlr.69x._/all.vcf.runtime',
+        whatshap_NA24385_pacbio_vcfeval = 'data/NA24385.1000g/vcfeval/whatshap.pacbio.ngmlr.69x.dp_filtered/all',
+        whatshap_NA24385_pacbio_vcfstats_genome = 'data/NA24385.1000g/variants/whatshap.pacbio.ngmlr.69x.dp_filtered/all.GQ69.vcf.stats',
+        whatshap_NA24385_pacbio_runtime = 'data/NA24385.1000g/variants/whatshap.pacbio.ngmlr.69x.dp_filtered/all.vcf.runtime',
+        clairvoyante_NA24385_pacbio_vcfeval = 'data/NA24385.1000g/vcfeval/clairvoyante.pacbio.ngmlr.69x.unfiltered/all',
+        clairvoyante_NA24385_pacbio_vcfstats_genome = 'data/NA24385.1000g/variants/clairvoyante.pacbio.ngmlr.69x.unfiltered/all.GQ69.vcf.stats',
+        clairvoyante_NA24385_pacbio_runtime = 'data/NA24385.1000g/variants/clairvoyante.pacbio.ngmlr.69x.unfiltered/all.vcf.runtime',
+        pacbio_NA24385_cov = 'data/NA24385.1000g/aligned_reads/pacbio/pacbio.ngmlr.all.69x.bam.median_coverage',
+
+        longshot_NA24385_ds_pacbio_vcfeval = 'data/NA24385.1000g/vcfeval/longshot.pacbio.ngmlr.30x._/all',
+        longshot_NA24385_ds_pacbio_vcfstats_genome = 'data/NA24385.1000g/variants/longshot.pacbio.ngmlr.30x._/all.GQ30.vcf.stats',
+        longshot_NA24385_ds_pacbio_runtime = 'data/NA24385.1000g/variants/longshot.pacbio.ngmlr.30x._/all.vcf.runtime',
+        whatshap_NA24385_ds_pacbio_vcfeval = 'data/NA24385.1000g/vcfeval/whatshap.pacbio.ngmlr.30x.dp_filtered/all',
+        whatshap_NA24385_ds_pacbio_vcfstats_genome = 'data/NA24385.1000g/variants/whatshap.pacbio.ngmlr.30x.dp_filtered/all.GQ30.vcf.stats',
+        whatshap_NA24385_ds_pacbio_runtime = 'data/NA24385.1000g/variants/whatshap.pacbio.ngmlr.30x.dp_filtered/all.vcf.runtime',
+        clairvoyante_NA24385_ds_pacbio_vcfeval = 'data/NA24385.1000g/vcfeval/clairvoyante.pacbio.ngmlr.30x.unfiltered/all',
+        clairvoyante_NA24385_ds_pacbio_vcfstats_genome = 'data/NA24385.1000g/variants/clairvoyante.pacbio.ngmlr.30x.unfiltered/all.GQ30.vcf.stats',
+        clairvoyante_NA24385_ds_pacbio_runtime = 'data/NA24385.1000g/variants/clairvoyante.pacbio.ngmlr.30x.unfiltered/all.vcf.runtime',
+        pacbio_NA24385_ds_cov = 'data/NA24385.1000g/aligned_reads/pacbio/pacbio.ngmlr.all.30x.bam.median_coverage',
+
+        longshot_NA24149_pacbio_vcfeval = 'data/NA24149.1000g/vcfeval/longshot.pacbio.ngmlr.32x._/all',
+        longshot_NA24149_pacbio_vcfstats_genome = 'data/NA24149.1000g/variants/longshot.pacbio.ngmlr.32x._/all.GQ32.vcf.stats',
+        longshot_NA24149_pacbio_runtime = 'data/NA24149.1000g/variants/longshot.pacbio.ngmlr.32x._/all.vcf.runtime',
+        whatshap_NA24149_pacbio_vcfeval = 'data/NA24149.1000g/vcfeval/whatshap.pacbio.ngmlr.32x.dp_filtered/all',
+        whatshap_NA24149_pacbio_vcfstats_genome = 'data/NA24149.1000g/variants/whatshap.pacbio.ngmlr.32x.dp_filtered/all.GQ32.vcf.stats',
+        whatshap_NA24149_pacbio_runtime = 'data/NA24149.1000g/variants/whatshap.pacbio.ngmlr.32x.dp_filtered/all.vcf.runtime',
+        clairvoyante_NA24149_pacbio_vcfeval = 'data/NA24149.1000g/vcfeval/clairvoyante.pacbio.ngmlr.32x.unfiltered/all',
+        clairvoyante_NA24149_pacbio_vcfstats_genome = 'data/NA24149.1000g/variants/clairvoyante.pacbio.ngmlr.32x.unfiltered/all.GQ32.vcf.stats',
+        clairvoyante_NA24149_pacbio_runtime = 'data/NA24149.1000g/variants/clairvoyante.pacbio.ngmlr.32x.unfiltered/all.vcf.runtime',
+        pacbio_NA24149_cov = 'data/NA24149.1000g/aligned_reads/pacbio/pacbio.ngmlr.all.32x.bam.median_coverage',
+
+        longshot_NA24143_pacbio_vcfeval = 'data/NA24143.1000g/vcfeval/longshot.pacbio.ngmlr.30x._/all',
+        longshot_NA24143_pacbio_vcfstats_genome = 'data/NA24143.1000g/variants/longshot.pacbio.ngmlr.30x._/all.GQ30.vcf.stats',
+        longshot_NA24143_pacbio_runtime = 'data/NA24143.1000g/variants/longshot.pacbio.ngmlr.30x._/all.vcf.runtime',
+        whatshap_NA24143_pacbio_vcfeval = 'data/NA24143.1000g/vcfeval/whatshap.pacbio.ngmlr.30x.dp_filtered/all',
+        whatshap_NA24143_pacbio_vcfstats_genome = 'data/NA24143.1000g/variants/whatshap.pacbio.ngmlr.30x.dp_filtered/all.GQ30.vcf.stats',
+        whatshap_NA24143_pacbio_runtime = 'data/NA24143.1000g/variants/whatshap.pacbio.ngmlr.30x.dp_filtered/all.vcf.runtime',
+        clairvoyante_NA24143_pacbio_vcfeval = 'data/NA24143.1000g/vcfeval/clairvoyante.pacbio.ngmlr.30x.unfiltered/all',
+        clairvoyante_NA24143_pacbio_vcfstats_genome = 'data/NA24143.1000g/variants/clairvoyante.pacbio.ngmlr.30x.unfiltered/all.GQ30.vcf.stats',
+        clairvoyante_NA24143_pacbio_runtime = 'data/NA24143.1000g/variants/clairvoyante.pacbio.ngmlr.30x.unfiltered/all.vcf.runtime',
+        pacbio_NA24143_cov = 'data/NA24143.1000g/aligned_reads/pacbio/pacbio.ngmlr.all.30x.bam.median_coverage',
+    output:
+        table = 'data/output/direct_methods_comparison.all.tex'
+    run:
+
+        longshot_NA12878_pacbio_table_files = genomes_table_files(input.longshot_NA12878_pacbio_vcfeval,
+                                                  input.longshot_NA12878_pacbio_vcfstats_genome,
+                                                  '',
+                                                  input.longshot_NA12878_pacbio_runtime)
+
+        whatshap_NA12878_pacbio_table_files = genomes_table_files(input.whatshap_NA12878_pacbio_vcfeval,
+                                                  input.whatshap_NA12878_pacbio_vcfstats_genome,
+                                                  '',
+                                                  input.whatshap_NA12878_pacbio_runtime)
+
+        clairvoyante_NA12878_pacbio_table_files = genomes_table_files(input.clairvoyante_NA12878_pacbio_vcfeval,
+                                                  input.clairvoyante_NA12878_pacbio_vcfstats_genome,
+                                                  '',
+                                                  input.clairvoyante_NA12878_pacbio_runtime)
+
+        longshot_NA24385_pacbio_table_files = genomes_table_files(input.longshot_NA24385_pacbio_vcfeval,
+                                                  input.longshot_NA24385_pacbio_vcfstats_genome,
+                                                  '',
+                                                  input.longshot_NA24385_pacbio_runtime)
+
+        whatshap_NA24385_pacbio_table_files = genomes_table_files(input.whatshap_NA24385_pacbio_vcfeval,
+                                                  input.whatshap_NA24385_pacbio_vcfstats_genome,
+                                                  '',
+                                                  input.whatshap_NA24385_pacbio_runtime)
+
+        clairvoyante_NA24385_pacbio_table_files = genomes_table_files(input.clairvoyante_NA24385_pacbio_vcfeval,
+                                                  input.clairvoyante_NA24385_pacbio_vcfstats_genome,
+                                                  '',
+                                                  input.clairvoyante_NA24385_pacbio_runtime)
+
+
+        longshot_NA24385_ds_pacbio_table_files = genomes_table_files(input.longshot_NA24385_ds_pacbio_vcfeval,
+                                                  input.longshot_NA24385_ds_pacbio_vcfstats_genome,
+                                                  '',
+                                                  input.longshot_NA24385_ds_pacbio_runtime)
+
+        whatshap_NA24385_ds_pacbio_table_files = genomes_table_files(input.whatshap_NA24385_ds_pacbio_vcfeval,
+                                                  input.whatshap_NA24385_ds_pacbio_vcfstats_genome,
+                                                  '',
+                                                  input.whatshap_NA24385_ds_pacbio_runtime)
+
+        clairvoyante_NA24385_ds_pacbio_table_files = genomes_table_files(input.clairvoyante_NA24385_ds_pacbio_vcfeval,
+                                                  input.clairvoyante_NA24385_ds_pacbio_vcfstats_genome,
+                                                  '',
+                                                  input.clairvoyante_NA24385_ds_pacbio_runtime)
+
+        longshot_NA24149_pacbio_table_files = genomes_table_files(input.longshot_NA24149_pacbio_vcfeval,
+                                                  input.longshot_NA24149_pacbio_vcfstats_genome,
+                                                  '',
+                                                  input.longshot_NA24149_pacbio_runtime)
+
+        whatshap_NA24149_pacbio_table_files = genomes_table_files(input.whatshap_NA24149_pacbio_vcfeval,
+                                                  input.whatshap_NA24149_pacbio_vcfstats_genome,
+                                                  '',
+                                                  input.whatshap_NA24149_pacbio_runtime)
+
+        clairvoyante_NA24149_pacbio_table_files = genomes_table_files(input.clairvoyante_NA24149_pacbio_vcfeval,
+                                                  input.clairvoyante_NA24149_pacbio_vcfstats_genome,
+                                                  '',
+                                                  input.clairvoyante_NA24149_pacbio_runtime)
+
+        longshot_NA24143_pacbio_table_files = genomes_table_files(input.longshot_NA24143_pacbio_vcfeval,
+                                                  input.longshot_NA24143_pacbio_vcfstats_genome,
+                                                  '',
+                                                  input.longshot_NA24143_pacbio_runtime)
+
+        whatshap_NA24143_pacbio_table_files = genomes_table_files(input.whatshap_NA24143_pacbio_vcfeval,
+                                                  input.whatshap_NA24143_pacbio_vcfstats_genome,
+                                                  '',
+                                                  input.whatshap_NA24143_pacbio_runtime)
+
+        clairvoyante_NA24143_pacbio_table_files = genomes_table_files(input.clairvoyante_NA24143_pacbio_vcfeval,
+                                                  input.clairvoyante_NA24143_pacbio_vcfstats_genome,
+                                                  '',
+                                                  input.clairvoyante_NA24143_pacbio_runtime)
+
+        covs = [parse_int_file(input.pacbio_NA12878_cov),
+                parse_int_file(input.pacbio_NA12878_cov),
+                parse_int_file(input.pacbio_NA12878_cov),
+                parse_int_file(input.pacbio_NA24385_cov),
+                parse_int_file(input.pacbio_NA24385_cov),
+                parse_int_file(input.pacbio_NA24385_cov),
+                parse_int_file(input.pacbio_NA24385_ds_cov),
+                parse_int_file(input.pacbio_NA24385_ds_cov),
+                parse_int_file(input.pacbio_NA24385_ds_cov),
+                parse_int_file(input.pacbio_NA24149_cov),
+                parse_int_file(input.pacbio_NA24149_cov),
+                parse_int_file(input.pacbio_NA24149_cov),
+                parse_int_file(input.pacbio_NA24143_cov),
+                parse_int_file(input.pacbio_NA24143_cov),
+                parse_int_file(input.pacbio_NA24143_cov)]
+        ptf.make_methods_comparison_table(longshot_NA12878_pacbio_table_files,
+                                 whatshap_NA12878_pacbio_table_files,
+                                 clairvoyante_NA12878_pacbio_table_files,
+                                 longshot_NA24385_pacbio_table_files,
+                                 whatshap_NA24385_pacbio_table_files,
+                                 clairvoyante_NA24385_pacbio_table_files,
+                                 longshot_NA24385_ds_pacbio_table_files,
+                                 whatshap_NA24385_ds_pacbio_table_files,
+                                 clairvoyante_NA24385_ds_pacbio_table_files,
+                                 longshot_NA24149_pacbio_table_files,
+                                 whatshap_NA24149_pacbio_table_files,
+                                 clairvoyante_NA24149_pacbio_table_files,
+                                 longshot_NA24143_pacbio_table_files,
+                                 whatshap_NA24143_pacbio_table_files,
+                                 clairvoyante_NA24143_pacbio_table_files,
+                                 [None,None,None,
+                                 None,None,None,
+                                 None,None,None,
+                                 None,None,None,
+                                 None,None,None],covs,
                                  output.table)
 
 rule vcf_stats:
@@ -301,18 +476,30 @@ rule plot_precision_recall_bars_NA12878_AJ_Trio:
 
 rule plot_haplotyping_results:
     params: job_name = 'plot_haplotyping_results',
-    input: longshot_NA12878_44x = 'data/NA12878.1000g/longshot_haplotypes/hap_statistics/longshot.pacbio.blasr.44x._.all.p',
-           longshot_NA24385_69x = 'data/NA24385.hg38/longshot_haplotypes/hap_statistics/longshot.pacbio.blasr.69x._.all.p',
-           hapcut2_NA12878_44x = 'data/NA12878.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.44x.all.p',
-           hapcut2_NA24385_69x = 'data/NA24385.hg38/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.69x.all.p',
+    input: longshot_filtered_NA12878_44x = 'data/NA12878.1000g/longshot_haplotypes/hap_statistics/longshot.pacbio.blasr.44x._.all.p',
+           longshot_filtered_NA24385_69x = 'data/NA24385.hg38/longshot_haplotypes/hap_statistics/longshot.pacbio.blasr.69x._.all.p',
+           hapcut2_filtered_NA12878_44x = 'data/NA12878.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.44x.all.p',
+           hapcut2_filtered_NA24385_69x = 'data/NA24385.hg38/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.69x.all.p',
+           longshot_unfiltered_NA12878_44x = 'data/NA12878.1000g/longshot_haplotypes/hap_statistics/longshot.pacbio.blasr.44x._.all.unfiltered.p',
+           longshot_unfiltered_NA24385_69x = 'data/NA24385.hg38/longshot_haplotypes/hap_statistics/longshot.pacbio.blasr.69x._.all.unfiltered.p',
+           hapcut2_unfiltered_NA12878_44x = 'data/NA12878.1000g/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.44x.all.unfiltered.p',
+           hapcut2_unfiltered_NA24385_69x = 'data/NA24385.hg38/HapCUT2_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.69x.all.unfiltered.p',
+           whatshap_NA12878_44x = 'data/NA12878.1000g/whatshap_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.44x.all.p',
+           whatshap_NA24385_69x = 'data/NA24385.hg38/whatshap_haplotypes/hap_statistics/illumina.30x.pacbio.blasr.69x.all.p',
            NA12878_44_cov = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.44x.bam.median_coverage',
            NA24385_69_cov = 'data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.all.69x.bam.median_coverage',
     output: png = 'data/plots/haplotyping_results_barplot.png'
     run:
-        ptf.plot_haplotyping_results(longshot_errs=[input.longshot_NA12878_44x,
-                                                  input.longshot_NA24385_69x],
-                                     hapcut2_errs=[input.hapcut2_NA12878_44x,
-                                                  input.hapcut2_NA24385_69x],
+        ptf.plot_haplotyping_results(longshot_filtered_errs=[input.longshot_filtered_NA12878_44x,
+                                                  input.longshot_filtered_NA24385_69x],
+                                     hapcut2_filtered_errs=[input.hapcut2_filtered_NA12878_44x,
+                                                  input.hapcut2_filtered_NA24385_69x],
+                                    longshot_unfiltered_errs=[input.longshot_unfiltered_NA12878_44x,
+                                          input.longshot_unfiltered_NA24385_69x],
+                                    hapcut2_unfiltered_errs=[input.hapcut2_unfiltered_NA12878_44x,
+                                          input.hapcut2_unfiltered_NA24385_69x],
+                                     whatshap_errs=[input.whatshap_NA12878_44x,
+                                                   input.whatshap_NA24385_69x],
                                      median_covs=[parse_int_file(input.NA12878_44_cov),
                                      parse_int_file(input.NA24385_69_cov)],
                                      output_file=output.png)
@@ -656,3 +843,23 @@ rule make_table_filtered_indels:
                                  input.NA24149_vcfeval_nofilter, input.NA24149_vcfeval_filter,
                                  input.NA24143_vcfeval_nofilter, input.NA24143_vcfeval_filter,
                                  [44,69,32,30], output.tex)
+
+
+
+rule plot_longshot_params:
+    params: job_name = 'plot_longshot_params{cov}x'
+    input:
+        longshot = 'data/NA12878.1000g/vcfeval/longshot.pacbio.blasr.{cov}x._/all',
+        longshot_no_hap = 'data/NA12878.1000g/vcfeval/longshot.pacbio.blasr.{cov}x.-n/all'
+    output:
+        png = 'data/plots/longshot_params_comparison_{cov}x.png'
+    run:
+        ptf.plot_vcfeval([input.longshot,
+                          input.longshot_no_hap],
+                         ['Longshot',
+                          'Longshot (no haplotype assembly)'],
+                          output.png,
+                          None,
+                          ['b','brown'],
+                          zorders=[10,9,8,7,6,5,4,3,2,1],
+                          xlim=(0.9,1.0))

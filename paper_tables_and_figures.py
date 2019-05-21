@@ -51,7 +51,7 @@ def format_bp(basepairs):
     else:
         return "{} bp".format(int(basepairs))
 
-def plot_vcfeval(dirlist, labels, output_file, title, colors=['r','#3333ff','#ccccff','#9999ff','#8080ff','#6666ff'], xlim=(0.6,1.0), ylim=(0.95,1.0), legendloc='lower left'):
+def plot_vcfeval(dirlist, labels, output_file, title, colors=['r','#3333ff','#ccccff','#9999ff','#8080ff','#6666ff'], xlim=(0.6,1.0), ylim=(0.95,1.0), legendloc='lower left',zorders=None):
 
 
     # add a small amount of padding to the xlim and ylim so that grid lines show up on the borders
@@ -69,7 +69,7 @@ def plot_vcfeval(dirlist, labels, output_file, title, colors=['r','#3333ff','#cc
         print("need to define larger color pallet to plot this many datasets.")
         exit(1)
 
-    for color, path, label in zip(colors, dirlist,labels):
+    for i,(color, path, label) in enumerate(zip(colors, dirlist,labels)):
 
         #quals = []
         recalls = []
@@ -87,7 +87,10 @@ def plot_vcfeval(dirlist, labels, output_file, title, colors=['r','#3333ff','#cc
                     precisions.append(el[5])
                     recalls.append(el[6])
 
-        plt.plot(recalls, precisions, color=color,label=label,linewidth=3,alpha=0.75)
+        if zorders == None:
+            plt.plot(recalls, precisions, color=color,label=label,linewidth=3,alpha=0.75)
+        else:
+            plt.plot(recalls, precisions, color=color,label=label,linewidth=3,alpha=0.75,zorder=zorders[i])
 
     plt.grid(True,color='grey',linestyle='--',alpha=0.5)
 
@@ -221,6 +224,40 @@ def get_precision_recall(vcfeval_dir, gq_cutoff):
     assert(recall != None)
 
     return (precision, recall)
+
+# input:
+# vcfeval_dir: directory containing vcfeval output
+# gq_cutoff: a Genotype Quality value to set as the cutoff for variants e.g. 30 or 50
+# output:
+# (precision, recall) : the precision and recall values for variants above the GQ cutoff
+def get_precision_recall_best_fmeasure(vcfeval_dir):
+
+    recall = None
+    precision = None
+    qual = None
+    best_fmeasure = 0.0
+
+    with gzip.open(os.path.join(vcfeval_dir,'snp_roc.tsv.gz'),mode='rt') as inf:
+
+        for line in inf:
+            if line[0] == '#':
+                continue
+            else:
+                el = [float(x) for x in line.strip().split()]
+                assert(len(el) == 8)
+                new_qual = el[0]
+                fmeasure = el[7]
+
+                if fmeasure > best_fmeasure:
+                    qual = new_qual
+                    precision = el[5]
+                    recall = el[6]
+                    best_fmeasure = fmeasure
+
+    assert(precision != None)
+    assert(recall != None)
+
+    return (precision, recall, qual)
 
 def plot_precision_recall_bars_simulation(pacbio_dirlist_genome, illumina_dirlist_genome, pacbio_dirlist_segdup, illumina_dirlist_segdup, gq_cutoff, labels, output_file):
 
@@ -379,7 +416,7 @@ def plot_precision_recall_bars_simulation_extended(pacbio_ngmlr_dirlist_genome,
                 align='center',
                 label=lab_pacbio_ngmlr,
                 zorder=0)
-        plt.bar(ind+2*width, pacbio_minimap2_vals, color='#00ff33',
+        plt.bar(ind+2*width, pacbio_minimap2_vals, color='brown',
                 ecolor='black',
                 alpha=alpha1,      # transparency
                 width=width,      # smaller bar width
@@ -400,7 +437,7 @@ def plot_precision_recall_bars_simulation_extended(pacbio_ngmlr_dirlist_genome,
                 align='center',
                 label=lab_pacbio_blasr,
                 zorder=0)
-        plt.bar(ind+5*width, illumina_vals, color='#ff1900',
+        plt.bar(ind+5*width, illumina_vals, color='k',
                 ecolor='black',
                 alpha=alpha1,      # transparency
                 width=width,      # smaller bar width
@@ -602,13 +639,13 @@ def plot_precision_recall_bars_NA12878_AJ_Trio_with_haplotyping_results(pacbio_d
     plt.ylim(0.95,1.0)
 
     plot_bars(ax1, np.array(ind_NA12878_pacbio), pacbio_precisions_NA12878,color='#2200ff',lab='Longshot (PacBio)')
-    plot_bars(ax1, np.array(ind_NA12878_illumina), illumina_precisions_NA12878,color='#ff1900',lab='Freebayes (Illumina)')
+    plot_bars(ax1, np.array(ind_NA12878_illumina), illumina_precisions_NA12878,color='k',lab='Freebayes (Illumina)')
     plot_bars(ax1, np.array(ind_NA24385_pacbio), pacbio_precisions_NA24385,color='#2200ff')
-    plot_bars(ax1, np.array(ind_NA24385_illumina), illumina_precisions_NA24385,color='#ff1900')
+    plot_bars(ax1, np.array(ind_NA24385_illumina), illumina_precisions_NA24385,color='k')
     plot_bars(ax1, np.array(ind_NA24149_pacbio), pacbio_precisions_NA24149,color='#2200ff')
-    plot_bars(ax1, np.array(ind_NA24149_illumina), illumina_precisions_NA24149,color='#ff1900')
+    plot_bars(ax1, np.array(ind_NA24149_illumina), illumina_precisions_NA24149,color='k')
     plot_bars(ax1, np.array(ind_NA24143_pacbio), pacbio_precisions_NA24143,color='#2200ff')
-    plot_bars(ax1, np.array(ind_NA24143_illumina), illumina_precisions_NA24143,color='#ff1900')
+    plot_bars(ax1, np.array(ind_NA24143_illumina), illumina_precisions_NA24143,color='k')
     ax1.legend(loc='center left', bbox_to_anchor=(0.3,1.12),ncol=2)
     ax1.text(-0.01, 1.055, 'a', transform=ax1.transAxes,fontsize=11, fontweight='bold', va='top')
 
@@ -621,13 +658,13 @@ def plot_precision_recall_bars_NA12878_AJ_Trio_with_haplotyping_results(pacbio_d
     ax2 = fig.add_subplot(gs[7:13,0:3])
     plt.ylabel("SNV Recall")
     plot_bars(ax2, np.array(ind_NA12878_pacbio), pacbio_recalls_NA12878,color='#2200ff')
-    plot_bars(ax2, np.array(ind_NA12878_illumina), illumina_recalls_NA12878,color='#ff1900')
+    plot_bars(ax2, np.array(ind_NA12878_illumina), illumina_recalls_NA12878,color='k')
     plot_bars(ax2, np.array(ind_NA24385_pacbio), pacbio_recalls_NA24385,color='#2200ff')
-    plot_bars(ax2, np.array(ind_NA24385_illumina), illumina_recalls_NA24385,color='#ff1900')
+    plot_bars(ax2, np.array(ind_NA24385_illumina), illumina_recalls_NA24385,color='k')
     plot_bars(ax2, np.array(ind_NA24149_pacbio), pacbio_recalls_NA24149,color='#2200ff')
-    plot_bars(ax2, np.array(ind_NA24149_illumina), illumina_recalls_NA24149,color='#ff1900')
+    plot_bars(ax2, np.array(ind_NA24149_illumina), illumina_recalls_NA24149,color='k')
     plot_bars(ax2, np.array(ind_NA24143_pacbio), pacbio_recalls_NA24143,color='#2200ff')
-    plot_bars(ax2, np.array(ind_NA24143_illumina), illumina_recalls_NA24143,color='#ff1900')
+    plot_bars(ax2, np.array(ind_NA24143_illumina), illumina_recalls_NA24143,color='k')
     prettify_plot(ax2)
     ax2.set_xticks(np.array(ind_NA12878_pacbio+ind_NA12878_illumina
                           +ind_NA24385_pacbio+ind_NA24385_illumina
@@ -678,7 +715,7 @@ def plot_precision_recall_bars_NA12878_AJ_Trio_with_haplotyping_results(pacbio_d
                 width=width,      # smaller bar width
                 align='center',
                 zorder=0)
-        plt.bar(ind+2.1*width, illumina_vals, color='#ff1900',
+        plt.bar(ind+2.1*width, illumina_vals, color='k',
                 ecolor='black', # black error bar color
                 alpha=alpha1,      # transparency
                 width=width,      # smaller bar width
@@ -701,9 +738,9 @@ def plot_precision_recall_bars_NA12878_AJ_Trio_with_haplotyping_results(pacbio_d
     longshot_switch_mismatch = [e.get_switch_mismatch_rate() for e in longshot_errs]
     illumina_switch_mismatch = [e.get_switch_mismatch_rate() for e in illumina_errs]
     plot_bars(ax3, ind[0], longshot_switch_mismatch[0], color='#2200ff')
-    plot_bars(ax3, ind[1], illumina_switch_mismatch[0], color='#ff1900')
+    plot_bars(ax3, ind[1], illumina_switch_mismatch[0], color='k')
     plot_bars(ax3, ind[2], longshot_switch_mismatch[1], color='#2200ff')
-    plot_bars(ax3, ind[3], illumina_switch_mismatch[1], color='#ff1900')
+    plot_bars(ax3, ind[3], illumina_switch_mismatch[1], color='k')
 
     plt.ylabel("Haplotype Combined\nSwitch Error Rate")
 
@@ -717,9 +754,9 @@ def plot_precision_recall_bars_NA12878_AJ_Trio_with_haplotyping_results(pacbio_d
     illumina_median_len = [e.get_N50_phased_portion()/1000 for e in illumina_errs]
     #make_hap_subplot(ax4,np.array(ind), longshot_median_len, illumina_median_len)
     plot_bars(ax4, ind[0], longshot_median_len[0], color='#2200ff', height_fmt_string="{0:.1f}")
-    plot_bars(ax4, ind[1], illumina_median_len[0], color='#ff1900', height_fmt_string="{0:.1f}")
+    plot_bars(ax4, ind[1], illumina_median_len[0], color='k', height_fmt_string="{0:.1f}")
     plot_bars(ax4, ind[2], longshot_median_len[1], color='#2200ff', height_fmt_string="{0:.1f}")
-    plot_bars(ax4, ind[3], illumina_median_len[1], color='#ff1900', height_fmt_string="{0:.1f}")
+    plot_bars(ax4, ind[3], illumina_median_len[1], color='k', height_fmt_string="{0:.1f}")
     plt.ylabel("Haplotype N50 (kb)")
     prettify_plot(ax4)
     ax4.set_xticks([])
@@ -731,9 +768,9 @@ def plot_precision_recall_bars_NA12878_AJ_Trio_with_haplotyping_results(pacbio_d
     longshot_fraction_phased = [e.get_phased_count() / e.get_num_snps() for e in longshot_errs]
     illumina_fraction_phased = [e.get_phased_count() / e.get_num_snps() for e in illumina_errs]
     plot_bars(ax5, ind[0], longshot_fraction_phased[0], color='#2200ff')
-    plot_bars(ax5, ind[1], illumina_fraction_phased[0], color='#ff1900')
+    plot_bars(ax5, ind[1], illumina_fraction_phased[0], color='k')
     plot_bars(ax5, ind[2], longshot_fraction_phased[1], color='#2200ff')
-    plot_bars(ax5, ind[3], illumina_fraction_phased[1], color='#ff1900')
+    plot_bars(ax5, ind[3], illumina_fraction_phased[1], color='k')
 
     #make_hap_subplot(ax5,np.array(ind), longshot_fraction_phased, illumina_fraction_phased)
     plt.ylabel("Fraction of Heterozygous\nVariants Phased")
@@ -761,20 +798,28 @@ def plot_precision_recall_bars_NA12878_AJ_Trio_with_haplotyping_results(pacbio_d
     plt.savefig(output_file, dpi=600)
 
 
-def plot_haplotyping_results(longshot_errs, hapcut2_errs, median_covs, output_file):
+def plot_haplotyping_results(longshot_filtered_errs, hapcut2_filtered_errs,
+                             longshot_unfiltered_errs, hapcut2_unfiltered_errs,
+                             whatshap_errs, median_covs, output_file):
     # errs should be in order: NA12878 44x, NA24385 69x
-    assert(len(longshot_errs) == 2)
-    assert(len(hapcut2_errs) == 2)
+    assert(len(longshot_filtered_errs) == 2)
+    assert(len(hapcut2_filtered_errs) == 2)
+    assert(len(longshot_unfiltered_errs) == 2)
+    assert(len(hapcut2_unfiltered_errs) == 2)
+    assert(len(whatshap_errs) == 2)
     assert(len(median_covs) == 2)
 
     #unpickle the error objects
-    longshot_errs = [pickle.load(open(f,'rb')) for f in longshot_errs]
-    hapcut2_errs = [pickle.load(open(f,'rb')) for f in hapcut2_errs]
+    longshot_filtered_errs = [pickle.load(open(f,'rb')) for f in longshot_filtered_errs]
+    hapcut2_filtered_errs = [pickle.load(open(f,'rb')) for f in hapcut2_filtered_errs]
+    longshot_unfiltered_errs = [pickle.load(open(f,'rb')) for f in longshot_unfiltered_errs]
+    hapcut2_unfiltered_errs = [pickle.load(open(f,'rb')) for f in hapcut2_unfiltered_errs]
+    whatshap_errs = [pickle.load(open(f,'rb')) for f in whatshap_errs]
 
     plt.figure(figsize=(5,6))
     #mpl.rcParams['axes.titlepad'] = 50
 
-    width = 0.10
+    width = 0.03
     alpha1 = 0.6
 
     # credit for this function: http://composition.al/blog/2015/11/29/a-better-way-to-add-labels-to-bar-charts-with-matplotlib/
@@ -795,26 +840,58 @@ def plot_haplotyping_results(longshot_errs, hapcut2_errs, median_covs, output_fi
                     format_str.format(height),
                     ha='center', va='bottom', fontsize=6)
 
-    def make_subplot(ax, ind, longshot_vals, hapcut2_vals, lab_longshot=None, lab_hapcut2=None, letter_label=None, format_str="{0:.4f}"):
+    def make_subplot(ax, ind, longshot_filtered_vals, hapcut2_filtered_vals,
+                   longshot_unfiltered_vals, hapcut2_unfiltered_vals,
+                   whatshap_vals, lab_longshot_filtered=None,
+                   lab_hapcut2_filtered=None, lab_longshot_unfiltered=None,
+                    lab_hapcut2_unfiltered=None, lab_whatshap=None,
+                    letter_label=None, format_str="{0:.4f}"):
 
-        rects1 = plt.bar(ind+width, longshot_vals, color='#2200ff',
+        rects1 = plt.bar(ind+width, longshot_filtered_vals, color='#2200ff',
+                ecolor='black', # black error bar color
+                alpha=1.0,      # transparency
+                width=width,      # smaller bar width
+                align='center',
+                label=lab_longshot_filtered,
+                zorder=0)
+        #autolabel(rects1, ax, format_str)
+
+        rects2 = plt.bar(ind+2*width, hapcut2_filtered_vals, color='k',
+                ecolor='black', # black error bar color
+                alpha=1.0,      # transparency
+                width=width,      # smaller bar width
+                align='center',
+                label=lab_hapcut2_filtered,
+                zorder=0)
+        #autolabel(rects2, ax, format_str)
+
+        rects3 = plt.bar(ind+3*width, longshot_unfiltered_vals, color='#2200ff',
                 ecolor='black', # black error bar color
                 alpha=alpha1,      # transparency
                 width=width,      # smaller bar width
                 align='center',
-                label=lab_longshot,
+                label=lab_longshot_unfiltered,
                 zorder=0)
-        autolabel(rects1, ax, format_str)
+        #autolabel(rects3, ax, format_str)
 
-        rects2 = plt.bar(ind+2*width, hapcut2_vals, color='k',
+        rects4 = plt.bar(ind+4*width, hapcut2_unfiltered_vals, color='k',
                 ecolor='black', # black error bar color
                 alpha=alpha1,      # transparency
                 width=width,      # smaller bar width
                 align='center',
-                label=lab_hapcut2,
+                label=lab_hapcut2_unfiltered,
                 zorder=0)
+        #autolabel(rects4, ax, format_str)
 
-        autolabel(rects2, ax, format_str)
+        rects5 = plt.bar(ind+5*width, whatshap_vals, color='orange',
+                ecolor='black', # black error bar color
+                alpha=alpha1,      # transparency
+                width=width,      # smaller bar width
+                align='center',
+                label=lab_whatshap,
+                zorder=0)
+        #autolabel(rects5, ax, format_str)
+
         #ax.text(-0.05, 1.07, letter_label, transform=ax.transAxes,fontsize=11, fontweight='bold', va='top')
 
         # add some text for labels, title and axes ticks
@@ -835,11 +912,23 @@ def plot_haplotyping_results(longshot_errs, hapcut2_errs, median_covs, output_fi
     ind = [0,0.3]
 
     ax = plt.subplot(211)
-    longshot_switch_mismatch = [e.get_switch_mismatch_rate() for e in longshot_errs]
-    hapcut2_switch_mismatch = [e.get_switch_mismatch_rate() for e in hapcut2_errs]
-    make_subplot(ax,np.array(ind), longshot_switch_mismatch, hapcut2_switch_mismatch, lab_longshot='Longshot Haplotype', lab_hapcut2='~30' + r'$\times$' + ' Illumina + HapCUT2 Haplotype', letter_label='a')
-    ax.legend(loc='center left', bbox_to_anchor=(0.0,1.15),ncol=1)
+    longshot_filtered_switch_mismatch = [e.get_switch_mismatch_rate() for e in longshot_filtered_errs]
+    hapcut2_filtered_switch_mismatch = [e.get_switch_mismatch_rate() for e in hapcut2_filtered_errs]
+    longshot_unfiltered_switch_mismatch = [e.get_switch_mismatch_rate() for e in longshot_unfiltered_errs]
+    hapcut2_unfiltered_switch_mismatch = [e.get_switch_mismatch_rate() for e in hapcut2_unfiltered_errs]
+    whatshap_switch_mismatch = [e.get_switch_mismatch_rate() for e in whatshap_errs]
 
+    make_subplot(ax,np.array(ind), longshot_filtered_switch_mismatch, hapcut2_filtered_switch_mismatch,
+                  longshot_unfiltered_switch_mismatch, hapcut2_unfiltered_switch_mismatch, whatshap_switch_mismatch,
+                  lab_longshot_filtered='Longshot Haplotypes (PQ > 30)',
+                  lab_hapcut2_filtered='~30' + r'$\times$' + ' Illumina + HapCUT2 Haplotypes (PQ > 30)',
+                  lab_longshot_unfiltered='Longshot Haplotypes',
+                  lab_hapcut2_unfiltered='~30' + r'$\times$' + ' Illumina + HapCUT2 Haplotypes',
+                  lab_whatshap='~30' + r'$\times$' + ' Illumina + WhatsHap Haplotypes',
+                  letter_label='a')
+    ax.text(-0.05, 1.03, 'a', transform=ax.transAxes,fontsize=11, fontweight='bold', va='top')
+    ax.legend(loc='center left', bbox_to_anchor=(0.0,1.35),ncol=1)
+    plt.ylim((0,0.0011))
     plt.ylabel("Switch + Mismatch Error Rate")
     #plt.ylim(0.99,1.0)
     prettify_plot()
@@ -847,12 +936,20 @@ def plot_haplotyping_results(longshot_errs, hapcut2_errs, median_covs, output_fi
     ax.set_xticklabels([])
 
     ax = plt.subplot(212)
+    plt.ylim((0,440))
     plt.ylabel("N50 (kb)")
-    longshot_N50 = [e.get_N50_phased_portion()/1000 for e in longshot_errs]
-    hapcut2_N50 = [e.get_N50_phased_portion()/1000  for e in hapcut2_errs]
-    make_subplot(ax,np.array(ind), longshot_N50, hapcut2_N50, letter_label='b', format_str='{0:.1f}')
+
+    longshot_filtered_N50 = [e.get_N50_phased_portion()/1000 for e in longshot_filtered_errs]
+    hapcut2_filtered_N50 = [e.get_N50_phased_portion()/1000  for e in hapcut2_filtered_errs]
+    longshot_unfiltered_N50 = [e.get_N50_phased_portion()/1000 for e in longshot_unfiltered_errs]
+    hapcut2_unfiltered_N50 = [e.get_N50_phased_portion()/1000  for e in hapcut2_unfiltered_errs]
+    whatshap_N50 = [e.get_N50_phased_portion()/1000  for e in whatshap_errs]
+
+    make_subplot(ax,np.array(ind), longshot_filtered_N50, hapcut2_filtered_N50,
+            longshot_unfiltered_N50, hapcut2_unfiltered_N50, whatshap_N50, letter_label='b', format_str='{0:.1f}')
+    ax.text(-0.05, 1.04, 'b', transform=ax.transAxes,fontsize=11, fontweight='bold', va='top')
     prettify_plot()
-    ax.set_xticks(np.array(ind)+1.5*width)
+    ax.set_xticks(np.array(ind)+3*width)
     ax.set_xticklabels(['NA12878\n{}'.format(median_covs[0]) + r'$\times$','NA24385\n{}'.format(median_covs[1]) + r'$\times$'])
 
     #ax.set_yscale('log')NA12878_prec_recall_{chrom}
@@ -862,7 +959,7 @@ def plot_haplotyping_results(longshot_errs, hapcut2_errs, median_covs, output_fi
     plt.xlabel(" ",labelpad=10)
 
     plt.tight_layout()
-    plt.subplots_adjust(top=0.90)
+    plt.subplots_adjust(top=0.79)
     #t = plt.suptitle(title)
 
     ax.set_axisbelow(True)
@@ -878,6 +975,153 @@ def plot_haplotyping_results(longshot_errs, hapcut2_errs, median_covs, output_fi
 
     #plt.show()
     plt.savefig(output_file, dpi = 600)
+
+'''
+
+def plot_haplotyping_results(longshot_filtered_errs, hapcut2_filtered_errs,
+                             whatshap_errs, median_covs, output_file):
+    # errs should be in order: NA12878 44x, NA24385 69x
+    assert(len(longshot_filtered_errs) == 2)
+    assert(len(hapcut2_filtered_errs) == 2)
+    assert(len(whatshap_errs) == 2)
+    assert(len(median_covs) == 2)
+
+    #unpickle the error objects
+    longshot_filtered_errs = [pickle.load(open(f,'rb')) for f in longshot_filtered_errs]
+    hapcut2_filtered_errs = [pickle.load(open(f,'rb')) for f in hapcut2_filtered_errs]
+    whatshap_errs = [pickle.load(open(f,'rb')) for f in whatshap_errs]
+
+    plt.figure(figsize=(5,6))
+    #mpl.rcParams['axes.titlepad'] = 50
+
+    width = 0.06
+    alpha1 = 0.6
+
+    # credit for this function: http://composition.al/blog/2015/11/29/a-better-way-to-add-labels-to-bar-charts-with-matplotlib/
+    def autolabel(rects, ax, format_str="{0:.4f}"):
+        # Get y-axis height to calculate label position from.
+        (y_bottom, y_top) = ax.get_ylim()
+        y_height = y_top - y_bottom
+
+        for rect in rects:
+            height = rect.get_height()
+
+            # Fraction of axis height taken up by this rectangle
+            p_height = (height / y_height)
+
+            label_position = height + (y_height * 0.01)
+
+            ax.text(rect.get_x() + rect.get_width()/2., label_position,
+                    format_str.format(height),
+                    ha='center', va='bottom', fontsize=6)
+
+    def make_subplot(ax, ind, longshot_filtered_vals, hapcut2_filtered_vals,
+                   whatshap_vals, lab_longshot_filtered=None,
+                   lab_hapcut2_filtered=None, lab_whatshap=None,
+                    letter_label=None, format_str="{0:.4f}"):
+
+        rects1 = plt.bar(ind+width, longshot_filtered_vals, color='#2200ff',
+                ecolor='black', # black error bar color
+                alpha=alpha1,      # transparency
+                width=width,      # smaller bar width
+                align='center',
+                label=lab_longshot_filtered,
+                zorder=0)
+        autolabel(rects1, ax, format_str)
+
+        rects2 = plt.bar(ind+2*width, hapcut2_filtered_vals, color='k',
+                ecolor='black', # black error bar color
+                alpha=alpha1,      # transparency
+                width=width,      # smaller bar width
+                align='center',
+                label=lab_hapcut2_filtered,
+                zorder=0)
+        autolabel(rects2, ax, format_str)
+
+        rects3 = plt.bar(ind+3*width, whatshap_vals, color='g',
+                ecolor='black', # black error bar color
+                alpha=alpha1,      # transparency
+                width=width,      # smaller bar width
+                align='center',
+                label=lab_whatshap,
+                zorder=0)
+        autolabel(rects3, ax, format_str)
+
+        #ax.text(-0.05, 1.07, letter_label, transform=ax.transAxes,fontsize=11, fontweight='bold', va='top')
+
+        # add some text for labels, title and axes ticks
+        #plt.xlim(-0.5,6)
+
+
+    def prettify_plot():
+
+        ax.yaxis.grid(True,color='grey', alpha=0.5, linestyle='--',zorder=1.0)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["bottom"].set_visible(False)
+        ax.spines["left"].set_visible(False)
+        plt.tick_params(axis="both", which="both", bottom=False, top=False,
+                    labelbottom=True, left=False, right=False, labelleft=True)
+
+
+    ind = [0,0.3]
+
+    ax = plt.subplot(211)
+    longshot_filtered_switch_mismatch = [e.get_switch_mismatch_rate() for e in longshot_filtered_errs]
+    hapcut2_filtered_switch_mismatch = [e.get_switch_mismatch_rate() for e in hapcut2_filtered_errs]
+    whatshap_switch_mismatch = [e.get_switch_mismatch_rate() for e in whatshap_errs]
+
+    make_subplot(ax,np.array(ind), longshot_filtered_switch_mismatch, hapcut2_filtered_switch_mismatch,
+                   whatshap_switch_mismatch,
+                  lab_longshot_filtered='Longshot Haplotype (filtered)',
+                  lab_hapcut2_filtered='~30' + r'$\times$' + ' Illumina + HapCUT2 Haplotype (filtered)',
+                  lab_whatshap='~30' + r'$\times$' + ' Illumina + WhatsHap Haplotype (unfiltered)',
+                  letter_label='a')
+    ax.legend(loc='center left', bbox_to_anchor=(0.0,1.25),ncol=1)
+
+    plt.ylabel("Switch + Mismatch Error Rate")
+    #plt.ylim(0.99,1.0)
+    prettify_plot()
+    ax.set_xticks([])
+    ax.set_xticklabels([])
+
+    ax = plt.subplot(212)
+    plt.ylabel("N50 (kb)")
+    longshot_filtered_N50 = [e.get_N50_phased_portion()/1000 for e in longshot_filtered_errs]
+    hapcut2_filtered_N50 = [e.get_N50_phased_portion()/1000  for e in hapcut2_filtered_errs]
+    whatshap_N50 = [e.get_N50_phased_portion()/1000  for e in whatshap_errs]
+
+    make_subplot(ax,np.array(ind), longshot_filtered_N50, hapcut2_filtered_N50,
+            whatshap_N50, letter_label='b', format_str='{0:.1f}')
+    prettify_plot()
+    ax.set_xticks(np.array(ind)+2*width)
+    ax.set_xticklabels(['NA12878\n{}'.format(median_covs[0]) + r'$\times$','NA24385\n{}'.format(median_covs[1]) + r'$\times$'])
+
+    #ax.set_yscale('log')NA12878_prec_recall_{chrom}
+    #plt.xlim(())
+    #plt.ylim((0,1.0))
+    #plt.legend(loc='upper left')
+    plt.xlabel(" ",labelpad=10)
+
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.85)
+    #t = plt.suptitle(title)
+
+    ax.set_axisbelow(True)
+
+    ticklabelpad = mpl.rcParams['xtick.major.pad']
+
+    # credit to https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot
+    # Shrink current axis by 20%
+    box = ax.get_position()
+    #ax.set_position([box.x0, box.y0, box.width * 0.85, box.height])
+    # Put a legend to the right of the current axis
+    #ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+    #plt.show()
+    plt.savefig(output_file, dpi = 600)
+
+'''
 
 def plot_precision_recall_bars_NA12878_AJ_Trio(pacbio_dirlist_NA12878, illumina_dirlist_NA12878,
                                                pacbio_dirlist_NA24385, illumina_dirlist_NA24385,
@@ -1110,6 +1354,114 @@ NA24143 (AJ mother) & ${}\\times$ & ${}$ & ${:.3f}$ & ${:.3f}$ & ${}$ & {} \\\\
            coverages[5], NA24385_69x.SNVs_called, NA24385_69x.precision, NA24385_69x.recall, NA24385_69x.outside_GIAB, NA24385_69x.runtime,
            coverages[6], NA24149_32x.SNVs_called, NA24149_32x.precision, NA24149_32x.recall, NA24149_32x.outside_GIAB, NA24149_32x.runtime,
            coverages[7], NA24143_30x.SNVs_called, NA24143_30x.precision, NA24143_30x.recall, NA24143_30x.outside_GIAB, NA24143_30x.runtime)
+
+    with open(outfile,'w') as outf:
+        print(s, file=outf)
+
+
+def make_methods_comparison_table(longshot_NA12878_pacbio_table_files,
+                                  whatshap_NA12878_pacbio_table_files,
+                                  clairvoyante_NA12878_pacbio_table_files,
+                                  longshot_NA24385_pacbio_table_files,
+                                  whatshap_NA24385_pacbio_table_files,
+                                  clairvoyante_NA24385_pacbio_table_files,
+                                  longshot_NA24385_ds_pacbio_table_files,
+                                  whatshap_NA24385_ds_pacbio_table_files,
+                                  clairvoyante_NA24385_ds_pacbio_table_files,
+                                  longshot_NA24149_pacbio_table_files,
+                                  whatshap_NA24149_pacbio_table_files,
+                                  clairvoyante_NA24149_pacbio_table_files,
+                                  longshot_NA24143_pacbio_table_files,
+                                  whatshap_NA24143_pacbio_table_files,
+                                  clairvoyante_NA24143_pacbio_table_files,
+                                  gq_cutoffs, coverages,
+                                  outfile):
+
+    genomes_table_entry = namedtuple('genomes_table_entry', ['SNVs_called', 'precision', 'recall', 'outside_GIAB', 'runtime','gq'])
+
+    def generate_table_line(table_files, gq_cutoff):
+        gq = gq_cutoff
+        if gq_cutoff == None:
+            precision, recall, gq = get_precision_recall_best_fmeasure(table_files.vcfeval_dir)
+        else:
+            precision, recall = get_precision_recall(table_files.vcfeval_dir, gq_cutoff)
+
+        with open(table_files.runtime,'r') as inf:
+            hh, mm, ss = inf.readline().strip().split(':')
+        runtime = hh + ':' + mm
+
+        snvs_total = get_snp_count(table_files.vcfstats_genome)
+
+        return genomes_table_entry(SNVs_called=snvs_total, precision=precision, recall=recall,
+                                   outside_GIAB=None, runtime=runtime, gq=gq)
+
+    longshot_NA12878_pacbio = generate_table_line(longshot_NA12878_pacbio_table_files, gq_cutoffs[0])
+    whatshap_NA12878_pacbio = generate_table_line(whatshap_NA12878_pacbio_table_files, gq_cutoffs[1])
+    clairvoyante_NA12878_pacbio = generate_table_line(clairvoyante_NA12878_pacbio_table_files, gq_cutoffs[2])
+
+    longshot_NA24385_pacbio = generate_table_line(longshot_NA24385_pacbio_table_files, gq_cutoffs[3])
+    whatshap_NA24385_pacbio = generate_table_line(whatshap_NA24385_pacbio_table_files, gq_cutoffs[4])
+    clairvoyante_NA24385_pacbio = generate_table_line(clairvoyante_NA24385_pacbio_table_files, gq_cutoffs[5])
+
+    longshot_NA24385_ds_pacbio = generate_table_line(longshot_NA24385_ds_pacbio_table_files, gq_cutoffs[6])
+    whatshap_NA24385_ds_pacbio = generate_table_line(whatshap_NA24385_ds_pacbio_table_files, gq_cutoffs[7])
+    clairvoyante_NA24385_ds_pacbio = generate_table_line(clairvoyante_NA24385_ds_pacbio_table_files, gq_cutoffs[8])
+
+    longshot_NA24149_pacbio = generate_table_line(longshot_NA24149_pacbio_table_files, gq_cutoffs[9])
+    whatshap_NA24149_pacbio = generate_table_line(whatshap_NA24149_pacbio_table_files, gq_cutoffs[10])
+    clairvoyante_NA24149_pacbio = generate_table_line(clairvoyante_NA24149_pacbio_table_files, gq_cutoffs[11])
+
+    longshot_NA24143_pacbio = generate_table_line(longshot_NA24143_pacbio_table_files, gq_cutoffs[12])
+    whatshap_NA24143_pacbio = generate_table_line(whatshap_NA24143_pacbio_table_files, gq_cutoffs[13])
+    clairvoyante_NA24143_pacbio = generate_table_line(clairvoyante_NA24143_pacbio_table_files, gq_cutoffs[14])
+
+    s = '''
+\\begin{{table}}[htbp]
+\\centering
+\\begin{{tabular}}{{llllllllll}}
+\\hline
+Method       & Genome   & Read     & GQ & Precision & Recall & Run time     & CPU Cores & Memory & Memory \\\\
+             &          & Coverage & cutoff &          &        & (all chroms) & Used      & (mean) & (max) \\\\
+\\hline
+Longshot     & NA12878  & ${}\\times$ & {:.1f} & ${:.3f}$ & ${:.3f}$ & {} & 1 & X & X  \\\\
+WhatsHap     & NA12878  & ${}\\times$ & {:.1f} & ${:.3f}$ & ${:.3f}$ & {} & 1 & X & X \\\\
+Clairvoyante & NA12878  & ${}\\times$ & {:.1f} & ${:.3f}$ & ${:.3f}$ & {} & 4 & X & X \\\\
+\\hline
+Longshot     & NA24385  & ${}\\times$ & {:.1f} & ${:.3f}$ & ${:.3f}$ & {} & 1 & X & X  \\\\
+WhatsHap     & NA24385  & ${}\\times$ & {:.1f} & ${:.3f}$ & ${:.3f}$ & {} & 1 & X & X \\\\
+Clairvoyante & NA24385  & ${}\\times$ & {:.1f} & ${:.3f}$ & ${:.3f}$ & {} & 4 & X & X \\\\
+\\hline
+Longshot     & NA24385*  & ${}\\times$ & {:.1f} & ${:.3f}$ & ${:.3f}$ & {} & 1 & X & X  \\\\
+WhatsHap     & NA24385*  & ${}\\times$ & {:.1f} & ${:.3f}$ & ${:.3f}$ & {} & 1 & X & X \\\\
+Clairvoyante & NA24385*  & ${}\\times$ & {:.1f} & ${:.3f}$ & ${:.3f}$ & {} & 4 & X & X \\\\
+\\hline
+Longshot     & NA24149  & ${}\\times$ & {:.1f} & ${:.3f}$ & ${:.3f}$ & {} & 1 & X & X  \\\\
+WhatsHap     & NA24149  & ${}\\times$ & {:.1f} & ${:.3f}$ & ${:.3f}$ & {} & 1 & X & X \\\\
+Clairvoyante & NA24149  & ${}\\times$ & {:.1f} & ${:.3f}$ & ${:.3f}$ & {} & 4 & X & X \\\\
+\\hline
+Longshot     & NA24143  & ${}\\times$ & {:.1f} & ${:.3f}$ & ${:.3f}$ & {} & 1 & X & X  \\\\
+WhatsHap     & NA24143  & ${}\\times$ & {:.1f} & ${:.3f}$ & ${:.3f}$ & {} & 1 & X & X \\\\
+Clairvoyante & NA24143  & ${}\\times$ & {:.1f} & ${:.3f}$ & ${:.3f}$ & {} & 4 & X & X \\\\
+\\hline
+\\end{{tabular}}
+\\caption{{{{\\bf Direct comparison of SMS variant calling methods.}}}}
+\\label{{tab:stats}}
+\\end{{table}}
+'''.format(coverages[0], longshot_NA12878_pacbio.gq, longshot_NA12878_pacbio.precision, longshot_NA12878_pacbio.recall, longshot_NA12878_pacbio.runtime,
+           coverages[1], whatshap_NA12878_pacbio.gq, whatshap_NA12878_pacbio.precision, whatshap_NA12878_pacbio.recall, whatshap_NA12878_pacbio.runtime,
+           coverages[2], clairvoyante_NA12878_pacbio.gq, clairvoyante_NA12878_pacbio.precision, clairvoyante_NA12878_pacbio.recall, clairvoyante_NA12878_pacbio.runtime,
+           coverages[3], longshot_NA24385_pacbio.gq, longshot_NA24385_pacbio.precision, longshot_NA24385_pacbio.recall, longshot_NA24385_pacbio.runtime,
+           coverages[4], whatshap_NA24385_pacbio.gq, whatshap_NA24385_pacbio.precision, whatshap_NA24385_pacbio.recall, whatshap_NA24385_pacbio.runtime,
+           coverages[5], clairvoyante_NA24385_pacbio.gq, clairvoyante_NA24385_pacbio.precision, clairvoyante_NA24385_pacbio.recall, clairvoyante_NA24385_pacbio.runtime,
+           coverages[6], longshot_NA24385_ds_pacbio.gq, longshot_NA24385_ds_pacbio.precision, longshot_NA24385_ds_pacbio.recall, longshot_NA24385_ds_pacbio.runtime,
+           coverages[7], whatshap_NA24385_ds_pacbio.gq,whatshap_NA24385_ds_pacbio.precision, whatshap_NA24385_ds_pacbio.recall, whatshap_NA24385_ds_pacbio.runtime,
+           coverages[8], clairvoyante_NA24385_ds_pacbio.gq, clairvoyante_NA24385_ds_pacbio.precision, clairvoyante_NA24385_ds_pacbio.recall, clairvoyante_NA24385_ds_pacbio.runtime,
+           coverages[9], longshot_NA24149_pacbio.gq, longshot_NA24149_pacbio.precision, longshot_NA24149_pacbio.recall, longshot_NA24149_pacbio.runtime,
+           coverages[10], whatshap_NA24149_pacbio.gq, whatshap_NA24149_pacbio.precision, whatshap_NA24149_pacbio.recall, whatshap_NA24149_pacbio.runtime,
+           coverages[11], clairvoyante_NA24149_pacbio.gq, clairvoyante_NA24149_pacbio.precision, clairvoyante_NA24149_pacbio.recall, clairvoyante_NA24149_pacbio.runtime,
+           coverages[12], longshot_NA24143_pacbio.gq, longshot_NA24143_pacbio.precision, longshot_NA24143_pacbio.recall, longshot_NA24143_pacbio.runtime,
+           coverages[13], whatshap_NA24143_pacbio.gq, whatshap_NA24143_pacbio.precision, whatshap_NA24143_pacbio.recall, whatshap_NA24143_pacbio.runtime,
+           coverages[14], clairvoyante_NA24143_pacbio.gq, clairvoyante_NA24143_pacbio.precision, clairvoyante_NA24143_pacbio.recall, clairvoyante_NA24143_pacbio.runtime)
 
     with open(outfile,'w') as outf:
         print(s, file=outf)
@@ -1475,6 +1827,7 @@ def actual_to_effective_read_coverage_plot(vcfgz_file, output_file):
 
     actual = []
     effective = []
+    print("actual_cov\teffective_cov")
     with pysam.VariantFile(vcfgz_file) as vcf:
         for rec in vcf:
 
@@ -1482,6 +1835,7 @@ def actual_to_effective_read_coverage_plot(vcfgz_file, output_file):
             ef = sum(rec.info['AC'])
             actual.append(ac)
             effective.append(ef)
+            print("{}\t{}".format(ac,ef))
 
     d = defaultdict(list)
     for a,e in zip(actual, effective):
@@ -1495,8 +1849,10 @@ def actual_to_effective_read_coverage_plot(vcfgz_file, output_file):
     for a, lst in sorted(list(d.items())):
         medians_x.append(a)
         medians_y.append(statistics.median(lst))
-        Q1.append(np.percentile(lst, 25))
-        Q3.append(np.percentile(lst, 75))
+        p25 = np.percentile(lst, 25)
+        p75 = np.percentile(lst, 75)
+        Q1.append(p25)
+        Q3.append(p75)
 
     plt.figure()
     #import pdb; pdb.set_trace()
@@ -1512,8 +1868,8 @@ def actual_to_effective_read_coverage_plot(vcfgz_file, output_file):
     #plt.scatter(actual, effective, color='b',marker='.',s=1,alpha=0.75,label='Single variant site')
 
     plt.plot([min(medians_x),max(medians_x)], [min(medians_x),max(medians_x)], color='k',linestyle=':',alpha=0.75,linewidth=3,label=None)
-    plt.fill_between(medians_x, Q1, Q3, color='r',alpha=0.3)#,label='1st-3rd Quartiles')
-    plt.plot(medians_x, medians_y, color='r',alpha=0.75,linewidth=3)#,label='Median effective coverage')
+    plt.fill_between(medians_x, Q1, Q3, color='b',alpha=0.3)#,label='1st-3rd Quartiles')
+    plt.plot(medians_x, medians_y, color='b',alpha=0.75,linewidth=3)#,label='Median effective coverage')
 
     ax1.spines["top"].set_visible(False)
     ax1.spines["right"].set_visible(False)
@@ -1637,9 +1993,9 @@ def plot_mappability_bars(pacbio_mf_0_0,
     #plot_bars(pacbio_mf_1_0_data,'#0061ff',4,'PacBio, 100% well-mapped')
 
     #plot_bars(illumina_mf_0_0_data,'#ffa0a0',5,'Illumina, all sites')
-    plot_bars(ax, illumina_mf_0_5_data,'#ff7272',4,'Illumina, at least 50% well-mapped')
-    plot_bars(ax, illumina_mf_0_75_data,'#ff4242',5,'Illumina, at least 75% well-mapped')
-    plot_bars(ax, illumina_mf_0_9_data,'#ff2323',6,'Illumina, at least 90% well-mapped')
+    plot_bars(ax, illumina_mf_0_5_data,'#818181',4,'Illumina, at least 50% well-mapped')
+    plot_bars(ax, illumina_mf_0_75_data,'#414141',5,'Illumina, at least 75% well-mapped')
+    plot_bars(ax, illumina_mf_0_9_data,'k',6,'Illumina, at least 90% well-mapped')
     #plot_bars(illumina_mf_1_0_data,'#ff0000',9,'Illumina, 100% well-mapped')
 
     ax.yaxis.grid(True,color='grey', alpha=0.5, linestyle='--',zorder=1.0)

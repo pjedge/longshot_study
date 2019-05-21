@@ -1,0 +1,7 @@
+name: clairvoyante
+channels:
+- defaults
+- bioconda
+- conda-forge
+dependencies:
+- clairvoyante=1.02

@@ -31,6 +31,7 @@ freebayes -f {} \
 --standard-filters \
 --region {} \
  --genotype-qualities \
+ --use-best-n-alleles 4 \
  {} \
   > {}
 '''.format(w_ref, w_chrom, snakemake.input.bam, snakemake.output.vcf)

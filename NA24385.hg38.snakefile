@@ -66,12 +66,6 @@ rule subsample_pacbio_NA24385_hg38:
         subsample_frac = float(wildcards.cov) / 69.0
         shell('{SAMTOOLS} view -hb {input.bam} -s {subsample_frac} > {output.bam}')
 
-# DOWNLOAD PACBIO BAM
-#rule download_pacbio_NA24385_hg38:
-#    params: job_name = 'download_pacbio_NA24385.hg38'
-#    output: bam = 'data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.all.69x.bam',
-#    shell: 'wget {NA24385_HG38_PACBIO_BLASR_BAM_URL} -O {output.bam}'
-
 # RENAME PACBIO BAM
 rule rename_pacbio_NA24385_hg38:
     params: job_name = 'rename_pacbio_NA24385.hg38.blasr'

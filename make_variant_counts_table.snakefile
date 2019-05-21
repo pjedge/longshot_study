@@ -203,6 +203,18 @@ rule filter_SNVs_segmental_duplications:
         -i {input.vcfgz} -o {output.vcfgz}
         '''
 
+rule filter_SNVs_coding_exons_segmental_duplications:
+    params: job_name = 'filter_SNVs_coding_exons_segmental_duplications.{individual}.{build}.{info}.GQ{GQ}.{frac}',
+    input:  vcfgz = 'data/{individual}.{build}/variants/{info}/all.GQ{GQ}.PASS.SNPs_ONLY.DECOMPOSED.vcf.gz',
+            tbi   = 'data/{individual}.{build}/variants/{info}/all.GQ{GQ}.PASS.SNPs_ONLY.DECOMPOSED.vcf.gz.tbi',
+            bed   = 'genome_tracks/coding_exons_intersect_segmental_duplications_{build}_{frac}_similar.bed.gz'
+    output: vcfgz = 'data/{individual}.{build}/variants/{info}/all.GQ{GQ,\d+}.PASS.SNPs_ONLY.DECOMPOSED.coding_exons_segdup{frac}_only.vcf.gz'
+    shell:
+        '''
+        {RTGTOOLS} RTG_MEM=12g vcffilter --bed-regions={input.bed} \
+        -i {input.vcfgz} -o {output.vcfgz}
+        '''
+
 rule filter_SNVs_confident_regions:
     params: job_name = 'filter_SNVs_GIAB_confident.{individual}.{build}.{info}.GQ{GQ}',
     input:  vcfgz = 'data/{individual}.{build}/variants/{info}/{type}.GQ{GQ}.PASS.SNPs_ONLY.DECOMPOSED.vcf.gz',

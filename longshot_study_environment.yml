@@ -8,6 +8,7 @@ dependencies:
   - aioeasywebdav=2.2.0=py36_0
   - aiohttp=3.3.2=py36h14c3975_0
   - appdirs=1.4.3=py_1
+  - arrow=0.13.1=py36_0
   - asn1crypto=0.24.0=py_1
   - async-timeout=3.0.0=py36_0
   - attrs=18.1.0=py_1
@@ -17,12 +18,14 @@ dependencies:
   - bcrypt=3.1.4=py36h14c3975_0
   - bedops=2.4.35=h2d50403_1
   - bedtools=2.27.1=he941832_2
+  - biopython=1.73=py36h14c3975_0
   - blas=1.0=mkl
   - blasr=5.3.2=hac9d22c_3
   - blasr_libcpp=5.3.1=hac9d22c_2
   - boto3=1.7.68=py_0
   - botocore=1.10.68=py_0
   - bwa=0.7.17=h84994c4_5
+  - bz2file=0.98=py_0
   - bzip2=1.0.6=h470a237_2
   - ca-certificates=2019.3.9=hecc5488_0
   - cachetools=2.1.0=py_0
@@ -127,7 +130,7 @@ dependencies:
   - pyasn1=0.4.4=py_0
   - pyasn1-modules=0.0.5=py36_0
   - pycparser=2.18=py_1
-  - pyfaidx=0.5.4.1=py_0
+  - pyfaidx=0.5.5.2=py_0
   - pygraphviz=1.3.1=py36_0
   - pynacl=1.1.2=py36_0
   - pyparsing=2.2.0=py_1
@@ -138,6 +141,7 @@ dependencies:
   - python-dateutil=2.7.3=py_0
   - python-irodsclient=0.7.0=py_0
   - pytz=2018.5=py_0
+  - pyvcf=0.6.8=py36_1000
   - pyyaml=3.12=py36_1
   - qt=5.6.2=7
   - ratelimiter=1.2.0=py36_0
@@ -162,9 +166,11 @@ dependencies:
   - tornado=5.1=py36_0
   - ucsc-twobittofa=366=hdd26221_0
   - urllib3=1.12=py36_0
+  - whatshap=0.18=py36h6bb024c_0
   - wheel=0.31.1=py36_1
   - wrapt=1.10.11=py36_0
   - xmlrunner=1.7.7=py_0
+  - xopen=0.5.1=py_0
   - xorg-libxau=1.0.8=h470a237_6
   - xorg-libxdmcp=1.1.2=h470a237_7
   - xz=5.2.4=h470a237_0

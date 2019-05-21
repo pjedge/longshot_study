@@ -59,15 +59,22 @@ def get_var_pos_lst(calls_vcfgz, gq_cutoff):
 
     with pysam.VariantFile(calls_vcfgz) as calls:
 
-        for record in calls:
-            if record.samples[0]['GQ'] < gq_cutoff:
+        for rec in calls:
+            if rec.samples[0]['GQ'] < gq_cutoff:
                 continue
 
             # currently only designed for variants that are simple SNVs
-            assert(len(record.alleles[0]) == 1)
 
-            var_pos_lst.append((record.chrom, record.pos, record.alleles[0],
-                                record.samples[0].alleles))
+            not_snv = False
+            for a in rec.alleles:
+                if a not in ['A','C','G','T','N']:
+                    not_snv = True
+
+            if not_snv:
+                continue
+
+            var_pos_lst.append((rec.chrom, rec.pos, rec.alleles[0],
+                                rec.samples[0].alleles))
 
     return var_pos_lst
 
@@ -99,6 +106,9 @@ def analyze_variants(chrom_name, pacbio_calls_vcfgz, fp_calls_vcfgz, fn_calls_vc
             # gt is tuple of ints representing genotype
             for ix, (chrom, pos, ref_base, alleles) in enumerate(var_pos_lst):
 
+                if mode in ['fp','fn'] and ref_base not in 'ACGT':
+                    continue
+
                 total += 1
                 assert(chrom == chrom_name)
 
@@ -123,6 +133,7 @@ def analyze_variants(chrom_name, pacbio_calls_vcfgz, fp_calls_vcfgz, fn_calls_vc
                             continue
 
                         assert(ref_base == rec.ref)
+
 
                         if not set(rec.samples[0].alleles) == set(alleles):
                             misgenotyped = True

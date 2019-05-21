@@ -2,8 +2,7 @@
 import re
 from math import log10
 
-def filter_SNVs(infile, outfile, max_dp, density_count=10, density_len=500, density_qual=50):
-    dp_pat = re.compile("DP=(\d+)")
+def filter_SNVs_density(infile, outfile, density_count=10, density_len=500, density_qual=50):
 
     with open(outfile,'w') as outf:
         lines = []
@@ -23,19 +22,15 @@ def filter_SNVs(infile, outfile, max_dp, density_count=10, density_len=500, dens
                     sample = el[9].split(':')
                     gq = None
                     for (tag,data) in zip(format,sample):
-                        if tag == 'GQ':
+                        if tag == 'GQ' and data != '.':
                             gq = float(data)
-                    assert(gq != None)
+                    if(gq == None):
+                        continue
                     lines.append(((chrom,pos,gq),line.strip()))
 
         filt = [0] * len(lines)
-        dp_count = 0
-        for i in range(len(lines)):
 
-            depth = int(float(re.findall(dp_pat,lines[i][1])[0]))
-            if depth > max_dp:
-                filt[i] = 1
-                dp_count += 1
+        for i in range(len(lines)):
 
             j = i+1
             d = 0
@@ -58,8 +53,7 @@ def filter_SNVs(infile, outfile, max_dp, density_count=10, density_len=500, dens
 
                 j += 1
 
-        print("{} variants filtered due to depth".format(dp_count))
-        print("{} variants filtered due to density".format(sum(filt)-dp_count))
+        print("{} variants filtered due to density".format(sum(filt)))
         #filtered_lines = [l for ((chrom,pos,qual),l),f in zip(lines,filt) if f == 0]
 
         #for line in filtered_lines:

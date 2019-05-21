@@ -32,7 +32,8 @@ LONGSHOT       = 'longshot'
 RTGTOOLS       = 'rtg'
 BGZIP = 'bgzip'
 TABIX = 'tabix'
-FREEBAYES      = 'freebayes'
+FREEBAYES      = '/home/pedge/git/freebayes/bin/freebayes' # v1.0.2-33-gdbb6160
+WHATSHAP = 'whatshap'
 SIMLORD = 'simlord'
 DWGSIM = 'dwgsim'
 BWA = 'bwa'
@@ -59,8 +60,11 @@ include: "simulation.1000g.snakefile"
 include: "NA12878.1000g.snakefile"
 include: "NA12878.hg38.snakefile"
 include: "NA24385.hg38.snakefile"  # AJ Son,    hg38
+include: "NA24385.1000g.snakefile"  # AJ Son,   1000g
 include: "NA24143.hg38.snakefile"  # AJ Mother, hg38
+include: "NA24143.1000g.snakefile"  # AJ Mother, 1000g
 include: "NA24149.hg38.snakefile"  # AJ Father, hg38
+include: "NA24149.1000g.snakefile"  # AJ Father, 1000g
 include: "aj_trio.snakefile" #
 include: "paper_tables_and_figures.snakefile"
 include: "haplotyping.snakefile"
@@ -70,13 +74,43 @@ include: "make_duplicated_gene_table.snakefile"
 include: "map_giab_reads.snakefile"
 
 #rule default:
-#    input:
-#        'data/NA12878.1000g/variants/freebayes.illumina.aligned.30x.unfiltered/7.vcf'        
+ #  input:
+#        'data/plots/longshot_params_comparison_30x.png'
+        #'data/plots/haplotyping_results_barplot.png',
+        #'data/plots/fig3_precision_recall_bars_NA12878_AJ_Trio_with_haplotyping_results.blasr.hg38.png',
+        #'data/NA24385.1000g/vcfeval/clairvoyante.pacbio.ngmlr.69x.unfiltered/all',
+        #'data/NA24385.1000g/vcfeval/whatshap.pacbio.ngmlr.69x.dp_dn_filtered/all',
+        #'data/NA24385.1000g/vcfeval/longshot.pacbio.ngmlr.69x._/all',
+        #'data/NA12878.1000g/vcfeval/clairvoyante.pacbio.ngmlr.44x.unfiltered/all',
+        #'data/NA12878.1000g/vcfeval/whatshap.pacbio.ngmlr.44x.dp_dn_filtered/all',
+        #'data/NA12878.1000g/vcfeval/longshot.pacbio.ngmlr.44x._/all',
+        #'data/output/longshot_v_whatshap.aj_son_hg38_blasr.all.tex'
+        #'data/NA12878.hg38/vcfeval/whatshap.ont.minimap2.30x.unfiltered/all',
+        #'data/NA24385.hg38/vcfeval/whatshap.pacbio.blasr.69x.dp_dn_filtered/all',
+        #expand('data/NA24385.hg38/vcfeval/clairvoyante.pacbio.blasr.69x.unfiltered/{c}',c=chr20to22),
+        #expand('data/NA12878.1000g/vcfeval/clairvoyante.pacbio.blasr.44x.unfiltered/{c}',c=chr20to22),
+        #expand('data/NA24385.hg38/variants/genomicconsensus.pacbio.blasr.69x.no_sample_info/{c}.vcf',c=chr20to22),
+        #'data/NA24385.hg38/variants/genomicconsensus.pacbio.blasr.69x.no_sample_info/all.vcf',
+        #'data/NA12878.1000g/vcfeval/genomicconsensus.pacbio.blasr.44x.unfiltered/all'
+        #'data/NA12878.1000g/vcfeval/clairvoyante.pacbio.blasr.44x.unfiltered/20',
+        #'data/NA12878.1000g/vcfeval/clairvoyante.pacbio.blasr.44x.unfiltered/5',
+        #'data/NA12878.1000g/vcfeval/clairvoyante.pacbio.blasr.44x.unfiltered/4',
+
+        #'data/NA12878.1000g/vcfeval/clairvoyante.pacbio.blasr.44x.unfiltered/3',
+
+        #'data/NA12878.1000g/vcfeval/clairvoyante.pacbio.blasr.44x.unfiltered/all',
+        #'data/NA12878.1000g/vcfeval/whatshap.pacbio.blasr.44x.unfiltered/all',
+        #'data/NA12878.1000g/vcfeval/whatshap.pacbio.blasr.44x.dp_filtered/all',
+        #'data/NA12878.1000g/vcfeval/whatshap.pacbio.blasr.44x.dp_dn_filtered/all',
+
+#        'data/NA12878.hg38/vcfeval/whatshap.ont.minimap2.30x._/all'
+
 
 rule all:
     input:
         # tables & figures
-        'data/NA12878.hg38/longshot_haplotypes/hap_statistics/longshot.ont.minimap2.30x._.all.p',
+        'data/plots/3method_NA12878.1000g.ngmlr.prec_recall_all.png',
+        'data/plots/longshot_params_comparison_44x.png',
         'data/plots/NA12878.hg38_ONT_PR_curve_all.png',
         'data/plots/fig3_precision_recall_bars_NA12878_AJ_Trio_with_haplotyping_results.blasr.hg38.png',
         'data/plots/prec_recall_4panel_blasr.all.png',
@@ -95,10 +129,28 @@ rule all:
         'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.read_lengths',
         'data/NA24385.hg38/aligned_reads/pacbio/pacbio.blasr.all.30x.bam.read_lengths',
         'data/output/NA12878_chr1_45x_haplotype_assigned_N50_analysis.txt',
-        'data/NA12878.1000g/variants/misc/INTERSECT_PG_longshot.pacbio.blasr.44x._.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats',
-        'data/NA12878.1000g/variants/misc/MINUS_longshot.pacbio.blasr.44x._.PG.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats',
-        'data/NA12878.1000g/variants/misc/MINUS_PG_longshot.pacbio.blasr.44x._.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats',
+        #'data/NA12878.1000g/variants/misc/INTERSECT_PG_longshot.pacbio.blasr.44x._.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats',
+        #'data/NA12878.1000g/variants/misc/MINUS_longshot.pacbio.blasr.44x._.PG.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats',
+        #'data/NA12878.1000g/variants/misc/MINUS_PG_longshot.pacbio.blasr.44x._.all.GQ45.PASS.SNPs_ONLY.DECOMPOSED.GIAB_nonconfident_only.inside_PG_confident.vcf.stats',
 
+
+rule coding_exons_segdup_NA12878:
+    params: job_name = 'coding_exons_segdup_NA12878.44x',
+    input:  bam = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.44x.bam',
+            bai = 'data/NA12878.1000g/aligned_reads/pacbio/pacbio.blasr.all.44x.bam.bai',
+            ref = 'data/genomes/hg19.fa',
+            bed = 'genome_tracks/coding_exons_intersect_segmental_duplications_1000g_0.95_similar.bed'
+    output: txt = 'data/output/NA12878.1000g_num_bases_coding_exons_covered.txt',
+    run:
+        shell('''echo '' > {output}''')
+        with open(input.bed, 'r') as inf:
+            for line in inf:
+                el = line.strip().split()
+                reg = 'chr'+el[0]+':'+str(int(el[1])+1)+'-'+el[2] # convert 0-index exclusive to 1-index inclusive
+                shell('''
+                {MAP_COUNTER} --chrom {reg} --bam {input.bam} --ref {input.ref} --min_cov 20 \
+                --min_mapq 30 --map_frac 0.9 >> {output}
+                ''')
 
 rule run_pileups:
     params: job_name = 'run_pileups_{individual}.{cov}x',
@@ -150,13 +202,34 @@ rule remove_x_y_region_filter:
     output: 'data/{individual}.{build}/variants/ground_truth/region_filter.1_22_only.bed'
     shell:  'cat {input} | python3 filter_bed_chroms.py > {output}'
 
+# rule vcfeval_rtgtools:
+#     params: job_name = 'vcfeval_rtgtools.{individual}.{build}.{calls_name}.{chrom}',
+#             region_arg = lambda wildcards: '--region={}'.format(chr_prefix(wildcards.chrom,wildcards.build)) if wildcards.chrom != 'all' else ''
+#     input:  calls_vcf = 'data/{individual}.{build}/variants/{calls_name}/{chrom}.vcf.gz',
+#             calls_ix = 'data/{individual}.{build}/variants/{calls_name}/{chrom}.vcf.gz.tbi',
+#             ground_truth = 'data/{individual}.{build}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
+#             ground_truth_ix = 'data/{individual}.{build}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz.tbi',
+#             region_filter ='data/{individual}.{build}/variants/ground_truth/region_filter.1_22_only.bed',
+#             sdf = 'data/genomes/{build}.sdf'
+#     output: dir = directory('data/{individual}.{build}/vcfeval/{calls_name}/{chrom}')
+#     shell:
+#         '''
+#         {RTGTOOLS} RTG_MEM=12g vcfeval \
+#         {params.region_arg} \
+#         -c {input.calls_vcf} \
+#         -b {input.ground_truth} \
+#         -e {input.region_filter} \
+#         -t {input.sdf} \
+#         -o {output.dir}
+#         '''
+
 rule vcfeval_rtgtools:
     params: job_name = 'vcfeval_rtgtools.{individual}.{build}.{calls_name}.{chrom}',
             region_arg = lambda wildcards: '--region={}'.format(chr_prefix(wildcards.chrom,wildcards.build)) if wildcards.chrom != 'all' else ''
     input:  calls_vcf = 'data/{individual}.{build}/variants/{calls_name}/{chrom}.vcf.gz',
             calls_ix = 'data/{individual}.{build}/variants/{calls_name}/{chrom}.vcf.gz.tbi',
-            ground_truth = 'data/{individual}.{build}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz',
-            ground_truth_ix = 'data/{individual}.{build}/variants/ground_truth/ground_truth.DECOMPOSED.SNVs_ONLY.vcf.gz.tbi',
+            ground_truth = 'data/{individual}.{build}/variants/ground_truth/ground_truth.vcf.gz',
+            ground_truth_ix = 'data/{individual}.{build}/variants/ground_truth/ground_truth.vcf.gz.tbi',
             region_filter ='data/{individual}.{build}/variants/ground_truth/region_filter.1_22_only.bed',
             sdf = 'data/genomes/{build}.sdf'
     output: dir = directory('data/{individual}.{build}/vcfeval/{calls_name}/{chrom}')
@@ -168,23 +241,22 @@ rule vcfeval_rtgtools:
         -b {input.ground_truth} \
         -e {input.region_filter} \
         -t {input.sdf} \
+        --decompose \
         -o {output.dir}
         '''
 
-rule vcfeval_allvariants:
-    params: job_name = 'vcfeval_allvariants.{individual}.{build}.{calls_name}.{chrom}',
-            region_arg = lambda wildcards: '--region={}'.format(chr_prefix(wildcards.chrom,wildcards.build)) if wildcards.chrom != 'all' else ''
-    input:  calls_vcf = 'data/{individual}.{build}/variants/{calls_name}/{chrom}.vcf.gz',
-            calls_ix = 'data/{individual}.{build}/variants/{calls_name}/{chrom}.vcf.gz.tbi',
+rule vcfeval_rtgtools_last3:
+    params: job_name = 'vcfeval_rtgtools.{individual}.{build}.{calls_name}.all',
+    input:  calls_vcf = 'data/{individual}.{build}/variants/{calls_name}/all.vcf.gz',
+            calls_ix = 'data/{individual}.{build}/variants/{calls_name}/all.vcf.gz.tbi',
             ground_truth = 'data/{individual}.{build}/variants/ground_truth/ground_truth.vcf.gz',
             ground_truth_ix = 'data/{individual}.{build}/variants/ground_truth/ground_truth.vcf.gz.tbi',
-            region_filter ='data/{individual}.{build}/variants/ground_truth/region_filter.1_22_only.bed',
+            region_filter ='data/{individual}.{build}/variants/ground_truth/region_filter.last3.bed',
             sdf = 'data/genomes/{build}.sdf'
-    output: dir = directory('data/{individual}.{build}/vcfeval_allvariants/{calls_name}/{chrom}')
+    output: dir = directory('data/{individual}.{build}/vcfeval/{calls_name}/last3')
     shell:
         '''
         {RTGTOOLS} RTG_MEM=12g vcfeval \
-        {params.region_arg} \
         -c {input.calls_vcf} \
         -b {input.ground_truth} \
         -e {input.region_filter} \
@@ -201,6 +273,23 @@ rule rtg_filter_SNVs_known_indels:
     output: vcf = 'data/{individual}.{build}/variants/known_indels_removed.longshot.pacbio.blasr.{cov}x._/all.vcf',
     shell: '{RTGTOOLS} RTG_MEM=12g vcffilter --exclude-bed {input.known_indels} -i {input.vcfgz} -o {output.vcf}.gz; gunzip {output.vcf}.gz'
 
+from intersect_SNV_genotypes import intersect_SNV_genotypes
+rule intersect_longshot_clairvoyante:
+    params: job_name = 'intersect_longshot_clairvoyante.{individual}.{build}.{cov}',
+    input:  ls  = 'data/{individual}.{build}/variants/longshot.pacbio.ngmlr.{cov}x._/all.vcf',
+            clv = 'data/{individual}.{build}/variants/clairvoyante.pacbio.ngmlr.{cov}x.unfiltered/all.vcf'
+    output: vcf = 'data/{individual}.{build}/variants/longshot_x_clairvoyante.longshot.pacbio.ngmlr.{cov}x._/all.vcf',
+    run:
+        intersect_SNV_genotypes(input.clv, input.ls, output.vcf)
+
+from intersect_SNV_genotypes import intersect_SNV_genotypes
+rule intersect_longshot_clairvoyante_blasr_ngmlr:
+    params: job_name = 'intersect_longshot_clairvoyante_blasr_ngmlr.{individual}.{build}.{cov}',
+    input:  ls  = 'data/{individual}.{build}/variants/longshot.pacbio.blasr.{cov}x._/all.vcf',
+            clv = 'data/{individual}.{build}/variants/clairvoyante.pacbio.ngmlr.{cov}x.unfiltered/all.vcf'
+    output: vcf = 'data/{individual}.{build}/variants/longshot_x_clairvoyante.longshot.pacbio.blasr_ngmlr.{cov}x._/all.vcf',
+    run:
+        intersect_SNV_genotypes(input.clv, input.ls, output.vcf)
 
 def convert_known_indels_to_bed(input, output, bp_pad=5):
     with pysam.VariantFile(input) as vcf, open(output,'w') as outf:
@@ -246,7 +335,6 @@ rule rtg_decompose_variants_ground_truth:
     output: vcfgz = 'data/{individual}.{build}/variants/ground_truth/ground_truth.DECOMPOSED.vcf.gz',
     shell: '{RTGTOOLS} RTG_MEM=12g vcfdecompose --break-mnps --break-indels -i {input.vcfgz} -o {output.vcfgz}'
 
-from filter_SNVs import filter_SNVs
 rule filter_illumina_SNVs:
     params: job_name = 'filter_SNVs_illumina.{individual}.{build}.chr{chrom}',
     input:  vcfgz = 'data/{individual}.{build}/variants/freebayes.illumina.aligned.{cov}x.unfiltered/{chrom}.vcf.gz',
@@ -259,13 +347,12 @@ rule filter_illumina_SNVs:
         max_cov = int(median_cov + 5*sqrt(median_cov))
         shell('{RTGTOOLS} RTG_MEM=12g vcffilter -D {max_cov} -i {input.vcfgz} -o {output.vcf}.gz')
         shell('gunzip -c {output.vcf}.gz > {output.vcf}')
-        #filter_SNVs(input.vcf, output.vcf, cov_filter, density_count=10, density_len=500, density_qual=50)
         shell('cp {input.runtime} {output.runtime}')
 
 rule combine_chrom:
     params: job_name = 'combine_chroms.{individual}.{build}.{caller}.{tech}.{further_info}',
     input: expand('data/{{individual}}.{{build}}/variants/{{caller}}.{{tech}}.{{further_info}}/{chrom}.vcf',chrom=chroms)
-    output: 'data/{individual}.{build}/variants/{caller,(freebayes|longshot)}.{tech,(pacbio|illumina|ont)}.{further_info}/all.vcf'
+    output: 'data/{individual}.{build}/variants/{caller,(freebayes|longshot|whatshap|genomicconsensus|clairvoyante)}.{tech,(pacbio|illumina|ont)}.{further_info}/all.vcf'
     shell:
         '''
         grep -P '^#' {input[0]} > {output}; # grep header
@@ -301,6 +388,7 @@ rule add_runtimes:
 
 rule run_longshot_pacbio:
     params: job_name = 'longshot.pacbio.{aligner}.{individual}.{build}.cov{cov}.{options}.chr{chrom}',
+            debug = 'data/{individual}.{build}/variants/longshot.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.debug'
     input:  bam = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.all.{cov}x.bam',
             bai = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.all.{cov}x.bam.bai',
             cov = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.all.{cov}x.bam.median_coverage',
@@ -311,15 +399,15 @@ rule run_longshot_pacbio:
             hg38 = 'data/genomes/hg38.fa',
             hg38_ix = 'data/genomes/hg38.fa.fai'
     output: vcf = 'data/{individual}.{build}/variants/longshot.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.vcf',
-            debug = directory('data/{individual}.{build}/variants/longshot.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.debug'),
+            potential_snvs = 'data/{individual}.{build}/variants/longshot.pacbio.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.debug/1.0.potential_SNVs.vcf',
             runtime = 'data/{individual}.{build}/variants/longshot.pacbio.{aligner}.{cov}x.{options}/{chrom,(\d+|X|Y)}.vcf.runtime'
     run:
         median_cov = parse_int_file(input.cov)
         max_cov = int(median_cov + 5*sqrt(median_cov))
         options_str = wildcards.options.replace('_',' ')
-        if wildcards.individual == 'NA12878' and wildcards.build == '1000g':
+        if wildcards.individual == 'NA12878' and wildcards.build == '1000g' and wildcards.aligner == 'blasr':
             t1 = time.time()
-            shell('{LONGSHOT} -r chr{wildcards.chrom} -F -C {max_cov} -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {input.hg19} --out {output.vcf}.tmp')
+            shell('{LONGSHOT} -r chr{wildcards.chrom} -F -C {max_cov} -d {params.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {input.hg19} --out {output.vcf}.tmp')
             t2 = time.time()
             # remove 'chr' from reference name in vcf
             remove_chr_from_vcf(output.vcf+'.tmp',output.vcf)
@@ -328,7 +416,7 @@ rule run_longshot_pacbio:
             w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
             w_ref = ref_file[wildcards.build]
             t1 = time.time()
-            shell('{LONGSHOT} -r {w_chrom} -F -C {max_cov} -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {w_ref} --out {output.vcf}')
+            shell('{LONGSHOT} -r {w_chrom} -F -C {max_cov} -d {params.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {w_ref} --out {output.vcf}')
             t2 = time.time()
 
         with open(output.runtime,'w') as outf:
@@ -352,7 +440,7 @@ rule run_longshot_beta_pacbio:
         median_cov = parse_int_file(input.cov)
         max_cov = int(median_cov + 5*sqrt(median_cov))
         options_str = wildcards.options.replace('_',' ')
-        if wildcards.individual == 'NA12878' and wildcards.build == '1000g':
+        if wildcards.individual == 'NA12878' and wildcards.build == '1000g' and wildcards.aligner == 'blasr':
             t1 = time.time()
             shell('{LONGSHOT_BETA} -r chr{wildcards.chrom} -F -C {max_cov} -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {input.hg19} --out {output.vcf}.tmp')
             t2 = time.time()
@@ -371,6 +459,7 @@ rule run_longshot_beta_pacbio:
 
 rule run_longshot_ont:
     params: job_name = 'longshot.ont.{aligner}.{individual}.{build}.cov{cov}.{options}.chr{chrom}',
+            debug = 'data/{individual}.{build}/variants/longshot.ont.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.debug'
     input:  bam = 'data/{individual}.{build}/aligned_reads/ont/ont.{aligner}.all.{cov}x.bam',
             bai = 'data/{individual}.{build}/aligned_reads/ont/ont.{aligner}.all.{cov}x.bam.bai',
             cov = 'data/{individual}.{build}/aligned_reads/ont/ont.{aligner}.all.{cov}x.bam.median_coverage',
@@ -381,7 +470,7 @@ rule run_longshot_ont:
             hg38 = 'data/genomes/hg38.fa',
             hg38_ix = 'data/genomes/hg38.fa.fai'
     output: vcf = 'data/{individual}.{build}/variants/longshot.ont.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.vcf',
-            debug = directory('data/{individual}.{build}/variants/longshot.ont.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.debug'),
+            potential_snvs = 'data/{individual}.{build}/variants/longshot.ont.{aligner}.{cov,\d+}x.{options}/{chrom,(\d+|X|Y)}.debug/1.0.potential_SNVs.vcf',
             runtime = 'data/{individual}.{build}/variants/longshot.ont.{aligner}.{cov}x.{options}/{chrom,(\d+|X|Y)}.vcf.runtime'
     run:
         median_cov = parse_int_file(input.cov)
@@ -390,11 +479,163 @@ rule run_longshot_ont:
         w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
         w_ref = ref_file[wildcards.build]
         t1 = time.time()
-        shell('{LONGSHOT} -r {w_chrom} -F -C {max_cov} -d {output.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {w_ref} --out {output.vcf}')
+        shell('{LONGSHOT} -r {w_chrom} -F -C {max_cov} -d {params.debug} {options_str} -s {wildcards.individual} --bam {input.bam} --ref {w_ref} --out {output.vcf}')
         t2 = time.time()
 
         with open(output.runtime,'w') as outf:
             print(seconds_to_formatted_time(t2-t1),file=outf)
+
+from filter_SNVs import filter_SNVs_density
+rule filter_othermethod_SNVs_depth:
+    params: job_name = 'filter_SNVs_{method}_depth.{individual}.{build}.chr{chrom}',
+    input:  vcfgz = 'data/{individual}.{build}/variants/{method}.{tech}.{aligner}.{cov}x.unfiltered/{chrom}.vcf.gz',
+            runtime = 'data/{individual}.{build}/variants/{method}.{tech}.{aligner}.{cov}x.unfiltered/{chrom}.vcf.runtime',
+            cov = 'data/{individual}.{build}/aligned_reads/{tech}/{tech}.{aligner}.all.{cov}x.bam.median_coverage'
+    output: vcf = 'data/{individual}.{build}/variants/{method}.{tech,(pacbio|ont)}.{aligner}.{cov,\d+}x.dp_filtered/{chrom,(\d+)}.vcf',
+            runtime = 'data/{individual}.{build}/variants/{method}.{tech}.{aligner}.{cov,\d+}x.dp_filtered/{chrom,(\d+)}.vcf.runtime'
+    run:
+        median_cov = parse_int_file(input.cov)
+        max_cov = int(median_cov + 5*sqrt(median_cov))
+        shell('{RTGTOOLS} RTG_MEM=12g vcffilter -D {max_cov} -i {input.vcfgz} -o {output.vcf}.gz')
+        shell('gunzip -c {output.vcf}.gz > {output.vcf}')
+        shell('cp {input.runtime} {output.runtime}')
+
+rule filter_othermethod_SNVs_density:
+    params: job_name = 'filter_SNVs_{method}_density.{individual}.{build}.chr{chrom}',
+    input:  vcfgz = 'data/{individual}.{build}/variants/{method}.{tech}.{aligner}.{cov}x.dp_filtered/{chrom}.vcf',
+            runtime = 'data/{individual}.{build}/variants/{method}.{tech}.{aligner}.{cov}x.dp_filtered/{chrom}.vcf.runtime',
+    output: vcf = 'data/{individual}.{build}/variants/{method}.{tech,(pacbio|ont)}.{aligner}.{cov,\d+}x.dp_dn_filtered/{chrom,(\d+)}.vcf',
+            runtime = 'data/{individual}.{build}/variants/{method}.{tech}.{aligner}.{cov,\d+}x.dp_dn_filtered/{chrom,(\d+)}.vcf.runtime'
+    run:
+        filter_SNVs_density(input.vcfgz, output.vcf, density_count=10, density_len=500, density_qual=50)
+        shell('cp {input.runtime} {output.runtime}')
+
+rule run_whatshap_pacbio:
+    params: job_name = 'whatshap.pacbio.{aligner}.{individual}.{build}.cov{cov}.chr{chrom}',
+    input:  bam = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.all.{cov}x.bam',
+            bai = 'data/{individual}.{build}/aligned_reads/pacbio/pacbio.{aligner}.all.{cov}x.bam.bai',
+            hg19    = 'data/genomes/hg19.fa',
+            hg19_ix = 'data/genomes/hg19.fa.fai',
+            hs37d5    = 'data/genomes/hs37d5.fa',
+            hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
+            hg38 = 'data/genomes/hg38.fa',
+            hg38_ix = 'data/genomes/hg38.fa.fai',
+            potential_snvs = 'data/{individual}.{build}/variants/longshot.pacbio.{aligner}.{cov}x._/{chrom}.debug/1.0.potential_SNVs.vcf',
+    output: vcf = 'data/{individual}.{build}/variants/whatshap.pacbio.{aligner}.{cov,\d+}x.unfiltered/{chrom,(\d+|X|Y)}.vcf',
+            runtime = 'data/{individual}.{build}/variants/whatshap.pacbio.{aligner}.{cov}x.unfiltered/{chrom,(\d+|X|Y)}.vcf.runtime'
+    run:
+        if wildcards.individual == 'NA12878' and wildcards.build == '1000g' and wildcards.aligner == 'blasr':
+            t1 = time.time()
+            shell('{WHATSHAP} genotype --ignore-read-groups --reference {input.hg19} -o {output.vcf}.tmp {input.potential_snvs} {input.bam}')
+            t2 = time.time()
+            # remove 'chr' from reference name in vcf
+            remove_chr_from_vcf(output.vcf+'.tmp',output.vcf)
+            # remove 'chr' from no-haplotype version of vcf
+        else:
+            w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
+            w_ref = ref_file[wildcards.build]
+            t1 = time.time()
+            shell('{WHATSHAP} genotype --ignore-read-groups --reference {w_ref} -o {output.vcf} {input.potential_snvs} {input.bam}')
+            t2 = time.time()
+
+        with open(output.runtime,'w') as outf:
+            print(seconds_to_formatted_time(t2-t1),file=outf)
+
+rule run_whatshap_ont:
+    params: job_name = 'whatshap.ont.{aligner}.{individual}.{build}.cov{cov}.chr{chrom}',
+    input:  bam = 'data/{individual}.{build}/aligned_reads/ont/ont.{aligner}.all.{cov}x.bam',
+            bai = 'data/{individual}.{build}/aligned_reads/ont/ont.{aligner}.all.{cov}x.bam.bai',
+            hg19    = 'data/genomes/hg19.fa',
+            hg19_ix = 'data/genomes/hg19.fa.fai',
+            hs37d5    = 'data/genomes/hs37d5.fa',
+            hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
+            hg38 = 'data/genomes/hg38.fa',
+            hg38_ix = 'data/genomes/hg38.fa.fai',
+            potential_snvs = 'data/{individual}.{build}/variants/longshot.ont.{aligner}.{cov}x._/{chrom}.debug/1.0.potential_SNVs.vcf',
+    output: vcf = 'data/{individual}.{build}/variants/whatshap.ont.{aligner}.{cov,\d+}x.unfiltered/{chrom,(\d+|X|Y)}.vcf',
+            runtime = 'data/{individual}.{build}/variants/whatshap.ont.{aligner}.{cov}x.unfiltered/{chrom,(\d+|X|Y)}.vcf.runtime'
+    run:
+        w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
+        w_ref = ref_file[wildcards.build]
+        t1 = time.time()
+        shell('{WHATSHAP} genotype --ignore-read-groups --reference {w_ref} -o {output.vcf} {input.potential_snvs} {input.bam}')
+        t2 = time.time()
+
+        with open(output.runtime,'w') as outf:
+            print(seconds_to_formatted_time(t2-t1),file=outf)
+
+# before this rule is executed, it is necessary to modify the conda env
+# run snakemake with the command:
+# snakemake --use-conda --create-envs-only
+# this will create clairvoyante's conda environment
+# then, find and activate that environment (should have no name and long hash directory path) e.g.:
+# conda activate .snakemake/conda/7c00edba
+# and run:
+# wget https://bootstrap.pypa.io/get-pip.py
+# pypy get-pip.py
+# pypy -m pip install --no-cache-dir intervaltree==2.1.0
+rule run_clairvoyante:
+    params: job_name = 'clairvoyante.{tech}.{aligner}.{individual}.{build}.cov{cov}.chr{chrom}',
+            w_chrom = lambda wildcards: chr_prefix(wildcards.chrom, wildcards.build),
+            w_ref = lambda wildcards: ref_file[wildcards.build]
+    input:  bam = 'data/{individual}.{build}/aligned_reads/{tech}/{tech}.{aligner}.all.{cov}x.bam',
+            bai = 'data/{individual}.{build}/aligned_reads/{tech}/{tech}.{aligner}.all.{cov}x.bam.bai',
+            hg19    = 'data/genomes/hg19.fa',
+            hg19_ix = 'data/genomes/hg19.fa.fai',
+            hs37d5    = 'data/genomes/hs37d5.fa',
+            hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
+            hg38 = 'data/genomes/hg38.fa',
+            hg38_ix = 'data/genomes/hg38.fa.fai'
+    output: vcf = 'data/{individual}.{build}/variants/clairvoyante.{tech,(pacbio|ont)}.{aligner}.{cov,\d+}x.unfiltered/{chrom,(\d+|X|Y)}.vcf',
+            runtime = 'data/{individual}.{build}/variants/clairvoyante.{tech}.{aligner}.{cov}x.unfiltered/{chrom,(\d+|X|Y)}.vcf.runtime'
+    conda:  'envs/clairvoyante.yaml'
+    script: 'scripts/clairvoyante.py'
+
+CLAIRVOYANTE_MODELS_URL = 'http://www.bio8.cs.hku.hk/trainedModels.tbz'
+#
+rule download_clairvoyante_models:
+    params: job_name = 'download_clairvoyante_models',
+    output: dir('data/clairvoyante_models')
+    shell: 'curl {CLAIRVOYANTE_MODELS_URL} | tar -jxf -'
+
+rule run_genomicconsensus:
+    params: job_name = 'genomicconsensus.{tech}.{aligner}.{individual}.{build}.cov{cov}.chr{chrom}',
+            w_chrom = lambda wildcards: chr_prefix(wildcards.chrom, wildcards.build),
+            w_ref = lambda wildcards: ref_file[wildcards.build]
+    input:  bam = 'data/{individual}.{build}/aligned_reads/{tech}/{tech}.{aligner}.all.{cov}x.bam',
+            bai = 'data/{individual}.{build}/aligned_reads/{tech}/{tech}.{aligner}.all.{cov}x.bam.bai',
+            pbi = 'data/{individual}.{build}/aligned_reads/{tech}/{tech}.{aligner}.all.{cov}x.bam.pbi',
+            hg19    = 'data/genomes/hg19.fa',
+            hg19_ix = 'data/genomes/hg19.fa.fai',
+            hs37d5    = 'data/genomes/hs37d5.fa',
+            hs37d5_ix = 'data/genomes/hs37d5.fa.fai',
+            hg38 = 'data/genomes/hg38.fa',
+            hg38_ix = 'data/genomes/hg38.fa.fai'
+    output: vcf = 'data/{individual}.{build}/variants/genomicconsensus.{tech,(pacbio|ont)}.{aligner}.{cov,\d+}x.no_sample_info/{chrom,(\d+|X|Y)}.vcf',
+            runtime = 'data/{individual}.{build}/variants/genomicconsensus.{tech}.{aligner}.{cov}x.unfiltered/{chrom,(\d+|X|Y)}.vcf.runtime'
+    conda:  'envs/genomicconsensus.yaml'
+    script: 'scripts/genomicconsensus.py'
+
+rule pbindex_bam:
+    params: job_name = lambda wildcards: 'pbindex_bam.{}'.format(str(wildcards.x).replace("/", "."))
+    input:  bam = '{x}.bam'
+    output: bai = '{x}.bam.pbi'
+    shell:  'pbindex {input.bam}'
+
+
+# Call 30x Illumina variants
+#rule call_variants_Illumina:
+#    params: job_name = 'call_illumina.{individual}.{build}.{cov}x.chr{chrom}',
+#    input: bam = 'data/{individual}.{build}/aligned_reads/illumina/illumina.aligned.all.{cov}x.bam',
+#            bai = 'data/{individual}.{build}/aligned_reads/illumina/illumina.aligned.all.{cov}x.bam.bai',
+#            ref_1000g_fa = 'data/genomes/hs37d5.fa',
+#            ref_1000g_fai = 'data/genomes/hs37d5.fa.fai',
+#            ref_hg38_fa = 'data/genomes/hg38.fa',
+#            ref_hg38_fai = 'data/genomes/hg38.fa.fai'
+#    output: vcf = 'data/{individual}.{build}/variants/freebayes.illumina.aligned.{cov}x.unfiltered/{chrom,(\d+)}.vcf',
+#            runtime = 'data/{individual}.{build}/variants/freebayes.illumina.aligned.{cov}x.unfiltered/{chrom,(\d+)}.vcf.runtime'
+#    conda: 'envs/freebayes.yaml'
+#    script: 'scripts/call_variants_Illumina.py'
 
 # Call 30x Illumina variants
 rule call_variants_Illumina:
@@ -407,8 +648,21 @@ rule call_variants_Illumina:
             ref_hg38_fai = 'data/genomes/hg38.fa.fai'
     output: vcf = 'data/{individual}.{build}/variants/freebayes.illumina.aligned.{cov}x.unfiltered/{chrom,(\d+)}.vcf',
             runtime = 'data/{individual}.{build}/variants/freebayes.illumina.aligned.{cov}x.unfiltered/{chrom,(\d+)}.vcf.runtime'
-    conda: 'envs/freebayes.yaml'
-    script: 'scripts/call_variants_Illumina.py'
+    run:
+        w_chrom = chr_prefix(wildcards.chrom, wildcards.build)
+        w_ref = ref_file[wildcards.build]
+        t1 = time.time()
+        shell('''
+        {FREEBAYES} -f {w_ref} \
+        --standard-filters \
+        --region {w_chrom} \
+         --genotype-qualities \
+         {input.bam} \
+          > {output.vcf}
+        ''')
+        t2 = time.time()
+        with open(output.runtime,'w') as outf:
+            print(seconds_to_formatted_time(t2-t1),file=outf)
 
 rule generate_genomecov_bed:
     params: job_name = 'generate_genomecov_bed.{individual}.{build}.{tech}.{info}.MAPQ{mapq}'
@@ -495,6 +749,20 @@ rule sort_hg38_genome_track:
         bgzip -c > {output.track}
         '''
 
+rule find_coding_exons_segdups:
+    params: job_name = 'find_coding_exons_segdups',
+    input: exons = 'genome_tracks/coding_exons_{build}.bed.gz',
+           segdup95 = 'genome_tracks/segmental_duplications_0.95_similar_{build}.bed',
+           names = 'genome_tracks/{build}.chrom.sizes.txt'
+    output: track = 'genome_tracks/coding_exons_intersect_segmental_duplications_{build}_0.95_similar.bed.gz'
+    shell:
+        '''
+        bedtools intersect -a {input.exons} -b {input.segdup95} | \
+        {BEDTOOLS} sort -g {input.names} | \
+        {BEDTOOLS} merge | \
+        bgzip -c > {output.track}
+        '''
+
 rule convert_genome_track_to_1000g:
     params: job_name = 'convert_genome_track_to_1000g.{track}',
     input: track = 'genome_tracks/{track}_hg19.bed.gz',
@@ -529,7 +797,7 @@ rule calculate_coverage:
         {BEDTOOLS} subtract -a stdin -b {input.n_regions} ''' + centromere_subtract + ''' |
         {BEDTOOLS} sort -faidx {input.genome_file} > {output.random_pos}''')
 
-        add_chr = (wildcards.individual == 'NA12878' and wildcards.build == '1000g' and wildcards.tech == 'pacbio')
+        add_chr = (wildcards.individual == 'NA12878' and wildcards.build == '1000g' and wildcards.tech == 'pacbio' and 'blasr' in wildcards.info)
 
         med_cov, mean_cov, stdev_cov = calculate_coverage(input.bam, output.random_pos, add_chr=add_chr)
         with open(output.med_cov,'w') as outf:
